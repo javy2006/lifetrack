@@ -30,6 +30,8 @@ export interface Board3DView {
   landingSpace: number | null;
   routeOwner: CharacterId | null;
   /** Translated short tile labels (24), painted on the tiles; defaults to the English captions. */
+  /** Month of the challenge (1-6): sets a gentle light mood, from crisp morning to warm late afternoon. */
+  month?: number;
   captions?: readonly string[];
   /** Face decided by the seeded board die (never by this scene); null when no roll is shown. */
   dieValue: number | null;
@@ -187,6 +189,19 @@ function LandingBurst({ space, owner, reducedMotion }: { space: number | null; o
   </mesh>;
 }
 
+/**
+ * Light mood per month: the sun swings slowly across the sky and warms over the six months.
+ * Static per month (no per-frame cost) and subtle, so tiles and tokens always read clearly.
+ */
+const MONTH_MOOD: readonly { sun: [number, number, number]; color: string; sky: string; intensity: number }[] = [
+  { sun: [-5.5, 9.5, 1.5], color: '#fff8ee', sky: '#fbfbf4', intensity: 1.7 },
+  { sun: [-5.2, 9.3, 2.0], color: '#fff6e8', sky: '#fffaf0', intensity: 1.72 },
+  { sun: [-5.0, 9.0, 2.5], color: '#fff4e2', sky: '#fff9ec', intensity: 1.74 },
+  { sun: [-4.6, 8.6, 3.0], color: '#fff0d8', sky: '#fff7e6', intensity: 1.75 },
+  { sun: [-4.2, 8.1, 3.4], color: '#ffead0', sky: '#fff4e0', intensity: 1.76 },
+  { sun: [-3.8, 7.6, 3.8], color: '#ffe4c4', sky: '#fff1da', intensity: 1.78 },
+];
+
 /** Route preview: a dot in the mover's colour on each space the pawn is about to cross. */
 function RouteDots({ route, owner }: { route: readonly number[]; owner: CharacterId | null }) {
   if (!owner || route.length === 0) return null;
@@ -215,6 +230,7 @@ function BoardBase() {
 }
 
 export default function Board3DScene({ view, onContextLost }: { view: Board3DView; onContextLost?: () => void }) {
+  const mood = MONTH_MOOD[Math.min(5, Math.max(0, (view.month ?? 1) - 1))]!;
   const tiles = useMemo(() => SPACE_WORLD.map((_, i) => i), []);
   const reducedMotion = useMemo(prefersReducedMotion, []);
   const ambient = useMemo(() => { try { return !reducedMotion && window.matchMedia('(pointer: fine)').matches; } catch { return false; } }, [reducedMotion]);
@@ -236,12 +252,12 @@ export default function Board3DScene({ view, onContextLost }: { view: Board3DVie
     <CameraRig focus={view.focus ? pawnWorld(view.positions[view.focus] ?? 0, view.focus, view.positions) : null} reducedMotion={reducedMotion}/>
     <color attach="background" args={['#dcead0']}/>
     <fog attach="fog" args={['#dcead0', 22, 44]}/>
-    <hemisphereLight args={['#fffaf0', '#b7cfa6', 1.0]}/>
+    <hemisphereLight args={[mood.sky, '#b7cfa6', 1.0]}/>
     {/* Key light from the upper left of the screen so shadows fall toward the viewer's lower right. */}
     <directionalLight
-      position={[-5, 9, 2.5]}
-      intensity={1.7}
-      color="#fff6e8"
+      position={mood.sun}
+      intensity={mood.intensity}
+      color={mood.color}
       castShadow
       shadow-mapSize={[2048, 2048]}
       shadow-bias={-0.0004}

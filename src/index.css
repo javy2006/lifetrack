@@ -467,3 +467,12 @@ img.mini-avatar { padding: 0; }
 .chart .chart-svg { max-width: 440px; margin: 0 auto; }
 .chart-wide .chart-svg { max-width: 640px; }
 @media (max-width: 560px) { .demo-panel { flex-wrap: wrap; justify-content: center; overflow: visible; row-gap: 2px; width: calc(100vw - 16px); } .demo-mode .game-action-dock { margin-bottom: 92px; } .demo-mode .game-action-modal { padding-bottom: 100px; } }
+/* Wide layouts (dashboard in its own column): the Roll button sits in the board's bottom-right corner,
+   over road and scenery, so it never covers the nearest tiles. */
+@media (min-width: 1100px) and (min-height: 600px) {
+  .game-scene-content .board-main-action { left: auto; right: 22px; bottom: 20px; transform: none; justify-items: end; }
+}
+/* Dashboard figures always fit their card: the size follows the card width, never an ellipsis. */
+.pd-card { container-type: inline-size; }
+@container (max-width: 150px) { .pd-card dd { font-size: 11px; letter-spacing: -.01em; } .pd-card dl { column-gap: 6px; } }
+@container (max-width: 132px) { .pd-card dd { font-size: 10px; } }
