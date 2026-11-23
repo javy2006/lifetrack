@@ -1,4 +1,4 @@
-// LifeTrack 3D board QA (M7): context loss, renderer toggling (heap/context leaks), idle GPU, draw calls,
+// LifeTrack 3D board QA (M7): context loss, board remounts (heap/context leaks), idle GPU, draw calls,
 // WebGL unavailable and reduced motion. Same setup as journey.mjs (playwright-core + installed Edge):
 //   node ../lt-qa/board3d.mjs http://127.0.0.1:4174/   (vite preview of a production build)
 import { chromium } from 'playwright-core';
@@ -38,19 +38,23 @@ async function setup(query, viewport = { width: 1280, height: 800 }) {
   console.log('context-loss logs:', JSON.stringify(logs, null, 1));
   await page.context().close();
 }
-// 3) Toggle 2D/3D repeatedly: no context exhaustion, bounded heap.
+// 3) Leave and resume the game repeatedly (mounts/unmounts the 3D board): no context exhaustion, bounded heap.
 {
-  const { page, logs } = await setup('?renderer=svg'); // start on 2D; the toggle switches in-session
-  const toggle = page.locator('button.renderer-toggle');
+  const { page, logs } = await setup('');
+  page.on('dialog', (d) => d.accept());
   const heap = async () => page.evaluate(() => { globalThis.gc?.(); return performance.memory.usedJSHeapSize; });
-  await toggle.click(); await page.locator('.board-3d canvas').waitFor(); await toggle.click(); await page.locator('.life-board').waitFor();
+  const cycle = async () => {
+    await page.locator('button', { hasText: /^\s*Exit/ }).first().click();
+    await page.locator('button', { hasText: /Continue saved game/ }).first().click();
+    await page.locator('.board-3d canvas').waitFor(); await page.waitForTimeout(150);
+  };
+  await page.locator('.board-3d canvas').waitFor(); await cycle();
   const h0 = await heap();
-  for (let i = 0; i < 20; i++) { await toggle.click(); await page.locator('.board-3d canvas').waitFor(); await page.waitForTimeout(150); await toggle.click(); await page.locator('.life-board').waitFor(); }
+  for (let i = 0; i < 20; i++) await cycle();
   await page.waitForTimeout(500);
   const h1 = await heap();
-  check('20 renderer round-trips: heap growth < 8 MB', h1 - h0 < 8e6, `${((h1 - h0) / 1e6).toFixed(2)} MB`);
+  check('20 board remounts: heap growth < 8 MB', h1 - h0 < 8e6, `${((h1 - h0) / 1e6).toFixed(2)} MB`);
   check('no "too many WebGL contexts" warnings', !logs.some((l) => /Too many active WebGL contexts/i.test(l)));
-  console.log('toggle logs:', JSON.stringify([...new Set(logs)], null, 1));
   await page.context().close();
 }
 // 4) Idle GPU: with frameloop="demand" a settled board issues no draw calls.

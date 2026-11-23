@@ -86,7 +86,7 @@ Status: ✅ done · 🔄 in progress · ⏳ planned · ⛔ blocked
 ### M8: Phase 5.6, 3D as default ✅
 | Task | Status | Evidence |
 | --- | --- | --- |
-| 8.1 Default renderer decision | ✅ | **3D is the default on tablets and desktops; 2D stays the default on phones.** `defaultRendererForViewport`: 3D when the smaller viewport side is ≥ 641 px. Why not phones: at 390 px the fixed isometric board is ~360 px wide and tile captions shrink to ~5 px, while the SVG board pans and stays readable; landscape phones also hide the toggle row (M1), so a 3D default there could not be switched in place. A stored choice and `?renderer=` always win |
+| 8.1 Default renderer decision | ✅ (superseded by UX P3) | **3D is the default on tablets and desktops; 2D stays the default on phones.** `defaultRendererForViewport`: 3D when the smaller viewport side is ≥ 641 px. Why not phones: at 390 px the fixed isometric board is ~360 px wide and tile captions shrink to ~5 px, while the SVG board pans and stays readable; landscape phones also hide the toggle row (M1), so a 3D default there could not be switched in place. A stored choice and `?renderer=` always win |
 | 8.2 SVG fallback and user switch | ✅ | SVG remains the automatic fallback (no WebGL, chunk/scene error, context loss) and a persisted toggle (`aria-pressed`). `scripts/qa/renderer-default.mjs` 23/23: defaults at 1440×900, 1280×720, 768×1024 (3D) and 390×844, 844×390 (2D); toggle, persistence across reload/resume, stored 3D applies in landscape; 0 console errors |
 | 8.3 Final gates (production build) | ✅ | 78/78 unit; tsc clean; build OK (main 327.13 kB, +4.28 kB vs pre-3D; 3D chunk 948 kB / 252.5 kB gzip, lazy). Journey default URL 53/53, `?renderer=3d` 57/57, `?renderer=svg` 53/53; `board3d.mjs` 14/14; engine diff empty |
 
@@ -102,6 +102,13 @@ Owner priorities: P1 visible dice and pawn movement · P2 simpler interface · P
 | Board stays visible | ✅ | Dice dialog removed; the 3D die tumbles then settles on the decided face; the die panel status follows Rolling… → You rolled N → You landed on X (`aria-live`). The decisions window opens by itself after landing (one less click) |
 | Readable steps | ✅ | The highlighted space follows the pawn step by step (ring pulse on each tile, then on the landing tile); 3D hops are 0.32 high and last 72% of each step, so every step has a visible rest; the turn marker shows over the moving pawn (you or a rival). SVG token transition follows the same step timing |
 | QA | ✅ | 82/82 unit; tsc clean; build OK; engine diff empty. Journey `?renderer=3d` 65/65 and `?renderer=svg` 61/61 incl. new checks at all 4 viewports: board uncovered while the pawn moves, decisions open only after the full move. `board3d.mjs` 14/14 |
+
+### P3: 3D as the primary experience ✅
+| Task | Status | Evidence |
+| --- | --- | --- |
+| 3D on every device with WebGL | ✅ | Supersedes M8's phone exception at the owner's request. `readRendererOverride`: 3D unless `?renderer=svg` (QA only). The old stored `lifetrack.renderer.v1` choice is ignored so earlier 2D picks cannot trap players without a visible switch |
+| No manual switching in the game UI | ✅ | 2D/3D toggle removed from the heading; SVG remains the automatic fallback (no WebGL, load/scene error, context loss) |
+| QA | ✅ | 81/81 unit; tsc clean; main 325.73 kB. `renderer-default.mjs` 15/15 (3D at 5 viewports with a stored "svg", no toggle, 0 errors). `board3d.mjs` 14/14 (leak test now remounts the board via Exit → Continue; +3.4 MB over 20 remounts). Journey default URL 61/61, `?renderer=svg` 61/61. Phone readability of the 3D board is addressed in P4 |
 
 ## How to run QA (for the next session)
 

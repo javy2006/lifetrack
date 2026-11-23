@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BOARD_ROUTE } from '../board/boardTypes.ts';
 import { PAWN_BASE_Y, SPACE_WORLD, TILE_SIZE, headingTowards, hopHeight, landingSquash, lerpAngle, tileCaption, lerpWorld, pawnWorld, spaceCategory, spaceWorld, svgToWorld } from './boardWorld.ts';
-import { DEFAULT_RENDERER, RENDERER_STORAGE_KEY, defaultRendererForViewport, readRendererPreference, writeRendererPreference } from './rendererPreference.ts';
+import { DEFAULT_RENDERER, readRendererOverride } from './rendererPreference.ts';
 
 test('every route space has a distinct world position centred on the origin', () => {
   assert.equal(SPACE_WORLD.length, BOARD_ROUTE.length);
@@ -53,34 +53,13 @@ test('animation helpers are bounded and deterministic', () => {
   assert.ok(Math.abs(hopHeight(0.5) - 0.22) < 1e-9);
 });
 
-test('renderer preference defaults to svg, honours storage and URL override, ignores junk', () => {
-  const store = new Map<string, string>();
-  const storage = { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => void store.set(k, v) };
-  assert.equal(DEFAULT_RENDERER, 'svg');
-  assert.equal(readRendererPreference(storage), 'svg');
-  writeRendererPreference(storage, '3d');
-  assert.equal(store.get(RENDERER_STORAGE_KEY), '3d');
-  assert.equal(readRendererPreference(storage), '3d');
-  assert.equal(readRendererPreference(storage, '?renderer=svg'), 'svg', 'URL wins for QA');
-  store.set(RENDERER_STORAGE_KEY, 'webgpu');
-  assert.equal(readRendererPreference(storage, '?renderer=nope'), 'svg');
-  const broken = { getItem: () => { throw new Error('denied'); }, setItem: () => { throw new Error('denied'); } };
-  assert.equal(readRendererPreference(broken), 'svg');
-  assert.doesNotThrow(() => writeRendererPreference(broken, '3d'));
-  assert.equal(readRendererPreference(null), 'svg');
-});
-
-test('device default: 3D on tablets and desktops, 2D on phones in either orientation; a stored choice wins', () => {
-  assert.equal(defaultRendererForViewport(1440, 900), '3d');
-  assert.equal(defaultRendererForViewport(768, 1024), '3d');
-  assert.equal(defaultRendererForViewport(390, 844), 'svg');
-  assert.equal(defaultRendererForViewport(844, 390), 'svg');
-  assert.equal(defaultRendererForViewport(Number.NaN, 900), 'svg');
-  const store = new Map<string, string>([[RENDERER_STORAGE_KEY, 'svg']]);
-  const storage = { getItem: (k: string) => store.get(k) ?? null };
-  assert.equal(readRendererPreference(storage, '', '3d'), 'svg', 'stored 2D choice beats the 3D device default');
-  assert.equal(readRendererPreference({ getItem: () => null }, '', '3d'), '3d');
-  assert.equal(readRendererPreference({ getItem: () => null }, '?renderer=svg', '3d'), 'svg');
+test('3D is the default renderer everywhere; only the QA URL parameter overrides it', () => {
+  assert.equal(DEFAULT_RENDERER, '3d');
+  assert.equal(readRendererOverride(), '3d');
+  assert.equal(readRendererOverride('?renderer=svg'), 'svg');
+  assert.equal(readRendererOverride('?renderer=3d'), '3d');
+  assert.equal(readRendererOverride('?renderer=webgpu'), '3d');
+  assert.equal(readRendererOverride('?%'), '3d');
 });
 
 test('pawn tween hops between spaces, finishes exactly on target, and snaps for reduced motion', async () => {
