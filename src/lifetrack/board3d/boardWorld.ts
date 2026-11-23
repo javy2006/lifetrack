@@ -70,8 +70,10 @@ export function hopHeight(t: number, peak = 0.22): number {
   return 4 * peak * k * (1 - k);
 }
 
-/** Seconds a pawn takes to hop one space (matches the controller's 135 ms step cadence). */
-export const PAWN_STEP_SECONDS = 0.13;
+/** Default seconds a pawn takes to hop one space; the scene passes the controller's step timing. */
+export const PAWN_STEP_SECONDS = 0.27;
+/** Hop height for a pawn step: tall enough to read each step at board zoom. */
+export const PAWN_HOP_PEAK = 0.32;
 
 export interface PawnTween { from: WorldPoint; to: WorldPoint; t: number }
 
@@ -80,7 +82,7 @@ export function stepPawnTween(tween: PawnTween, delta: number, duration = PAWN_S
   const t = reducedMotion || duration <= 0 ? 1 : Math.min(1, tween.t + Math.max(0, delta) / duration);
   const flat = lerpWorld(tween.from, tween.to, t);
   const moved = Math.hypot(tween.to.x - tween.from.x, tween.to.z - tween.from.z) > 1e-6;
-  return { tween: { ...tween, t }, point: { ...flat, y: flat.y + (moved && !reducedMotion ? hopHeight(t) : 0) }, done: t >= 1 };
+  return { tween: { ...tween, t }, point: { ...flat, y: flat.y + (moved && !reducedMotion ? hopHeight(t, PAWN_HOP_PEAK) : 0) }, done: t >= 1 };
 }
 
 /**

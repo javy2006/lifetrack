@@ -25,6 +25,8 @@ export interface Board3DView {
   dieValue: number | null;
   /** True only while the decided value is still hidden (the tumble phase). */
   dieRolling: boolean;
+  /** Seconds a pawn spends hopping one space (from the controller's step timing). */
+  stepSeconds: number;
 }
 
 function prefersReducedMotion(): boolean {
@@ -155,7 +157,7 @@ export default function Board3DScene({ view, onContextLost }: { view: Board3DVie
       {tiles.map((i) => <TileBase key={i} index={i}/>)}
     </StaticBatch>
     {tiles.filter((i) => i === view.currentSpace || (view.highlightCategory !== null && spaceCategory(i) === view.highlightCategory)).map((i) => <TileGlow key={i} index={i} active={i === view.currentSpace} reducedMotion={reducedMotion}/>)}
-    {view.playerIds.map((id) => <Pawn3D key={id} id={id} index={view.positions[id] ?? 0} positions={view.positions} human={id === view.humanId} active={view.activePlayer === id} reducedMotion={reducedMotion}/>)}
+    {view.playerIds.map((id) => <Pawn3D key={id} id={id} index={view.positions[id] ?? 0} positions={view.positions} human={id === view.humanId} active={view.activePlayer === id} stepSeconds={view.stepSeconds} reducedMotion={reducedMotion}/>)}
     <Die value={view.dieValue} rolling={view.dieRolling} reducedMotion={reducedMotion}/>
   </Canvas>;
 }

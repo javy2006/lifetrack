@@ -70,7 +70,7 @@ function Figure({ id, human }: { id: CharacterId; human: boolean }) {
   </group>;
 }
 
-export function Pawn3D({ id, index, positions, human, active, reducedMotion }: { id: CharacterId; index: number; positions: Record<CharacterId, number>; human: boolean; active: boolean; reducedMotion: boolean }) {
+export function Pawn3D({ id, index, positions, human, active, stepSeconds, reducedMotion }: { id: CharacterId; index: number; positions: Record<CharacterId, number>; human: boolean; active: boolean; stepSeconds: number; reducedMotion: boolean }) {
   const group = useRef<Group>(null);
   const body = useRef<Group>(null);
   const marker = useRef<Group>(null);
@@ -92,7 +92,7 @@ export function Pawn3D({ id, index, positions, human, active, reducedMotion }: {
     let wantYaw = REST_YAW;
     if (tween.current.t < 1) {
       const { from, to } = tween.current;
-      const r = stepPawnTween(tween.current, delta, undefined, reducedMotion);
+      const r = stepPawnTween(tween.current, delta, stepSeconds, reducedMotion);
       tween.current = r.tween;
       g.position.set(r.point.x, r.point.y, r.point.z);
       const [h, v] = reducedMotion ? [1, 1] : landingSquash(r.tween.t);

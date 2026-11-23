@@ -29,6 +29,7 @@ async function overflow(page, label) {
   const strip = await page.evaluate(() => { const s = document.querySelector('.resource-strip'); if (!s) return null; const r = s.getBoundingClientRect(); const kids = [...s.children].map((c) => c.getBoundingClientRect()); return { bottom: r.bottom, maxKid: Math.max(...kids.map((k) => k.bottom)), rows: new Set(kids.map((k) => Math.round(k.top))).size }; });
   if (strip && strip.maxKid > strip.bottom + 1) results.overflow.push(`${label}: header resource strip spills ${Math.round(strip.maxKid - strip.bottom)}px (${strip.rows} rows)`);
 }
+const decisionsOpen = (page) => page.locator('button.save-action, button.pass-action').first().waitFor({ timeout: 20000 });
 const game = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('lifetrack.game.v1') ?? 'null'));
 const board = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('lifetrack.board.v1') ?? 'null'));
 
@@ -64,8 +65,19 @@ async function playMonth(page, month, tag, { loseBoardAtEventDraw = false } = {}
     });
     check(`${tag}: board visible (>=120px tall, <=10% under the dock)`, fit.h >= 120 && fit.covered <= 10, `h=${fit.h} covered=${fit.covered}%`);
   }
+  const rolledAt = Date.now();
   await page.locator('.game-action-layer button', { hasText: /Roll Dice/ }).click();
-  await click(page, /Continue to decisions/);
+  if (month === 1) {
+    await page.waitForTimeout(1900); // after tumble + reveal: the pawn is hopping
+    const covering = await page.locator('.dice-overlay, .game-action-modal').count();
+    check(`${tag}: board stays uncovered while the pawn moves`, covering === 0, `covering=${covering}`);
+  }
+  await decisionsOpen(page);
+  if (month === 1) {
+    const g0 = await game(page), b0 = await board(page), roll = b0?.lastDiceRoll?.[g0.humanId] ?? 0;
+    const elapsed = Date.now() - rolledAt, minimum = 950 + 650 + 380 * roll + 1100 - 200;
+    check(`${tag}: decisions open only after the pawn finishes moving`, roll >= 1 && elapsed >= minimum, `roll=${roll} ${elapsed}ms >= ${minimum}ms`);
+  }
   if (month === 1) { await shot(page, `${tag}-03-decisions`); await overflow(page, `${tag} decisions`); }
   for (let i = 0; i < 2; i++) {
     const save = page.locator('button.save-action');

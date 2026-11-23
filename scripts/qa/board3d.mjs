@@ -33,7 +33,7 @@ async function setup(query, viewport = { width: 1280, height: 800 }) {
   await page.locator('button', { hasText: /Collect monthly income/ }).first().click();
   await page.locator('button', { hasText: /Pay monthly essentials/ }).first().click();
   await page.locator('.game-action-layer button', { hasText: /Roll Dice/ }).click();
-  const ok = await page.locator('button', { hasText: /Continue to decisions/ }).first().waitFor({ timeout: 15000 }).then(() => true, () => false);
+  const ok = await page.locator('button.save-action, button.pass-action').first().waitFor({ timeout: 15000 }).then(() => true, () => false);
   check('game playable after context loss', ok);
   console.log('context-loss logs:', JSON.stringify(logs, null, 1));
   await page.context().close();
@@ -78,7 +78,7 @@ async function setup(query, viewport = { width: 1280, height: 800 }) {
   check('idle 3D board issues no draw calls over 2 s', d1 === d0, `${d1 - d0} draws (startup total ${d0})`);
   await click(/Collect monthly income/); await click(/Pay monthly essentials/);
   await page.locator('.game-action-layer button', { hasText: /Roll Dice/ }).click();
-  await click(/Continue to decisions/);
+  await page.locator('button.save-action, button.pass-action').first().waitFor({ timeout: 20000 });
   await page.waitForTimeout(3000);
   const d2 = await page.evaluate(() => globalThis.__draws);
   await page.waitForTimeout(2000);
@@ -100,7 +100,7 @@ async function setup(query, viewport = { width: 1280, height: 800 }) {
   await click(/Collect monthly income/); await click(/Pay monthly essentials/);
   check('no WebGL: SVG board shown', (await page.locator('.life-board').count()) === 1 && (await page.locator('.board-3d').count()) === 0);
   await page.locator('.game-action-layer button', { hasText: /Roll Dice/ }).click();
-  check('no WebGL: roll completes', await page.locator('button', { hasText: /Continue to decisions/ }).first().waitFor({ timeout: 15000 }).then(() => true, () => false));
+  check('no WebGL: roll completes', await page.locator('button.save-action, button.pass-action').first().waitFor({ timeout: 15000 }).then(() => true, () => false));
   check('no WebGL: no console errors', errs.length === 0, errs.join(' | '));
   await b2.close();
 }
@@ -114,7 +114,7 @@ async function setup(query, viewport = { width: 1280, height: 800 }) {
   await click(/^Continue/); await click(/Begin month one/);
   await click(/Collect monthly income/); await click(/Pay monthly essentials/);
   await page.locator('.game-action-layer button', { hasText: /Roll Dice/ }).click();
-  check('reduced motion: roll completes on the 3D board', await page.locator('button', { hasText: /Continue to decisions/ }).first().waitFor({ timeout: 15000 }).then(() => true, () => false) && (await page.locator('.board-3d canvas').count()) === 1);
+  check('reduced motion: roll completes on the 3D board', await page.locator('button.save-action, button.pass-action').first().waitFor({ timeout: 15000 }).then(() => true, () => false) && (await page.locator('.board-3d canvas').count()) === 1);
   check('reduced motion: no console errors', errs.length === 0, errs.join(' | '));
 }
 await browser.close();

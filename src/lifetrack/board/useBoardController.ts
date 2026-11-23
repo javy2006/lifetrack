@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CharacterId, GameState } from '../game/types.ts';
+import { getBoardTiming, prefersReducedMotion, type TurnTiming } from './boardTiming.ts';
 import { createBoardProgress, getAiTurnOrder, isValidBoardProgress, moveBoardPlayer, movePosition, reconcileBoardProgress, rollBoardDie, type BoardProgress } from './boardTypes.ts';
 
 export const BOARD_SAVE_KEY='lifetrack.board.v1';
@@ -18,9 +19,12 @@ export function useBoardController(state:GameState|null) {
     try{return readBoardSave(localStorage.getItem(BOARD_SAVE_KEY),state.seed,state.round,state.players.map(p=>p.id));}catch{return createBoardProgress(state.seed,state.round,state.players.map(p=>p.id));}
   });
   const [rolling,setRolling]=useState(false);
-  const [landingNotice,setLandingNotice]=useState(false);
-  const [revealedRoll,setRevealedRoll]=useState<number|null>(null);
-  const [activeRoll,setActiveRoll]=useState<number|null>(null);
+  /** Die shown on the board: tumbling with its value hidden, then the decided value. */
+  const [dieTumbling,setDieTumbling]=useState(false);
+  const [dieValue,setDieValue]=useState<number|null>(null);
+  /** Space the last mover landed on; drives landing feedback until the next roll. */
+  const [landing,setLanding]=useState<{playerId:CharacterId;space:number}|null>(null);
+  const [stepMs,setStepMs]=useState(getBoardTiming(false).human.stepMs);
   const [movementStep,setMovementStep]=useState<{playerId:CharacterId;position:number}|null>(null);
   const rollLock=useRef(false),aiLock=useRef(false);
   useEffect(()=>{
@@ -34,36 +38,45 @@ export function useBoardController(state:GameState|null) {
     if(!progress)return;
     try{localStorage.setItem(BOARD_SAVE_KEY,JSON.stringify(progress));}catch{/* Game remains playable without board progress storage. */}
   },[progress]);
+  /**
+   * Shows one already-decided roll: tumble, reveal, one hop per space, then a rest on the
+   * landing space. Progress is committed by the caller only after this resolves, so a reload
+   * mid-animation simply replays the same seeded roll instead of moving twice.
+   */
+  const animateTurn=useCallback(async(id:CharacterId,from:number,roll:number,timing:TurnTiming)=>{
+    setStepMs(timing.stepMs);setLanding(null);setDieValue(null);
+    if(timing.tumbleMs>0){setDieTumbling(true);await wait(timing.tumbleMs);}
+    setDieTumbling(false);setDieValue(roll);
+    await wait(timing.revealMs);
+    let position=from;
+    for(let step=0;step<roll;step++){position=movePosition(position,1);setMovementStep({playerId:id,position});await wait(timing.stepMs);}
+    setLanding({playerId:id,space:position});
+    await wait(timing.landMs);
+  },[]);
   const rollHuman=useCallback(async()=>{
     if(!state||state.status!=='playing'||state.phase!=='decisions'||!progress||progress.stage!=='human-roll'||rollLock.current)return;
-    rollLock.current=true;setRolling(true);setLandingNotice(false);
+    rollLock.current=true;setRolling(true);
     const id=state.humanId,roll=rollBoardDie(state.seed,state.round,id);
-    await wait(520);
-    setRevealedRoll(roll);
-    let position=progress.positions[id];
-    for(let step=0;step<roll;step++){position=movePosition(position,1);setMovementStep({playerId:id,position});await wait(135);}
+    await animateTurn(id,progress.positions[id],roll,getBoardTiming(prefersReducedMotion()).human);
     setProgress(p=>p?{...moveBoardPlayer(p,id,roll),stage:'human-landed',activePlayer:null}:p);
-    setMovementStep(null);setRolling(false);setLandingNotice(true);rollLock.current=false;
-  },[state,progress]);
+    setMovementStep(null);setRolling(false);rollLock.current=false;
+  },[state,progress,animateTurn]);
   const runAiTurns=useCallback(async()=>{
     if(!state||!progress||!['human-roll','human-landed','ai-turns'].includes(progress.stage)||aiLock.current)return;
     aiLock.current=true;
+    const timing=getBoardTiming(prefersReducedMotion()).ai;
     let queue=progress.stage==='ai-turns'?progress.aiQueue:getAiTurnOrder(state.players.map(p=>p.id),state.humanId);
     setProgress(p=>p?{...p,stage:'ai-turns',aiQueue:queue}:p);
     while(queue.length){
-      const id=queue[0];setProgress(p=>p?{...p,activePlayer:id}:p);
+      const id=queue[0]!;setProgress(p=>p?{...p,activePlayer:id}:p);
       const roll=rollBoardDie(state.seed,state.round,id);
-      setActiveRoll(roll);
-      let position=progress.positions[id];
-      for(let step=0;step<roll;step++){position=movePosition(position,1);setMovementStep({playerId:id,position});await wait(135);}
+      await animateTurn(id,progress.positions[id],roll,timing);
       setProgress(p=>p?{...moveBoardPlayer(p,id,roll),stage:'ai-turns',aiQueue:queue.slice(1),activePlayer:null}:p);
       setMovementStep(null);
-      setActiveRoll(null);
       queue=queue.slice(1);
     }
     setProgress(p=>p?{...p,stage:'complete',aiQueue:[],activePlayer:null}:p);
     aiLock.current=false;
-  },[state,progress]);
-  const dismissLanding=useCallback(()=>{setLandingNotice(false);setRevealedRoll(null);},[]);
-  return {progress,rolling,movementStep,landingNotice,revealedRoll,activeRoll,dismissLanding,rollHuman,runAiTurns};
+  },[state,progress,animateTurn]);
+  return {progress,rolling,movementStep,dieTumbling,dieValue,landing,stepMs,rollHuman,runAiTurns};
 }
