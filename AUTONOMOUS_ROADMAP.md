@@ -74,7 +74,7 @@ Status: ✅ done · 🔄 in progress · ⏳ planned · ⛔ blocked
 ### M7: Phase 5.5, performance and quality
 | Task | Status | Evidence |
 | --- | --- | --- |
-| 7.1 `frameloop="demand"`, DPR cap, disposal, context-loss fallback | ⏳ | |
+| 7.1 `frameloop="demand"`, DPR cap, disposal, context-loss fallback | ✅ | `frameloop="demand"` + `dpr={[1,2]}` (M4); die textures disposed on unmount (M5). Context loss: simulated with `WEBGL_lose_context` in dev and in a production build; the SVG board takes over in about 100 ms and the game stays playable. **Known limitation:** R3F logs a caught `WebGLRenderer … 'precision'` console error during the switch (it rebuilds a root on the lost context). The renderer is confirmed not to be rebuilt per render (`createRenderer` only when `!state.gl`) |
 | 7.2 Bundle budget: main chunk ≤ +5 kB vs. pre-3D; 3D chunk lazy | ⏳ | |
 | 7.3 Browser QA with renderer=3d at all viewports; full journey + save/resume | ⏳ | |
 

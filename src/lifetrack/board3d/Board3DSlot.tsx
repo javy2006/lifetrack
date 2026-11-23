@@ -25,12 +25,13 @@ class Board3DBoundary extends Component<{ fallback: ReactNode; children: ReactNo
 
 export function Board3DSlot({ view, fallback, label }: { view: Board3DView; fallback: ReactNode; label: string }) {
   const [webgl] = useState(isWebGLAvailable);
-  if (!webgl) return <>{fallback}</>;
+  const [contextLost, setContextLost] = useState(false);
+  if (!webgl || contextLost) return <>{fallback}</>;
   return <Board3DBoundary fallback={fallback}>
     <Suspense fallback={fallback}>
       <div className="board-3d" data-renderer="3d">
         <p className="sr-only">{label}</p>
-        <Board3DScene view={view}/>
+        <Board3DScene view={view} onContextLost={() => setContextLost(true)}/>
       </div>
     </Suspense>
   </Board3DBoundary>;

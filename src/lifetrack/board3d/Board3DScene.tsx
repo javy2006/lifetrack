@@ -142,7 +142,7 @@ function CityBlock() {
   </group>;
 }
 
-export default function Board3DScene({ view }: { view: Board3DView }) {
+export default function Board3DScene({ view, onContextLost }: { view: Board3DView; onContextLost?: () => void }) {
   const tiles = useMemo(() => SPACE_WORLD.map((_, i) => i), []);
   const reducedMotion = useMemo(prefersReducedMotion, []);
   return <Canvas
@@ -152,7 +152,11 @@ export default function Board3DScene({ view }: { view: Board3DView }) {
     dpr={[1, 2]}
     gl={{ antialias: true, powerPreference: 'low-power' }}
     camera={{ position: [8, 8, 8], zoom: 60, near: 0.1, far: 100 }}
-    onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
+    onCreated={({ camera, gl }) => {
+      camera.lookAt(0, 0, 0);
+      // A lost GPU context (common on mobile) hands the board back to the SVG renderer.
+      gl.domElement.addEventListener('webglcontextlost', (event) => { event.preventDefault(); onContextLost?.(); }, { once: true });
+    }}
     aria-hidden="true"
   >
     <FitCamera/>
