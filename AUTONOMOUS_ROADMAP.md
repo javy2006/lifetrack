@@ -138,6 +138,15 @@ Owner priorities: P1 visible dice and pawn movement · P2 simpler interface · P
 | Portraits | ✅ | `CharacterPortrait` (round, explicit size, alt text) replaces the old SVG art in the top-left HUD, the "Everyone's money journey" comparison table, the board roster, the final standings and the 2D-fallback tokens. Selection cards show the official head-to-waist bust. The old SVG `CharacterArt` and chibi figures were removed (main bundle −4.4 kB) |
 | QA | ✅ | 83/83 unit; tsc clean; build OK; engine diff empty. Journey default 61/61 (4 runs; one run reported a console error whose text was not captured and did not reproduce in 3 reruns) and `?renderer=svg` 61/61; `board3d.mjs` 14/14 (~181 draws/frame); `renderer-default.mjs` 15/15; portraits load 192×192 with no failed requests at 1440×900 and 390×844 |
 
+### Fix: broken character images on the deployed site ✅
+| Task | Status | Evidence |
+| --- | --- | --- |
+| Root cause | ✅ | The root `.gitattributes` stores `*.webp`, `*.jpg` and `*.wav` in Git LFS. The deployment does not fetch LFS objects, so it served LFS pointer text instead of the images (and the sounds in `public/audio`). Reproduced with `GIT_LFS_SKIP_SMUDGE=1` checkouts: `b1feae1` contains pointer text, the fix contains real WebP/JPEG/WAV files. Paths, filenames and casing were already correct |
+| Fix | ✅ | `public/.gitattributes` (which already exempted `favicon.png` for the same reason) now exempts `assets/characters/{portraits,faces}` and `audio`; files re-stored as plain blobs (~0.9 MB). **Rule: anything the browser loads from `public/` must not be LFS.** |
+| Selection cards | ✅ | Face-centred round crop of the official portrait (320 px WebP, `object-fit: cover`, `object-position: 50% 40%`); busts removed. Age badge kept above the portrait on phones |
+| Fallback | ✅ | `CharacterPortrait` shows the character's initial on their colour if an image fails, keeps the name as `aria-label`, and logs the failing URL |
+| QA | ✅ | Built from a clean LFS-free checkout (as the deployment does): `character-images.mjs` 3/3 (4 portraits 320 px, `cover`, no failed requests at 1440×900 and 390×844; blocked images show 4 labelled initials). Journey default 61/61 and `?renderer=svg` 61/61, `board3d.mjs` 14/14, `renderer-default.mjs` 15/15; 83/83 unit; tsc clean; engine diff empty |
+
 ## How to run QA (for the next session)
 
 1. `pnpm test`, `pnpm typecheck`, `pnpm build`, then `npx vite preview --port 4174`.
