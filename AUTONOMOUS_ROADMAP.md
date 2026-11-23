@@ -40,12 +40,12 @@ Status: ✅ done · 🔄 in progress · ⏳ planned · ⛔ blocked
 | --- | --- | --- |
 | 2.1 Pin `three@0.187.0`, `@react-three/fiber@9.8.2`, `@types/three@0.187.0` (React 19-compatible; fiber peer react `>=19 <19.4`) | ✅ | Lockfile has additions only; tsc clean; 63/63; main bundle hash unchanged (`index-BB1qZMbi.js`, 322.85 kB) |
 
-### M3: Phase 5.1, renderer-independent board model
+### M3: Phase 5.1, renderer-independent board model ✅
 | Task | Status | Evidence |
 | --- | --- | --- |
-| 3.1 Pure isometric world mapping of the 24 board spaces (`board3d/boardWorld.ts`) + tests | ⏳ | |
-| 3.2 Architecture guard test: `game/` never imports board, React or three | ⏳ | |
-| 3.3 Renderer preference (`svg`/`3d`) in a separate storage key; default `svg` | ⏳ | |
+| 3.1 Pure isometric world mapping of the 24 board spaces (`board3d/boardWorld.ts`) + tests | ✅ | `boardWorld.test.ts`: distinct, centred, loop order, no tile overlap, pawn spread, bounded lerp/hop |
+| 3.2 Architecture guard test: `game/` only imports `game/`; `board3d/` never references `gameReducer`, `dispatch(`, `rollBoardDie` or `Math.random` | ✅ | `game/__tests__/architecture.test.ts`; scanner verified on 14 files / 39 imports and flags a planted `../board` import |
+| 3.3 Renderer preference (`svg`/`3d`) under `lifetrack.renderer.v1`, default `svg`, `?renderer=` QA override | ✅ | `rendererPreference.ts` + tests (junk values, throwing storage); 70/70, tsc clean |
 
 ### M4: Phase 5.2, static 3D board (lazy, with fallback)
 | Task | Status | Evidence |
