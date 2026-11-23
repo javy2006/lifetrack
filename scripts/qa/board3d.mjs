@@ -40,7 +40,7 @@ async function setup(query, viewport = { width: 1280, height: 800 }) {
 }
 // 3) Toggle 2D/3D repeatedly: no context exhaustion, bounded heap.
 {
-  const { page, logs } = await setup('');
+  const { page, logs } = await setup('?renderer=svg'); // start on 2D; the toggle switches in-session
   const toggle = page.locator('button.renderer-toggle');
   const heap = async () => page.evaluate(() => { globalThis.gc?.(); return performance.memory.usedJSHeapSize; });
   await toggle.click(); await page.locator('.board-3d canvas').waitFor(); await toggle.click(); await page.locator('.life-board').waitFor();

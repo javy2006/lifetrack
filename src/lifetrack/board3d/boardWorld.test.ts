@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BOARD_ROUTE } from '../board/boardTypes.ts';
 import { PAWN_BASE_Y, SPACE_WORLD, TILE_SIZE, headingTowards, hopHeight, landingSquash, lerpAngle, tileCaption, lerpWorld, pawnWorld, spaceCategory, spaceWorld, svgToWorld } from './boardWorld.ts';
-import { DEFAULT_RENDERER, RENDERER_STORAGE_KEY, readRendererPreference, writeRendererPreference } from './rendererPreference.ts';
+import { DEFAULT_RENDERER, RENDERER_STORAGE_KEY, defaultRendererForViewport, readRendererPreference, writeRendererPreference } from './rendererPreference.ts';
 
 test('every route space has a distinct world position centred on the origin', () => {
   assert.equal(SPACE_WORLD.length, BOARD_ROUTE.length);
@@ -68,6 +68,19 @@ test('renderer preference defaults to svg, honours storage and URL override, ign
   assert.equal(readRendererPreference(broken), 'svg');
   assert.doesNotThrow(() => writeRendererPreference(broken, '3d'));
   assert.equal(readRendererPreference(null), 'svg');
+});
+
+test('device default: 3D on tablets and desktops, 2D on phones in either orientation; a stored choice wins', () => {
+  assert.equal(defaultRendererForViewport(1440, 900), '3d');
+  assert.equal(defaultRendererForViewport(768, 1024), '3d');
+  assert.equal(defaultRendererForViewport(390, 844), 'svg');
+  assert.equal(defaultRendererForViewport(844, 390), 'svg');
+  assert.equal(defaultRendererForViewport(Number.NaN, 900), 'svg');
+  const store = new Map<string, string>([[RENDERER_STORAGE_KEY, 'svg']]);
+  const storage = { getItem: (k: string) => store.get(k) ?? null };
+  assert.equal(readRendererPreference(storage, '', '3d'), 'svg', 'stored 2D choice beats the 3D device default');
+  assert.equal(readRendererPreference({ getItem: () => null }, '', '3d'), '3d');
+  assert.equal(readRendererPreference({ getItem: () => null }, '?renderer=svg', '3d'), 'svg');
 });
 
 test('pawn tween hops between spaces, finishes exactly on target, and snaps for reduced motion', async () => {

@@ -22,7 +22,7 @@ import { useBoardController } from '../board/useBoardController.ts';
 import { getActionLayerMode, getEventDrawBoardStep } from '../board/boardTypes.ts';
 import { useAudio } from '../components/AudioControls.tsx';
 import { Board3DSlot } from '../board3d/Board3DSlot.tsx';
-import { readRendererPreference, writeRendererPreference, type BoardRenderer } from '../board3d/rendererPreference.ts';
+import { defaultRendererForViewport, readRendererPreference, writeRendererPreference, type BoardRenderer } from '../board3d/rendererPreference.ts';
 
 function browserStorage(){try{return window.localStorage;}catch{return null;}}
 
@@ -100,7 +100,7 @@ function ResultsView({state,dispatch}:{state:GameState;dispatch:(a:GameAction)=>
 export function GameScreen({state,dispatch,onExit}:{state:GameState;dispatch:(a:GameAction)=>void;onExit:()=>void}) {
   const player=getHumanPlayer(state);const record=getRoundRecord(player,state.round);const [showIntro,setShowIntro]=useState(false);
   const board=useBoardController(state);
-  const [renderer,setRenderer]=useState<BoardRenderer>(()=>readRendererPreference(browserStorage(),window.location.search));
+  const [renderer,setRenderer]=useState<BoardRenderer>(()=>readRendererPreference(browserStorage(),window.location.search,defaultRendererForViewport(window.innerWidth,window.innerHeight)));
   const toggleRenderer=()=>{const next:BoardRenderer=renderer==="3d"?"svg":"3d";writeRendererPreference(browserStorage(),next);setRenderer(next);};
   const isOverlay=getActionLayerMode(state.status,state.phase,board.progress?.stage??null)==='modal';
   useEffect(()=>{document.body.classList.add('game-session');return()=>document.body.classList.remove('game-session');},[]);

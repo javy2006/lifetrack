@@ -83,10 +83,30 @@ Status: ✅ done · 🔄 in progress · ⏳ planned · ⛔ blocked
 | 7.5 Browser QA (production build) | ✅ | `scripts/qa/board3d.mjs` 14/14 (context loss, toggling, idle GPU, draws/frame, no-WebGL at 390 px, reduced motion at 768 px). Journey `?renderer=3d` 57/57 and `?renderer=svg` 53/53: full 6-month desktop game, month-2 board-save loss + reload resume, money conservation, seeded events, phone/tablet/landscape; 0 console errors, no overflow |
 | Known | — | R3F 9.8.2 logs a `THREE.Clock` deprecation **warning** on three 0.187 (inside R3F; harmless, would need an R3F upgrade) |
 
-### M8: Phase 5.6, 3D as default
+### M8: Phase 5.6, 3D as default ✅
 | Task | Status | Evidence |
 | --- | --- | --- |
-| 8.1 Make 3D the default only after M4–M7 gates pass; SVG stays as an automatic fallback and a user setting | ⏳ | |
+| 8.1 Default renderer decision | ✅ | **3D is the default on tablets and desktops; 2D stays the default on phones.** `defaultRendererForViewport`: 3D when the smaller viewport side is ≥ 641 px. Why not phones: at 390 px the fixed isometric board is ~360 px wide and tile captions shrink to ~5 px, while the SVG board pans and stays readable; landscape phones also hide the toggle row (M1), so a 3D default there could not be switched in place. A stored choice and `?renderer=` always win |
+| 8.2 SVG fallback and user switch | ✅ | SVG remains the automatic fallback (no WebGL, chunk/scene error, context loss) and a persisted toggle (`aria-pressed`). `scripts/qa/renderer-default.mjs` 23/23: defaults at 1440×900, 1280×720, 768×1024 (3D) and 390×844, 844×390 (2D); toggle, persistence across reload/resume, stored 3D applies in landscape; 0 console errors |
+| 8.3 Final gates (production build) | ✅ | 78/78 unit; tsc clean; build OK (main 327.13 kB, +4.28 kB vs pre-3D; 3D chunk 948 kB / 252.5 kB gzip, lazy). Journey default URL 53/53, `?renderer=3d` 57/57, `?renderer=svg` 53/53; `board3d.mjs` 14/14; engine diff empty |
+
+## How to run QA (for the next session)
+
+1. `pnpm test`, `pnpm typecheck`, `pnpm build`, then `npx vite preview --port 4174`.
+2. In a folder outside the repo: `npm i playwright-core@1.49.1`, copy `scripts/qa/*.mjs` there (ESM ignores NODE_PATH).
+3. `node journey.mjs http://127.0.0.1:4174/?renderer=3d ./shots` (and `?renderer=svg`), `node board3d.mjs http://127.0.0.1:4174/`, `node renderer-default.mjs http://127.0.0.1:4174/`. Screenshots stay out of the repo.
+
+## Known remaining issues
+
+- R3F 9.8.2 logs a `THREE.Clock` deprecation warning with three 0.187 (inside R3F; needs an R3F release that uses `THREE.Timer`).
+- Landscape phones hide the renderer toggle with the rest of the heading row (by design since M1); switch in portrait.
+- If a WebGL context were lost before R3F creates its renderer, the error boundary falls back to SVG but React logs the caught error.
+- The 3D chunk is 252 kB gzip; the SVG board shows while it loads, so there is no blank state.
+
+## Next steps (suggested)
+
+- Optional: larger tile captions or a closer camera on small screens if 3D should become the phone default later.
+- Optional: upgrade R3F when a release drops `THREE.Clock`, then re-run all QA scripts.
 
 ## Blocked / needs product owner
 
