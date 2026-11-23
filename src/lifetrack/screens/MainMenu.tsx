@@ -20,5 +20,5 @@ export function MainMenu({ onPlay, onNew, onHowToPlay, onLearning, canResume }: 
 }
 
 export function InfoModal({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
-  return <div className="modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}><section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button className="modal-close" onClick={onClose} aria-label="Close dialog">×</button><Eyebrow>LIFETRACK GUIDE</Eyebrow><h2 id="modal-title">{title}</h2>{children}<Button onClick={onClose}>Got it</Button></section></div>;
+  return <div className="modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}><section className="surface-card modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button className="modal-close" onClick={onClose} aria-label="Close dialog">×</button><Eyebrow>LIFETRACK GUIDE</Eyebrow><h2 id="modal-title">{title}</h2>{children}<Button onClick={onClose}>Got it</Button></section></div>;
 }

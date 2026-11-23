@@ -5,7 +5,8 @@ import type { GameState } from '../game/types.ts';
 import { CHARACTERS } from '../game/characters.ts';
 import { getAiTurnsForRound, getCurrentEvent } from '../game/gameReducer.ts';
 import { CityScene } from '../components/CityScene.tsx';
-import { CharacterPortrait, characterPortraitUrl } from '../components/CharacterPortrait.tsx';
+import { characterPortraitUrl } from '../components/CharacterPortrait.tsx';
+import { PlayerDashboard } from '../components/PlayerDashboard.tsx';
 import { STEP_HOP_SHARE } from './boardTiming.ts';
 import { routeSpaces } from '../board3d/boardWorld.ts';
 import { BOARD_POINTS, BOARD_ROUTE, getBoardSpaceIndex, getEventBoardCategory, tokenOffset, type BoardCategory, type BoardProgress } from './boardTypes.ts';
@@ -44,7 +45,7 @@ export function BoardScene({state,progress,rolling,movementStep,dieTumbling,dieV
       {players.map(({player,character,index})=>{const p=BOARD_POINTS[index],offset=tokenOffset(index,player.id,progress?.positions??({} as Record<typeof player.id,number>));const x=p.x+offset.x,y=p.y+offset.y;return <g key={player.id} transform={`translate(${x} ${y})`} className={`board-token ${player.id===state.humanId?'board-token-human':''} ${mover===player.id?'board-token-moving':''}`} aria-label={`${character.name}${player.controller==='human'?' (you)':' (AI)'} on space ${index+1}`}>
         <ellipse cy="-5" rx="13" ry="5" fill="#173247" opacity=".22"/><circle cy="-20" r="14" fill={categoryColor[character.id==='alex'?'savings':character.id==='meiling'?'family':character.id==='daniel'?'protection':'salary']} stroke="#fff" strokeWidth="2"/><clipPath id={`token-clip-${player.id}`}><circle cy="-20" r="12"/></clipPath><image href={characterPortraitUrl(player.id)} x="-12" y="-32" width="24" height="24" clipPath={`url(#token-clip-${player.id})`} preserveAspectRatio="xMidYMid slice"/>
       </g>})}
-    </svg>;if(!renderBoard)return svgBoard;const positions=Object.fromEntries(players.map(({player,index})=>[player.id,index])) as Board3DView["positions"];return renderBoard(svgBoard,{playerIds:state.players.map(p=>p.id),humanId:state.humanId,positions,activePlayer:mover,currentSpace:current,highlightCategory:state.phase==="event"&&event?highlight:null,dieValue:dieTumbling?null:shownRoll,dieRolling:dieTumbling,stepSeconds:(stepMs*STEP_HOP_SHARE)/1000,route:mover&&!dieTumbling&&dieValue!==null&&progress?routeSpaces(progress.positions[mover],dieValue):[],routeOwner:mover},boardLabel);})()}</div>
+    </svg>;if(!renderBoard)return svgBoard;const positions=Object.fromEntries(players.map(({player,index})=>[player.id,index])) as Board3DView["positions"];return renderBoard(svgBoard,{playerIds:state.players.map(p=>p.id),humanId:state.humanId,positions,activePlayer:mover,currentSpace:current,highlightCategory:state.phase==="event"&&event?highlight:null,dieValue:dieTumbling?null:shownRoll,dieRolling:dieTumbling,stepSeconds:(stepMs*STEP_HOP_SHARE)/1000,route:mover&&!dieTumbling&&dieValue!==null&&progress?routeSpaces(progress.positions[mover],dieValue):[],routeOwner:mover,landingSpace:landing&&movementStep?landing.space:null},boardLabel);})()}</div>
     {(()=>{const move=progress?.lastMovement;const name=(id:string|null|undefined)=>CHARACTERS.find(c=>c.id===id)?.name??'';const isYou=(id:string|null|undefined)=>id===state.humanId;
       // One short status line that follows the turn: rolling → rolled → landed.
       const status=dieTumbling?(isYou(mover)?'Rolling…':`${name(mover)} is rolling…`)
@@ -53,6 +54,7 @@ export function BoardScene({state,progress,rolling,movementStep,dieTumbling,dieV
         :humanCanRoll?'Your turn · roll the dice':progress?.stage==='complete'?'All moves done':state.phase==='event-draw'?'Rivals are moving':move?`${isYou(move.playerId)?'You':name(move.playerId)} landed on ${BOARD_ROUTE[move.to]!.label}`:'Roll to move';
       const detail=activeAiTurn&&!movementStep&&!dieTumbling?(activeAiTurn.rationale||activeAiTurn.message):'One roll a month · events are shared';
       return <div className="board-controls"><div className={`board-die ${landing&&!movementStep?'board-die-landed':''}`}><DiceFace value={dieTumbling?null:shownRoll} rolling={dieTumbling}/><div aria-live="polite"><b>{status}</b><small>{detail}</small></div></div>{rollControl&&humanCanRoll&&<button className="roll-dice-button" onClick={onRoll} disabled={rolling}><Dices size={19}/>{rolling?'Rolling…':'Roll Dice'}</button>}</div>})()}
-    <div className="board-roster">{players.map(({player,character,index})=><div key={player.id} className={`${player.id===state.humanId?'board-roster-player active':'board-roster-player'} ${progress?.activePlayer===player.id?'board-turn-active':''}`}><CharacterPortrait id={player.id} name={character.name} size={22} className={`mini-avatar ${player.id}`}/><b>{character.name}</b><small>Space {index+1} · {player.controller==='human'?'You':'AI'}</small></div>)}</div>
+    {/* Four-player dashboard: whose turn it is, positions and key money figures for everyone. */}
+    <PlayerDashboard state={state} positions={Object.fromEntries(players.map(({player,index})=>[player.id,index])) as Record<import('../game/types.ts').CharacterId,number>} activeId={mover??(state.status==='playing'&&state.phase==='decisions'?state.humanId:null)}/>
   </section>;
 }

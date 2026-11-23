@@ -4,7 +4,7 @@
  */
 import { useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { CanvasTexture, Euler, Quaternion, SRGBColorSpace, Vector3, type Mesh } from 'three';
+import { CanvasTexture, Euler, Quaternion, SRGBColorSpace, Vector3, type Mesh, type MeshBasicMaterial } from 'three';
 import type { CharacterId } from '../game/types.ts';
 import type { BoardCategory } from '../board/boardTypes.ts';
 import { DIE_FACE_ORDER, PLAYER_COLOR, RING_HALF, SPACE_WORLD, TILE_SIZE, dieRestRotation, spaceCategory } from './boardWorld.ts';
@@ -23,6 +23,8 @@ export interface Board3DView {
   highlightCategory: BoardCategory | null;
   /** Spaces the moving pawn is about to cross (shown once its roll is revealed), and who is moving. */
   route: readonly number[];
+  /** Space a pawn has just landed on (during the landing pause), for the landing effect. */
+  landingSpace: number | null;
   routeOwner: CharacterId | null;
   /** Face decided by the seeded board die (never by this scene); null when no roll is shown. */
   dieValue: number | null;
@@ -111,8 +113,34 @@ function Die({ value, rolling, reducedMotion }: { value: number | null; rolling:
 const CAMERA_PITCH = (42 * Math.PI) / 180;
 const CAMERA_POSITION: [number, number, number] = [0, 10 * Math.sin(CAMERA_PITCH), 10 * Math.cos(CAMERA_PITCH)];
 
-/** Plaza in the city centre where the die lands (matches City3D). */
-const DIE_SPOT = { x: 1.45, z: 1.5 } as const;
+/** Spot on the central plaza where the die lands (matches City3D). */
+const DIE_SPOT = { x: 0.45, z: 0.42 } as const;
+
+/** Landing effect: a ring in the mover's colour that expands and fades on the landing space. */
+function LandingBurst({ space, owner, reducedMotion }: { space: number | null; owner: CharacterId | null; reducedMotion: boolean }) {
+  const ring = useRef<Mesh>(null);
+  const started = useRef<number | null>(null);
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => { started.current = null; invalidate(); }, [space, invalidate]);
+  useFrame((state) => {
+    const r = ring.current;
+    if (!r || space === null) return;
+    const material = r.material as MeshBasicMaterial;
+    if (reducedMotion) { r.scale.setScalar(1); material.opacity = 0.55; return; }
+    started.current ??= state.clock.elapsedTime;
+    const t = Math.min(1, (state.clock.elapsedTime - started.current) / 0.7);
+    const ease = 1 - (1 - t) * (1 - t);
+    r.scale.setScalar(0.55 + ease * 0.75);
+    material.opacity = 0.85 * (1 - t);
+    if (t < 1) invalidate();
+  });
+  if (space === null || !owner) return null;
+  const p = SPACE_WORLD[space]!;
+  return <mesh ref={ring} position={[p.x, TILE_SIZE.height + 0.04, p.z]} rotation={[-Math.PI / 2, 0, 0]}>
+    <ringGeometry args={[0.42, 0.5, 48]}/>
+    <meshBasicMaterial color={PLAYER_COLOR[owner]} transparent opacity={0.85} depthWrite={false} toneMapped={false}/>
+  </mesh>;
+}
 
 /** Route preview: a dot in the mover's colour on each space the pawn is about to cross. */
 function RouteDots({ route, owner }: { route: readonly number[]; owner: CharacterId | null }) {
@@ -187,6 +215,7 @@ export default function Board3DScene({ view, onContextLost }: { view: Board3DVie
     </StaticBatch>
     {tiles.filter((i) => i === view.currentSpace || (view.highlightCategory !== null && spaceCategory(i) === view.highlightCategory)).map((i) => <TileGlow key={i} index={i} active={i === view.currentSpace} reducedMotion={reducedMotion}/>)}
     <RouteDots route={view.route} owner={view.routeOwner}/>
+    <LandingBurst key={view.landingSpace ?? 'none'} space={view.landingSpace} owner={view.routeOwner} reducedMotion={reducedMotion}/>
     {view.playerIds.map((id) => <Pawn3D key={id} id={id} index={view.positions[id] ?? 0} positions={view.positions} human={id === view.humanId} active={view.activePlayer === id} stepSeconds={view.stepSeconds} reducedMotion={reducedMotion}/>)}
     <Die value={view.dieValue} rolling={view.dieRolling} reducedMotion={reducedMotion}/>
   </Canvas>;

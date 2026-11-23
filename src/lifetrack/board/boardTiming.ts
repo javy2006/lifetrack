@@ -16,14 +16,15 @@ export interface TurnTiming {
 export interface BoardTiming { human: TurnTiming; ai: TurnTiming }
 
 const FULL: BoardTiming = {
-  human: { tumbleMs: 950, revealMs: 650, stepMs: 380, landMs: 1100 },
-  ai: { tumbleMs: 550, revealMs: 450, stepMs: 300, landMs: 650 },
+  human: { tumbleMs: 900, revealMs: 500, stepMs: 360, landMs: 650 },
+  // Rivals move with the same step and landing rhythm so every turn reads the same way.
+  ai: { tumbleMs: 800, revealMs: 400, stepMs: 360, landMs: 600 },
 };
 
 /** Reduced motion: no tumble and no hops (pawns snap), but every step and the result stay visible. */
 const REDUCED: BoardTiming = {
-  human: { tumbleMs: 0, revealMs: 600, stepMs: 220, landMs: 900 },
-  ai: { tumbleMs: 0, revealMs: 350, stepMs: 160, landMs: 450 },
+  human: { tumbleMs: 0, revealMs: 450, stepMs: 200, landMs: 600 },
+  ai: { tumbleMs: 0, revealMs: 350, stepMs: 200, landMs: 500 },
 };
 
 export function getBoardTiming(reducedMotion: boolean): BoardTiming {

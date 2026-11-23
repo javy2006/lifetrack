@@ -5,6 +5,7 @@ import type { CharacterId } from './lifetrack/game/types.ts';
 import { MainMenu, InfoModal } from './lifetrack/screens/MainMenu.tsx';
 import { CharacterSelection, GameIntroduction } from './lifetrack/screens/CharacterSelection.tsx';
 import { GameScreen } from './lifetrack/screens/GameScreen.tsx';
+import { HowToPlay } from './lifetrack/components/HowToPlay.tsx';
 import { Disclaimer } from './lifetrack/components/ui.tsx';
 import { AudioProvider } from './lifetrack/components/AudioControls.tsx';
 
@@ -30,7 +31,7 @@ function Application() {
   else if (screen === 'introduction') content = <GameIntroduction characterId={selected} onBack={()=>setScreen('characters')} onBegin={beginGame}/>;
   else content = <MainMenu canResume={Boolean(state)} onPlay={()=>setPaused(false)} onNew={startNew} onHowToPlay={()=>setModal('how')} onLearning={()=>setModal('learning')}/>;
 
-  return <>{content}{modal&&<InfoModal title={modal==='how'?'How to play LifeTrack':'Insurance, in plain language'} onClose={()=>setModal(null)}>{modal==='how'?<><p>Move through six months, one decision at a time. Each month starts with income and essential expenses, then two action points for your choices.</p><ul className="modal-list"><li>Save RM300 to build your emergency cushion.</li><li>Explore fictional cover with clearly defined conditions and exclusions.</li><li>Confirm your decisions, reveal the shared event and review what each policy paid.</li><li>After month six, answer three questions and compare your financial resilience score.</li></ul></>:<><p>LifeTrack uses simplified fictional examples to show how different types of insurance benefits work.</p><div className="learning-guide"><div><b>Reimbursement</b><span>Pays eligible bills after a deductible, up to a limit.</span></div><div><b>Fixed benefit</b><span>Pays a set amount when the defined event occurs.</span></div><div><b>Lump sum</b><span>Pays one defined amount that can be used flexibly.</span></div></div><p>Policies only respond to what they define. Emergency savings remain useful for costs that are excluded or unrelated.</p></>}<Disclaimer/></InfoModal>}</>;
+  return <>{content}{modal&&<InfoModal title={modal==='how'?'How to play':'Insurance, in plain language'} onClose={()=>setModal(null)}>{modal==='how'?<HowToPlay/>:<><p>LifeTrack uses simplified fictional examples to show how different types of insurance benefits work.</p><div className="learning-guide"><div><b>Reimbursement</b><span>Pays eligible bills after a deductible, up to a limit.</span></div><div><b>Fixed benefit</b><span>Pays a set amount when the defined event occurs.</span></div><div><b>Lump sum</b><span>Pays one defined amount that can be used flexibly.</span></div></div><p>Policies only respond to what they define. Emergency savings remain useful for costs that are excluded or unrelated.</p></>}<Disclaimer/></InfoModal>}</>;
 }
 
 export default function App() { return <AudioProvider><GameProvider><Application/></GameProvider></AudioProvider>; }

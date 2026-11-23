@@ -11,7 +11,7 @@ const materials = new Map<string, MeshStandardMaterial | MeshBasicMaterial>();
 const textures = new Map<string, Texture>();
 
 /** Unit shapes: box 1x1x1, cylinder radius 0.5 height 1, sphere radius 0.5, cone radius 0.5 height 1. */
-export function geo(): Record<'box' | 'cyl' | 'cylLow' | 'sphere' | 'dome' | 'cone' | 'prism' | 'ring' | 'gem' | 'plane' | 'capsule' | 'frustum' | 'taper' | 'torso' | 'faceShell', BufferGeometry> {
+export function geo(): Record<'box' | 'cyl' | 'cylLow' | 'sphere' | 'dome' | 'cone' | 'prism' | 'ring' | 'gem' | 'plane' | 'capsule' | 'frustum' | 'taper' | 'torso' | 'faceShell' | 'hoodBack' | 'hoodTop', BufferGeometry> {
   geometries ??= {
     box: new BoxGeometry(1, 1, 1),
     cyl: new CylinderGeometry(0.5, 0.5, 1, 18),
@@ -33,6 +33,9 @@ export function geo(): Record<'box' | 'cyl' | 'cylLow' | 'sphere' | 'dome' | 'co
     torso: new LatheGeometry([[0.0, 0.455], [0.104, 0.46], [0.098, 0.54], [0.106, 0.62], [0.122, 0.7], [0.13, 0.755], [0.112, 0.79], [0.05, 0.808], [0.0, 0.81]].map(([r, y]) => new Vector2(r, y)), 22).scale(1, 1, 0.6),
     // Front cap of the head that carries the face texture (planar UVs; see faceShellGeometry).
     faceShell: faceShellGeometry(),
+    // Hijab: a sphere with a face opening at the front (back/sides piece + forehead cap).
+    hoodBack: new SphereGeometry(0.5, 28, 18, Math.PI / 2 + 0.95, Math.PI * 2 - 1.9, 0, Math.PI * 0.84),
+    hoodTop: new SphereGeometry(0.5, 14, 6, Math.PI / 2 - 0.95, 1.9, 0, 0.6),
     // Flat 1x1 decal lying on the ground (faces +Y).
     plane: new PlaneGeometry(1, 1).rotateX(-Math.PI / 2),
   };

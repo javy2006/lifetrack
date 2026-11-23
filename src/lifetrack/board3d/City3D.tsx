@@ -121,33 +121,68 @@ function CoverOffice({ x, z }: { x: number; z: number }) {
   </group>;
 }
 
+/** Small corner shop with a striped awning (commercial district). */
+function Shop({ x, z }: { x: number; z: number }) {
+  return <group position={[x, 0.04, z]}>
+    <P c="#f3e7d3" p={[0, 0.17, 0]} s={[0.56, 0.34, 0.42]}/>
+    <P c="#8a6b52" p={[0, 0.36, 0]} s={[0.6, 0.04, 0.46]}/>
+    {[0, 1, 2, 3].map((i) => <P key={i} c={i % 2 ? '#fbf8f2' : '#d6a44b'} p={[-0.21 + i * 0.14, 0.27, 0.25]} s={[0.14, 0.03, 0.14]} r={[0.45, 0, 0]}/>)}
+    <P c="#cfe3ea" p={[0, 0.13, 0.212]} s={[0.38, 0.14, 0.01]} shadow={false}/>
+  </group>;
+}
+
+/** Tinted ground for a district, so the four areas read at a glance. */
+function District({ x, z, color }: { x: number; z: number; color: string }) {
+  return <P c={color} p={[x, 0.044, z]} s={[1.72, 0.006, 1.72]} shadow={false}/>;
+}
+
+/** Road from the plaza edge to the lot edge, with a dashed centre line. */
+function Road({ axis, dir }: { axis: 'x' | 'z'; dir: 1 | -1 }) {
+  const from = 1.02, to = 2.5, mid = dir * (from + to) / 2, len = to - from;
+  const pos = (u: number): [number, number, number] => axis === 'x' ? [u, 0.047, 0] : [0, 0.047, u];
+  const size: [number, number, number] = axis === 'x' ? [len, 0.006, 0.34] : [0.34, 0.006, len];
+  return <group>
+    <P c="#b8bec1" p={pos(mid)} s={size} shadow={false}/>
+    {[0.25, 0.65, 1.05].map((k) => <P key={k} c="#f4f2ea" p={[...pos(dir * (from + k + 0.1))].map((v, i) => i === 1 ? 0.051 : v) as [number, number, number]} s={axis === 'x' ? [0.18, 0.004, 0.03] : [0.03, 0.004, 0.18]} shadow={false}/>)}
+  </group>;
+}
+
 /**
- * Calm centre: a low park with a fountain, four small landmarks (one per money theme) and
- * the plaza where the die lands. Everything stays under 0.6 units tall so nothing competes
- * with, or hides, the board spaces and pawns.
+ * Calm centre with a clear layout: a paved central plaza (fountain and the die's landing spot),
+ * four roads, and four tinted districts, one per money theme: finance (bank), health (clinic),
+ * homes (family) and shops (cover office). Buildings stay low and set back from the tile ring,
+ * so decoration never hides a space or a pawn.
  */
 export function CityBlock() {
   const lot = 5.1;
   return <group>
     <P c="#d6e6d2" p={[0, 0.02, 0]} s={[lot, 0.04, lot]} shadow={false}/>
-    {/* Paths: a ring and a cross, in pale stone */}
-    <P g="ring" c="#ece6d8" p={[0, 0.042, 0]} s={[3.1, 3.1, 0.5]} r={[Math.PI / 2, 0, 0]} shadow={false}/>
-    <P c="#ece6d8" p={[0, 0.043, 0]} s={[lot - 0.3, 0.004, 0.22]} shadow={false}/>
-    <P c="#ece6d8" p={[0, 0.043, 0]} s={[0.22, 0.004, lot - 0.3]} shadow={false}/>
-    {/* Fountain */}
-    <P g="cyl" c="#e6dfd0" p={[0, 0.07, 0]} s={[0.9, 0.06, 0.9]}/>
-    <P g="cyl" c="#8cc0d6" p={[0, 0.102, 0]} s={[0.76, 0.01, 0.76]} shadow={false}/>
-    <P g="cylLow" c="#e6dfd0" p={[0, 0.2, 0]} s={[0.1, 0.22, 0.1]}/>
-    <P g="cyl" c="#e6dfd0" p={[0, 0.31, 0]} s={[0.3, 0.03, 0.3]}/>
-    {/* Landmarks: savings (bank), medical (clinic), family (home), cover (insurance) */}
-    <Bank x={-1.45} z={-1.45}/>
-    <Clinic x={1.45} z={-1.45}/>
-    <House x={-1.45} z={1.45} wall="#f0d9bc" roof="#b5523b"/>
-    <CoverOffice x={1.45} z={0.2}/>
-    {/* Plaza where the die lands */}
-    <P g="cyl" c="#efe9dc" p={[1.45, 0.05, 1.5]} s={[0.95, 0.02, 0.95]} shadow={false}/>
-    <P g="ring" c="#d6a44b" p={[1.45, 0.062, 1.5]} s={[0.88, 0.88, 0.4]} r={[Math.PI / 2, 0, 0]} shadow={false}/>
-    <Tree x={-0.55} z={-1.9} s={0.9}/><Tree x={0.6} z={-1.95} s={0.8} tone="#6d9e72"/><Tree x={-2.05} z={-0.4} s={0.85} tone="#4f7f63"/>
-    <Tree x={-2.0} z={0.55} s={0.75}/><Tree x={-0.5} z={2.0} s={0.8} tone="#6d9e72"/><Tree x={2.05} z={-0.75} s={0.7}/>
+    <District x={-1.62} z={-1.62} color="#cfe3cf"/>
+    <District x={1.62} z={-1.62} color="#d5e4ec"/>
+    <District x={-1.62} z={1.62} color="#eadfcc"/>
+    <District x={1.62} z={1.62} color="#e6dde6"/>
+    <Road axis="x" dir={1}/><Road axis="x" dir={-1}/><Road axis="z" dir={1}/><Road axis="z" dir={-1}/>
+    {/* Central plaza */}
+    <P g="cyl" c="#ece6d8" p={[0, 0.05, 0]} s={[2.1, 0.02, 2.1]} shadow={false}/>
+    <P g="ring" c="#d6a44b" p={[0, 0.062, 0]} s={[2.06, 2.06, 0.35]} r={[Math.PI / 2, 0, 0]} shadow={false}/>
+    <P g="cyl" c="#e6dfd0" p={[-0.25, 0.08, -0.25]} s={[0.62, 0.06, 0.62]}/>
+    <P g="cyl" c="#8cc0d6" p={[-0.25, 0.112, -0.25]} s={[0.5, 0.01, 0.5]} shadow={false}/>
+    <P g="cylLow" c="#e6dfd0" p={[-0.25, 0.19, -0.25]} s={[0.08, 0.18, 0.08]}/>
+    <P g="cyl" c="#e6dfd0" p={[-0.25, 0.28, -0.25]} s={[0.22, 0.025, 0.22]}/>
+    {/* Finance */}
+    <Bank x={-1.6} z={-1.5}/>
+    <Tree x={-2.2} z={-0.75} s={0.7}/>
+    {/* Health */}
+    <Clinic x={1.6} z={-1.5}/>
+    <P c="#9b7a5b" p={[1.0, 0.08, -0.82]} s={[0.3, 0.03, 0.08]}/>
+    <Tree x={2.2} z={-0.75} s={0.7} tone="#6d9e72"/>
+    {/* Homes */}
+    <House x={-1.95} z={1.25} wall="#f0d9bc" roof="#b5523b"/>
+    <House x={-1.15} z={1.95} wall="#f8f7f0" roof="#7d68a6" ry={0.2}/>
+    <Tree x={-2.2} z={2.15} s={0.65} tone="#4f7f63"/>
+    {/* Shops */}
+    <CoverOffice x={1.75} z={1.85}/>
+    <Shop x={2.0} z={1.0}/>
+    <Tree x={1.0} z={2.2} s={0.65}/>
   </group>;
 }

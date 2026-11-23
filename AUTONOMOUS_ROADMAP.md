@@ -147,6 +147,19 @@ Owner priorities: P1 visible dice and pawn movement · P2 simpler interface · P
 | Fallback | ✅ | `CharacterPortrait` shows the character's initial on their colour if an image fails, keeps the name as `aria-label`, and logs the failing URL |
 | QA | ✅ | Built from a clean LFS-free checkout (as the deployment does): `character-images.mjs` 3/3 (4 portraits 320 px, `cover`, no failed requests at 1440×900 and 390×844; blocked images show 4 labelled initials). Journey default 61/61 and `?renderer=svg` 61/61, `board3d.mjs` 14/14, `renderer-default.mjs` 15/15; 83/83 unit; tsc clean; engine diff empty |
 
+### Gameplay experience and polish (owner brief, 2026-11-23) ✅
+| Task | Status | Evidence |
+| --- | --- | --- |
+| Vikram | ✅ | Display name Daniel → Vikram (`characters.ts`); internal id `daniel` kept for save compatibility. New test pins names/ids; journey checks no on-screen "Daniel" during play and on results |
+| Updated references | ✅ | The owner replaced `reference/{mei-ling,aisyah}.jpg`, added `vikram.jpg` and deleted the outdated generated portraits/faces. Assets regenerated from the new references (script maps `daniel` → `vikram.jpg`, handles RGBA). 3D models updated: Mei Ling round glasses, Vikram beard and skin tone, Aisyah cream hijab over a red underscarf (hood with a face opening + drape) |
+| P1 movement | ✅ | Timing: tumble 900 ms, value 500 ms, 360 ms per space, landing 650 ms; rivals use the same step and landing rhythm (tested ranges 800–1000 / 300–400 / 500–700). New landing ring burst in the mover's colour; the decisions window states why it opened ("Rolled 5 · Landed on Family") |
+| P3 How to play | ✅ | `HowToPlay`: four numbered, illustrated steps (Roll, Move, Decide, Finish) with one sentence each and gentle animation (static with reduced motion), used in the main-menu guide and in game. Main-menu modals now have a proper panel background |
+| P6 dashboard | ✅ | `PlayerDashboard` replaces the roster chips: portrait, name, cash, income, expenses (essentials + premiums), net worth (cash + savings, as in scoring), board space and a turn badge. 2×2 beside the board on desktop, compact 2×2 below it on tablet, one slim row on phones (full 2×2 in the Money drawer). Journey verifies it against the saved state for all 4 players |
+| P7 sound | ✅ | Effects on by default, music off; new prefs key (v1 had saved "off" for everyone while the files were broken). One-click mute button + volume popover. Dice/step/landing synthesized with Web Audio (no files); effect files fetched and decoded once; no sound before a user gesture; per-sound throttle and a 4-sound cap; base-URL-aware paths. The 0.5 MB ambience track is no longer downloaded unless music is turned on |
+| P5 board | ✅ | Central paved plaza (fountain and the die's landing spot), four roads and four tinted districts: finance (bank), health (clinic), homes (two houses), shops (cover office + shop) |
+| P2/P4 | ✅ | Already delivered in UX P2/P3 (short screens, Learn more; 3D everywhere with automatic SVG fallback, no toggle) |
+| QA | ✅ | 84/84 unit; tsc clean; build OK. Journey default 75/75 and `?renderer=svg` 75/75 (each viewport plays a different character: Alex desktop full 6 months with save-loss reload, Mei Ling phone, Vikram tablet, Aisyah landscape; dashboard accuracy months 1 and 4; movement before decisions); `board3d.mjs` 14/14 ×3 (heap measured after 3 GC passes; an 80-remount trend levels off at ~3.3 MB); `renderer-default.mjs` 15/15; `character-images.mjs` 3/3 |
+
 ## How to run QA (for the next session)
 
 1. `pnpm test`, `pnpm typecheck`, `pnpm build`, then `npx vite preview --port 4174`.

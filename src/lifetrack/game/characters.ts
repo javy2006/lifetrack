@@ -41,7 +41,7 @@ export const CHARACTERS: readonly CharacterDefinition[] = [
   },
   {
     id: 'daniel',
-    name: 'Daniel',
+    name: 'Vikram',
     pronouns: { subject: 'he', possessive: 'his' },
     age: 27,
     occupation: 'Site engineer',

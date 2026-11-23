@@ -34,7 +34,7 @@ export function Limb({ from, to, radius, m }: { from: V3; to: V3; radius: number
 }
 
 /** Shared skin tones sampled from the references by the asset script. */
-export const SKIN: Record<CharacterId, string> = { alex: '#d29973', meiling: '#d39975', daniel: '#c38861', aisyah: '#cd906a' };
+export const SKIN: Record<CharacterId, string> = { alex: '#d29973', meiling: '#d0afa0', daniel: '#8b513d', aisyah: '#c47a4c' };
 
 const HEAD_Y = 0.905, NECK_Y = 0.8;
 /** Board-readability tweaks: heads are a little larger than the references and tilt up toward the camera. */
@@ -173,7 +173,7 @@ function LongHair({ color, wave = false }: { color: string; wave?: boolean }) {
 
 // ---------------------------------------------------------------- Mei Ling: The Balanced Planner
 // Sage blazer with pushed-up sleeves, cream blouse, black ankle trousers, black flats, long straight
-// black hair, a silver laptop held at her left side and a watch.
+// black hair, round glasses, a silver laptop held at her left side and a watch.
 const MEILING = { jacket: '#8fa68f', lapel: '#7b927c', blouse: '#efe6da', trousers: '#2c2d30', shoes: '#1b1d20', hair: '#17181c', laptop: '#b9bcc1', watch: '#3a3330' };
 export function MeiLingModel() {
   const c = MEILING, skin = SKIN.meiling;
@@ -193,15 +193,23 @@ export function MeiLingModel() {
     <Part g="cyl" m={c.watch} p={[0.158, 0.452, 0.064]} s={[0.054, 0.016, 0.054]}/>
     <Part g="box" m={c.laptop} p={[0.19, 0.47, 0.04]} s={[0.016, 0.17, 0.14]}/>
     <Part g="sphere" m={skin} p={[0.172, 0.43, 0.08]} s={[0.04, 0.06, 0.034]}/>
-    <Head id="meiling"><LongHair color={c.hair}/></Head>
+    <Head id="meiling">
+      <LongHair color={c.hair}/>
+      {/* Round glasses */}
+      <Part g="ring" m="#2b2523" p={[-0.034, 0.912, 0.083]} s={[0.05, 0.05, 0.06]}/>
+      <Part g="ring" m="#2b2523" p={[0.034, 0.912, 0.083]} s={[0.05, 0.05, 0.06]}/>
+      <Part g="box" m="#2b2523" p={[0, 0.915, 0.086]} s={[0.018, 0.005, 0.005]}/>
+      <Part g="box" m="#2b2523" p={[-0.066, 0.914, 0.045]} s={[0.004, 0.004, 0.07]}/>
+      <Part g="box" m="#2b2523" p={[0.066, 0.914, 0.045]} s={[0.004, 0.004, 0.07]}/>
+    </Head>
   </>;
 }
 
-// ---------------------------------------------------------------- Daniel: Protection First
-// Yellow hard hat with chin strap, navy work jacket with yellow-and-grey reflective shoulder
+// ---------------------------------------------------------------- Vikram: Protection First (internal id 'daniel', kept for save compatibility)
+// Yellow hard hat, short beard, navy work jacket with yellow-and-grey reflective shoulder
 // stripes, ID badge, radio on the belt, charcoal cargo trousers and black work boots.
-const DANIEL = { jacket: '#2c3a5c', band: '#24304d', stripe: '#e6c52c', reflect: '#b9bec4', trousers: '#3a3b3e', boots: '#1b1d20', hat: '#f2c22e', hatRim: '#e0ad1c', strap: '#4a4f55', hair: '#17181c', tee: '#eef0f2' };
-export function DanielModel() {
+const DANIEL = { jacket: '#2c3a5c', band: '#24304d', stripe: '#e6c52c', reflect: '#b9bec4', trousers: '#3a3b3e', boots: '#1b1d20', hat: '#f2c22e', hatRim: '#e0ad1c', hair: '#17181c', tee: '#eef0f2' };
+export function VikramModel() {
   const c = DANIEL, skin = SKIN.daniel;
   return <>
     <Shoes color={c.boots} boot/>
@@ -228,20 +236,20 @@ export function DanielModel() {
     <HangingArm side={-1} sleeve={c.jacket} skin={skin} cuff={c.band}/>
     <HangingArm side={1} sleeve={c.jacket} skin={skin} cuff={c.band}/>
     <Head id="daniel">
+      <Part g="sphere" m="#2a221f" p={[0, 0.858, -0.006]} s={[0.152, 0.1, 0.152]}/>
       <Part g="box" m={c.hair} p={[-0.07, 0.925, 0.0]} s={[0.018, 0.045, 0.05]}/>
       <Part g="box" m={c.hair} p={[0.07, 0.925, 0.0]} s={[0.018, 0.045, 0.05]}/>
       <Part g="dome" m={c.hat} p={[0, 0.952, -0.006]} s={[0.176, 0.13, 0.186]}/>
       <Part g="cyl" m={c.hatRim} p={[0, 0.953, 0.008]} s={[0.192, 0.012, 0.212]}/>
       <Part g="box" m={c.hatRim} p={[0, 1.012, 0]} s={[0.024, 0.016, 0.15]}/>
-      <Part g="ring" m={c.strap} p={[0, 0.89, 0.012]} s={[0.152, 0.17, 0.08]} r={[-0.55, 0, 0]}/>
     </Head>
   </>;
 }
 
 // ---------------------------------------------------------------- Aisyah: The Adaptable
 // Coral blazer with pushed-up sleeves, cream blouse, lanyard with ID card, black ankle trousers,
-// black flats, long wavy black hair with a red headband, a watch and an open, explaining gesture.
-const AISYAH = { jacket: '#d9665b', lapel: '#c3554b', blouse: '#efe6da', trousers: '#2c2d30', shoes: '#1b1d20', hair: '#17181c', band: '#d43a3a', lanyard: '#9b3a3a', watch: '#3a3330' };
+// black flats, a cream hijab over a red underscarf, a watch and an open, explaining gesture.
+const AISYAH = { jacket: '#d9665b', lapel: '#c3554b', blouse: '#efe6da', trousers: '#2c2d30', shoes: '#1b1d20', hijab: '#ece3d3', band: '#c8323a', lanyard: '#9b3a3a', watch: '#3a3330' };
 export function AisyahModel() {
   const c = AISYAH, skin = SKIN.aisyah;
   return <>
@@ -264,8 +272,13 @@ export function AisyahModel() {
     <Part g="cyl" m={c.watch} p={[0.09, 0.6, 0.11]} s={[0.054, 0.016, 0.054]} r={[Math.PI / 2, 0, 0.8]}/>
     <Part g="sphere" m={skin} p={[0.055, 0.6, 0.145]} s={[0.06, 0.025, 0.05]}/>
     <Head id="aisyah">
-      <LongHair color={c.hair} wave/>
-      <Part g="ring" m={c.band} p={[0, 0.958, 0.004]} s={[0.17, 0.17, 0.24]} r={[Math.PI / 2 - 0.45, 0, 0]}/>
+      {/* Cream hijab with a red underscarf framing the face */}
+      <mesh geometry={geo().hoodBack} material={mat(c.hijab)} position={[0, 0.905, -0.006]} scale={[0.178, 0.208, 0.184]} castShadow/>
+      <mesh geometry={geo().hoodTop} material={mat(c.hijab)} position={[0, 0.905, -0.006]} scale={[0.178, 0.208, 0.184]} castShadow/>
+      <Part g="ring" m={c.band} p={[0, 0.955, 0.0]} s={[0.165, 0.165, 0.2]} r={[Math.PI / 2 - 0.62, 0, 0]}/>
+      <Part g="sphere" m={c.hijab} p={[0, 0.818, -0.004]} s={[0.15, 0.05, 0.12]}/>
     </Head>
+    <Part g="frustum" m={c.hijab} p={[0, 0.775, -0.004]} s={[0.3, 0.1, 0.22]}/>
+    <Part g="sphere" m={c.hijab} p={[0, 0.73, 0.06]} s={[0.13, 0.11, 0.04]}/>
   </>;
 }

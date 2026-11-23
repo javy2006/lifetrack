@@ -33,10 +33,10 @@ const decisionsOpen = (page) => page.locator('button.save-action, button.pass-ac
 const game = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('lifetrack.game.v1') ?? 'null'));
 const board = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('lifetrack.board.v1') ?? 'null'));
 
-async function startGame(page, tag) {
+async function startGame(page, tag, character = 0) {
   await page.goto(url);
   await click(page, /Play the game/, 30000);
-  await page.locator('button.character-option').first().click();
+  await page.locator('button.character-option').nth(character).click();
   await click(page, /^Continue/);
   await click(page, /Begin month one/);
   await btn(page, /Collect monthly income/).waitFor();
@@ -75,7 +75,7 @@ async function playMonth(page, month, tag, { loseBoardAtEventDraw = false } = {}
   await decisionsOpen(page);
   if (month === 1) {
     const g0 = await game(page), b0 = await board(page), roll = b0?.lastDiceRoll?.[g0.humanId] ?? 0;
-    const elapsed = Date.now() - rolledAt, minimum = 950 + 650 + 380 * roll + 1100 - 200;
+    const elapsed = Date.now() - rolledAt, minimum = 900 + 500 + 360 * roll + 650 - 200; // board/boardTiming.ts human timing, minus slack
     check(`${tag}: decisions open only after the pawn finishes moving`, roll >= 1 && elapsed >= minimum, `roll=${roll} ${elapsed}ms >= ${minimum}ms`);
   }
   if (month === 1) { await shot(page, `${tag}-03-decisions`); await overflow(page, `${tag} decisions`); }
@@ -84,6 +84,19 @@ async function playMonth(page, month, tag, { loseBoardAtEventDraw = false } = {}
     if (await save.isEnabled()) await save.click(); else await page.locator('button.pass-action').click();
   }
   await click(page, /Confirm decisions/);
+  if (month === 1 || month === 4) {
+    // Four-player dashboard shows the same cash and net worth (cash + savings) as the saved game state.
+    await page.waitForTimeout(300);
+    const g = await game(page);
+    const shown = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('.board-card .pd-card')].map((card) => {
+      const id = [...card.classList].find((c) => c.startsWith('pd-') && !['pd-card', 'pd-you', 'pd-active'].includes(c))?.slice(3);
+      const num = (sel) => Number((card.querySelector(sel)?.textContent ?? '').replace(/[^0-9-]/g, ''));
+      return [id, { cash: num('.pd-cash dd'), worth: num('.pd-worth dd') }];
+    })));
+    const ok = g.players.every((p) => shown[p.id] && shown[p.id].cash === p.cash && shown[p.id].worth === p.cash + p.savings);
+    check(`${tag} month ${month}: dashboard matches saved cash and net worth for all 4 players`, ok && Object.keys(shown).length === 4, JSON.stringify(shown));
+    check(`${tag} month ${month}: no player-facing "Daniel"`, !(await page.evaluate(() => /Daniel/.test(document.body.innerText))));
+  }
   if (loseBoardAtEventDraw) {
     const g = await game(page);
     check('month 2 game save is in event-draw before reload', g?.phase === 'event-draw', `phase=${g?.phase}`);
@@ -118,6 +131,7 @@ async function playMonth(page, month, tag, { loseBoardAtEventDraw = false } = {}
   await click(page, /See final results/);
   await btn(page, /Play again/).waitFor();
   await shot(page, `${tag}-06-results`);
+  check('results page uses the name Vikram, never Daniel', !(await page.evaluate(() => /Daniel/.test(document.body.innerText))) && (await page.evaluate(() => /Vikram/.test(document.body.innerText))));
   const g = await game(page);
   check('game complete', g.status === 'complete');
   for (const p of g.players) {
@@ -139,12 +153,14 @@ async function playMonth(page, month, tag, { loseBoardAtEventDraw = false } = {}
 }
 
 // 2) Phone and tablet: month 1 screens + layout overflow.
-for (const [tag, viewport] of [['phone', { width: 390, height: 844 }], ['tablet', { width: 768, height: 1024 }], ['landscape', { width: 844, height: 390 }]]) {
+// Each viewport plays a different character, so all four are tested as the human player.
+for (const [tag, viewport, character] of [['phone', { width: 390, height: 844 }, 1], ['tablet', { width: 768, height: 1024 }, 2], ['landscape', { width: 844, height: 390 }, 3]]) {
   const page = await newPage(viewport, tag);
   await page.goto(url);
   await btn(page, /Play the game/).waitFor({ timeout: 30000 });
   await shot(page, `${tag}-00-menu`); await overflow(page, `${tag} menu`);
-  await startGame(page, tag);
+  await startGame(page, tag, character);
+  check(`${tag}: playing as character ${character}`, (await game(page))?.humanId === ['alex', 'meiling', 'daniel', 'aisyah'][character]);
   await overflow(page, `${tag} income`);
   await playMonth(page, 1, tag);
   await page.context().close();

@@ -42,7 +42,8 @@ async function setup(query, viewport = { width: 1280, height: 800 }) {
 {
   const { page, logs } = await setup('');
   page.on('dialog', (d) => d.accept());
-  const heap = async () => page.evaluate(() => { globalThis.gc?.(); return performance.memory.usedJSHeapSize; });
+  // Several GC passes with short waits: one pass left up to ~8 MB of garbage in some runs (an 80-remount trend levels off at ~3 MB).
+  const heap = async () => page.evaluate(async () => { for (let i = 0; i < 3; i++) { globalThis.gc?.(); await new Promise((r) => setTimeout(r, 100)); } return performance.memory.usedJSHeapSize; });
   const cycle = async () => {
     await page.locator('button', { hasText: /^\s*Exit/ }).first().click();
     await page.locator('button', { hasText: /Continue saved game/ }).first().click();

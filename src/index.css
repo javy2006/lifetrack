@@ -169,3 +169,75 @@ img.mini-avatar { padding: 0; }
 .character-art .character-age { z-index: 2; }
 .character-portrait-fallback { display: inline-grid; place-items: center; color: #fff; font-weight: 800; line-height: 1; }
 .character-art .character-portrait-fallback.character-card-art { font-size: 44px !important; }
+
+/* Sound: one-click mute toggle plus a small settings popover for volumes. */
+.audio-controls { display: inline-flex; align-items: center; gap: 2px; }
+.audio-toggle { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 9px; border-radius: 9px; color: #4f6276; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.audio-toggle:hover { background: #eaf0f4; color: #0f294a; }
+.audio-toggle[aria-pressed="false"] { color: #8a96a3; }
+.audio-toggle:focus-visible { outline: 2px solid #2f5d7a; outline-offset: 2px; }
+@media (max-width: 520px) { .audio-toggle span { display: none; } }
+
+/* How to play: four illustrated steps. */
+.how-to-play { list-style: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 16px 0; padding: 0; }
+.htp-step { position: relative; display: grid; justify-items: center; gap: 6px; padding: 14px 10px 16px; border-radius: 16px; background: linear-gradient(160deg, #fffdf8, #eef4ec); box-shadow: inset 0 0 0 1px #e4e9e1; text-align: center; }
+.htp-step b { color: #0f294a; font-size: 15px; letter-spacing: .04em; text-transform: uppercase; }
+.htp-step > span:last-child { color: #5d6f82; font-size: 12px; line-height: 1.4; }
+.htp-number { position: absolute; top: 8px; left: 8px; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #c8102e; color: #fff; font-size: 12px; font-weight: 800; }
+.htp-art { width: 100%; max-width: 132px; height: auto; }
+.htp-die-body { transform-origin: 60px 44px; animation: htp-wobble 2.4s ease-in-out infinite; }
+.htp-pawn { animation: htp-hop 2.4s ease-in-out infinite; }
+.htp-card-b { transform-origin: 85px 46px; animation: htp-pick 2.4s ease-in-out infinite; }
+.htp-crown { transform-origin: 60px 20px; animation: htp-bob 2.4s ease-in-out infinite; }
+@keyframes htp-wobble { 0%, 70%, 100% { transform: rotate(0); } 20% { transform: rotate(-9deg) translateY(-6px); } 40% { transform: rotate(7deg); } }
+@keyframes htp-hop { 0% { transform: translate(-60px, 0); } 15% { transform: translate(-45px, -14px); } 30% { transform: translate(-30px, 0); } 45% { transform: translate(-15px, -14px); } 60%, 100% { transform: translate(0, 0); } }
+@keyframes htp-pick { 0%, 40%, 100% { transform: none; } 55%, 85% { transform: translateY(-5px) scale(1.04); } }
+@keyframes htp-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@media (max-width: 640px) { .how-to-play { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (prefers-reduced-motion: reduce) { .htp-die-body, .htp-pawn, .htp-card-b, .htp-crown { animation: none; } }
+.modal-panel:has(.how-to-play) { width: min(780px, 100%); max-width: 780px; }
+
+/* Four-player dashboard (replaces the roster chips under the board). */
+.player-dashboard { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding-top: 8px; }
+.pd-card { min-width: 0; padding: 8px 10px; border-radius: 13px; background: #f6f7f4; box-shadow: inset 0 0 0 1px #e6e9e3; transition: box-shadow .2s, background .2s; }
+.pd-card header { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.pd-name { display: grid; min-width: 0; line-height: 1.15; }
+.pd-name b { overflow: hidden; color: #0f294a; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.pd-name small { color: #718095; font-size: 10px; }
+.pd-card { position: relative; }
+.pd-turn { position: absolute; top: -8px; right: 8px; padding: 2px 7px; border-radius: 20px; background: #c8102e; color: #fff; font-size: 9px; font-weight: 800; white-space: nowrap; box-shadow: 0 2px 6px #c8102e40; }
+.pd-card dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px 10px; margin: 7px 0 0; }
+.pd-card dl div { min-width: 0; }
+.pd-card dt { color: #8693a1; font-size: 9px; text-transform: uppercase; letter-spacing: .05em; }
+.pd-card dd { margin: 0; overflow: hidden; color: #1f3347; font-size: 12px; font-weight: 750; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+.pd-in dd { color: #1b6a48; } .pd-out dd { color: #a03a32; }
+.pd-you { background: #fff7f8; box-shadow: inset 0 0 0 1px #efc9cf; }
+.pd-active { background: #fff; box-shadow: inset 0 0 0 2px #c8102e, 0 6px 16px #c8102e1f; }
+.pd-meiling.pd-active:not(.pd-you) { box-shadow: inset 0 0 0 2px #7d68a6, 0 6px 16px #7d68a61f; }
+.pd-daniel.pd-active:not(.pd-you) { box-shadow: inset 0 0 0 2px #457a9b, 0 6px 16px #457a9b1f; }
+.pd-aisyah.pd-active:not(.pd-you) { box-shadow: inset 0 0 0 2px #d6a44b, 0 6px 16px #d6a44b1f; }
+.pd-alex.pd-active:not(.pd-you) { box-shadow: inset 0 0 0 2px #24845b, 0 6px 16px #24845b1f; }
+.pd-active:not(.pd-you) .pd-turn { background: #34495d; }
+/* Desktop: 2x2 beside the board (the 3D board is height-limited, so this uses spare width). */
+@media (min-width: 1100px) {
+  .game-scene-content .board-card { grid-template-columns: minmax(0, 1fr) clamp(270px, 23vw, 340px); column-gap: 14px; }
+  .game-scene-content .board-card > .board-heading, .game-scene-content .board-card > .board-viewport, .game-scene-content .board-card > .board-controls { grid-column: 1; }
+  .game-scene-content .board-card > .player-dashboard { grid-column: 2; grid-row: 2 / span 2; align-self: center; padding-top: 0; }
+}
+/* Tablets: figures on one line per card, so the 2x2 stays compact under the board. */
+@media (min-width: 641px) and (max-width: 1099px) { .board-card .pd-card dl { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 5px; } }
+/* Phones: one slim row (portrait, cash, space) under the board so it keeps its height; the full 2x2 is in the Money drawer. */
+.financial-drawer .player-dashboard { display: none; }
+@media (max-width: 640px) {
+  .board-card .player-dashboard { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding-top: 4px; }
+  .board-card .pd-card { padding: 4px 5px; border-radius: 10px; }
+  .board-card .pd-card header { gap: 4px; }
+  .board-card .pd-card .character-portrait { width: 20px; height: 20px; }
+  .board-card .pd-name b { font-size: 10px; } .board-card .pd-name small { font-size: 8px; }
+  .board-card .pd-turn, .board-card .pd-worth, .board-card .pd-in, .board-card .pd-out, .board-card .pd-card dt { display: none; }
+  .board-card .pd-card dl { grid-template-columns: 1fr; margin-top: 2px; }
+  .board-card .pd-card dd { font-size: 10px; }
+  .financial-drawer .player-dashboard { display: grid; margin-bottom: 10px; }
+}
+@media (max-height: 500px) and (orientation: landscape) { .game-scene-content .player-dashboard { display: none; } }
+@media (prefers-reduced-motion: reduce) { .pd-card { transition: none; } }

@@ -4,14 +4,14 @@
  */
 import type { CharacterId } from '../game/types.ts';
 import { PLAYER_COLOR } from './boardWorld.ts';
-import { AisyahModel, AlexModel, DanielModel, MeiLingModel, Part } from './CharacterModels.tsx';
+import { AisyahModel, AlexModel, MeiLingModel, Part, VikramModel } from './CharacterModels.tsx';
 
 /** Models are 1 unit tall; this sets their height on the board (a tile is 1 unit wide). */
 export const MODEL_SCALE = 0.9;
-/** Top of the tallest figure (Daniel's hard hat) in pawn space. */
+/** Top of the tallest figure (Vikram's hard hat) in pawn space. */
 export const FIGURE_TOP = 1.04 * MODEL_SCALE;
 
-const MODELS: Record<CharacterId, () => React.JSX.Element> = { alex: AlexModel, meiling: MeiLingModel, daniel: DanielModel, aisyah: AisyahModel };
+const MODELS: Record<CharacterId, () => React.JSX.Element> = { alex: AlexModel, meiling: MeiLingModel, daniel: VikramModel, aisyah: AisyahModel };
 
 export function Figure({ id, human }: { id: CharacterId; human: boolean }) {
   const Model = MODELS[id];
