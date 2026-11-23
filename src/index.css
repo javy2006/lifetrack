@@ -166,5 +166,6 @@ html,body,#root{min-height:100%;}body.game-session{overflow:hidden;overscroll-be
 .resource-player .character-mini-art { width: 36px; height: 36px; filter: none; }
 .rival-row .character-rival-art { width: 34px; height: 34px; filter: none; }
 img.mini-avatar { padding: 0; }
+.character-art .character-age { z-index: 2; }
 .character-portrait-fallback { display: inline-grid; place-items: center; color: #fff; font-weight: 800; line-height: 1; }
 .character-art .character-portrait-fallback.character-card-art { font-size: 44px !important; }
