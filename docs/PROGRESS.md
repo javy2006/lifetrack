@@ -13,8 +13,9 @@ Ground rule: `src/lifetrack/game/` (reducer, calculations, AI strategies, polici
 | 4.3C-0 | Git baseline | **Done** (2026-11-23, `df0a775`) |
 | 4.3C-1 | Event-draw board-state recovery soft-lock | **Done** (2026-11-23) |
 | 4.3C-2a | Board progress ahead of the game save | **Done** (2026-11-23) |
-| 4.3C-2b | Browser journey / multi-viewport QA | Next |
-| 4.3C-2c | Insight popups (needs product decision) | Open |
+| 4.3C-2b | Browser journey / multi-viewport QA, pre-roll modal blocker, phone header | **Done** (2026-11-23) |
+| 4.3C-2c | Insight popups (needs product decision) | Open, waiting on product decision |
+| 4.3C-2d | Phone: "Money" drawer overlaps board heading | Open (cosmetic) |
 | 5.x | Three.js + React Three Fiber 9 board renderer | Not started (dependencies not installed) |
 
 ## Step 0: Git baseline (2026-11-23)
@@ -43,4 +44,18 @@ Ground rule: `src/lifetrack/game/` (reducer, calculations, AI strategies, polici
 ## Open items carried forward
 
 - `state.insight` is set by the reducer but never rendered (no insight popup, and `insight/dismiss` is unused).
-- The full browser journey and multi-viewport QA are not yet run.
+- ~~The full browser journey and multi-viewport QA are not yet run.~~ Done in 4.3C-2b below.
+
+## Phase 4.3C-2b: browser journey and multi-viewport QA (2026-11-23)
+
+A real-browser run (headless Edge via `scripts/qa/journey.mjs`) found two pre-existing Phase 4.3 layout bugs, both fixed:
+
+1. **Blocker: the game could not be played past the first roll with a mouse.** In `decisions`, before the human rolled, the action layer was a full-screen blurred modal. Its card said "Roll to open your month" but had no button, and it covered the board's Roll Dice button.
+   - **Fix:** the pure `getActionLayerMode(status, phase, stage)` in `board/boardTypes.ts` docks that card (non-blocking) until the pawn has landed. The card also has its own Roll Dice button, which is disabled while rolling and calls the existing, lock-guarded `rollHuman`. Decisions still open as a modal after landing. All other phases are unchanged.
+   - **Tests:** `board/actionLayer.test.ts`, which failed before the fix.
+2. **Phone header spill.** At ≤480px an older 2-column grid rule plus `.resource-player{grid-column:span 2}` wrapped the full-screen header's balances into extra rows, which spilled 82px over the scene.
+   - **Fix:** a phone rule scoped to `.game-fullscreen` in `src/index.css` keeps avatar, name and three balances on one row, and hides only the subtitle and decorative icons.
+
+A code review of the change (project `code-review` skill) found no defects. Its two suggestions were applied: disable the dock button while rolling, and keep the player name visible on phones.
+
+**Still open:** a second Roll Dice button (the board's) stays focusable behind the dock, a duplicate control for screen readers. There is also the phone drawer/heading overlap (4.3C-2d) and insight popups (4.3C-2c).

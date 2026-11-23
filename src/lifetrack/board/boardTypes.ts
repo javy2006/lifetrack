@@ -74,6 +74,14 @@ export function reconcileBoardProgress(progress:BoardProgress,round:number,phase
   return progress;
 }
 
+/** 'modal' blocks the board behind a blurred dialog; 'dock' leaves the board (and its Roll Dice button) usable. */
+export function getActionLayerMode(status:GameState['status'],phase:GameState['phase'],stage:BoardTurnStage|null):'modal'|'dock' {
+  if(status!=='playing')return 'modal';
+  // Before the human lands, decisions are not open yet: the player must reach the board to roll.
+  if(phase==='decisions')return stage==='human-landed'?'modal':'dock';
+  return ['event','claims','summary'].includes(phase)?'modal':'dock';
+}
+
 export type EventDrawBoardStep='run-ai-turns'|'draw-event';
 
 /**

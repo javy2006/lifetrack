@@ -19,7 +19,7 @@ import { EventIllustration } from '../components/EventIllustration.tsx';
 import { CityScene } from '../components/CityScene.tsx';
 import { BoardScene } from '../board/BoardScene.tsx';
 import { useBoardController } from '../board/useBoardController.ts';
-import { getEventDrawBoardStep } from '../board/boardTypes.ts';
+import { getActionLayerMode, getEventDrawBoardStep } from '../board/boardTypes.ts';
 import { useAudio } from '../components/AudioControls.tsx';
 
 function PhaseButton({ label, onClick }: { label: string; onClick: () => void }) { return <Button onClick={onClick}>{label}<ArrowRight size={16}/></Button>; }
@@ -96,7 +96,7 @@ function ResultsView({state,dispatch}:{state:GameState;dispatch:(a:GameAction)=>
 export function GameScreen({state,dispatch,onExit}:{state:GameState;dispatch:(a:GameAction)=>void;onExit:()=>void}) {
   const player=getHumanPlayer(state);const record=getRoundRecord(player,state.round);const [showIntro,setShowIntro]=useState(false);
   const board=useBoardController(state);
-  const isOverlay=state.status!=='playing'||['decisions','event','claims','summary'].includes(state.phase);
+  const isOverlay=getActionLayerMode(state.status,state.phase,board.progress?.stage??null)==='modal';
   useEffect(()=>{document.body.classList.add('game-session');return()=>document.body.classList.remove('game-session');},[]);
   const {playEffect}=useAudio();
   const previousState=useRef(state);
@@ -124,7 +124,7 @@ export function GameScreen({state,dispatch,onExit}:{state:GameState;dispatch:(a:
   else if(state.status==='complete')content=<ResultsView state={state} dispatch={dispatch}/>;
   else if(state.phase==='income')content=<Card className="phase-card income-phase"><span className="phase-orbit"><Coins size={25}/></span><Eyebrow>MONTH {state.round} · INCOME DAY</Eyebrow><h2>Your new month begins</h2><p>Your monthly income is ready. Let’s add it to your cash before taking care of this month’s essentials.</p><div className="income-amount">+{formatRM(GAME_CONFIG.monthlyIncome)}<small>monthly income</small></div><PhaseButton label="Collect monthly income" onClick={()=>dispatch({type:'round/collect-income'})}/></Card>;
   else if(state.phase==='expenses')content=<Card className="phase-card expenses-phase"><span className="phase-orbit"><Wallet size={25}/></span><Eyebrow>MONTH {state.round} · THE ESSENTIALS</Eyebrow><h2>First, cover the basics</h2><p>Housing, food and everyday bills come before optional spending. Your active recurring premiums are handled here too.</p><div className="bill-breakdown"><div><span>Essential expenses</span><b>−{formatRM(GAME_CONFIG.essentialExpenses)}</b></div><div><span>Existing monthly premiums</span><b>−{formatRM(getMonthlyPremiumTotal(player))}</b></div><div className="bill-remaining"><span>Cash before choices</span><b>{formatRM(player.cash-GAME_CONFIG.essentialExpenses-getMonthlyPremiumTotal(player))}</b></div></div><PhaseButton label="Pay monthly essentials" onClick={()=>dispatch({type:'round/pay-bills'})}/></Card>;
-  else if(state.phase==='decisions')content=board.progress?.stage==='human-landed'?<><RoundDecision state={state} dispatch={dispatch}/><PolicyMarketplace state={state} dispatch={dispatch}/></>:<Card className="phase-card"><Eyebrow>YOUR TURN</Eyebrow><h2>Roll to open your month</h2><p>Move your token around the city board, then make your existing financial choices.</p></Card>;
+  else if(state.phase==='decisions')content=board.progress?.stage==='human-landed'?<><RoundDecision state={state} dispatch={dispatch}/><PolicyMarketplace state={state} dispatch={dispatch}/></>:<Card className="phase-card"><Eyebrow>YOUR TURN</Eyebrow><h2>Roll to open your month</h2><p>Move your token around the city board, then make your existing financial choices.</p>{board.progress?.stage==='human-roll'&&<Button disabled={board.rolling} onClick={()=>void board.rollHuman()}>{board.rolling?'Rolling…':'Roll Dice'}<ArrowRight size={16}/></Button>}</Card>;
   else if(state.phase==='event-draw')content=<Card className="phase-card"><Eyebrow>THE TABLE · AI TURNS</Eyebrow><h2>{board.progress?.activePlayer?`${getCharacter(board.progress.activePlayer).name} is moving`:board.progress?.stage==='complete'?'The table is ready':'Your rivals are taking their turns'}</h2><p>Each rival moves around the same city route. The shared monthly event still comes from the LifeTrack event deck.</p></Card>;
   else if(state.phase==='event')content=<EventView state={state} dispatch={dispatch}/>;
   else if(state.phase==='claims')content=<ClaimView state={state} dispatch={dispatch}/>;
