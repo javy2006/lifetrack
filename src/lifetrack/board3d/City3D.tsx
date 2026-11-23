@@ -6,7 +6,7 @@ import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import type { Mesh } from 'three';
 import { CATEGORY_COLOR, SPACE_WORLD, TILE_SIZE, spaceCategory, tileCaption } from './boardWorld.ts';
-import { captionTexture, decal, geo, mat, windowTexture } from './kit3d.ts';
+import { captionTexture, decal, geo, mat } from './kit3d.ts';
 
 type V3 = [number, number, number];
 type Shape = keyof ReturnType<typeof geo>;
@@ -22,14 +22,17 @@ export function TileBase({ index }: { index: number }) {
   const p = SPACE_WORLD[index]!;
   const category = spaceCategory(index);
   const { width: w, depth: d, height: h } = TILE_SIZE;
-  const captionWidth = w - 0.16;
+  const captionWidth = w - 0.2;
   return <group position={[p.x, 0, p.z]}>
     <mesh geometry={geo().box} material={mat('#d8d0bf')} position={[0, h / 2 - 0.01, 0]} scale={[w + 0.04, h, d + 0.04]} receiveShadow castShadow/>
     <mesh geometry={geo().box} material={mat(CATEGORY_COLOR[category])} position={[0, h + 0.01, 0]} scale={[w, 0.02, d]} receiveShadow/>
     <mesh geometry={geo().box} material={mat('#f7f3e8')} position={[0, h + 0.022, 0]} scale={[w - 0.1, 0.008, d - 0.1]} receiveShadow/>
-    <mesh geometry={geo().plane} material={decal(captionTexture(tileCaption(index), INK[category]!))} position={[0, h + 0.0275, 0.02]} scale={[captionWidth, 1, captionWidth * 0.3125]}/>
-    {/* Start marker on the first space */}
-    {index === 0 && <P c="#c8102e" p={[-w / 2 + 0.1, h + 0.05, -d / 2 + 0.1]} s={[0.06, 0.05, 0.06]} g="cyl"/>}
+    <mesh geometry={geo().plane} material={decal(captionTexture(tileCaption(index), INK[category]!, category))} position={[0, h + 0.0275, 0]} scale={[captionWidth, 1, captionWidth]}/>
+    {/* Start flag on the first space */}
+    {index === 0 && <group position={[-w / 2 + 0.12, h + 0.03, -d / 2 + 0.12]}>
+      <P g="cylLow" c="#4b5a63" p={[0, 0.2, 0]} s={[0.025, 0.4, 0.025]}/>
+      <P c="#c8102e" p={[0.09, 0.33, 0]} s={[0.17, 0.11, 0.012]}/>
+    </group>}
   </group>;
 }
 
@@ -65,130 +68,86 @@ function PulseRing({ color, y, animate }: { color: string; y: number; animate: b
     invalidate();
   });
   return <mesh ref={ring} position={[0, y, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-    <ringGeometry args={[0.52, 0.6, 40]}/>
+    <ringGeometry args={[0.66, 0.74, 48]}/>
     <meshBasicMaterial color={color} transparent opacity={0.75} toneMapped={false}/>
   </mesh>;
 }
 
 function Tree({ x, z, s = 1, tone = '#588b70' }: { x: number; z: number; s?: number; tone?: string }) {
   return <group position={[x, 0.04, z]} scale={s}>
-    <P g="cylLow" c="#886d55" p={[0, 0.1, 0]} s={[0.05, 0.2, 0.05]}/>
-    <P g="cone" c={tone} p={[0, 0.33, 0]} s={[0.3, 0.36, 0.3]}/>
-    <P g="cone" c={tone} p={[0, 0.5, 0]} s={[0.22, 0.26, 0.22]}/>
-  </group>;
-}
-
-function Lamp({ x, z }: { x: number; z: number }) {
-  return <group position={[x, 0.04, z]}>
-    <P g="cylLow" c="#4b5a63" p={[0, 0.17, 0]} s={[0.018, 0.34, 0.018]}/>
-    <mesh geometry={geo().sphere} material={mat('#fff3c4', { emissive: '#ffd77a', emissiveIntensity: 0.6 })} position={[0, 0.36, 0]} scale={0.05}/>
-  </group>;
-}
-
-/** Tower with window facades on the four sides and a plain roof. */
-function Tower({ x, z, w, h, d, c }: { x: number; z: number; w: number; h: number; d: number; c: string }) {
-  const win = mat(c, { map: windowTexture() }), roof = mat('#e9e4d8');
-  return <group position={[x, 0.04, z]}>
-    <mesh geometry={geo().box} material={[win, win, roof, roof, win, win]} position={[0, h / 2, 0]} scale={[w, h, d]} castShadow receiveShadow/>
-    <P c="#cfc8b8" p={[0, h + 0.03, 0]} s={[w * 0.5, 0.06, d * 0.5]}/>
-    <P c="#9aa7ad" p={[w * 0.18, h + 0.09, -d * 0.1]} s={[0.08, 0.08, 0.08]}/>
+    <P g="cylLow" c="#886d55" p={[0, 0.09, 0]} s={[0.05, 0.18, 0.05]}/>
+    <P g="sphere" c={tone} p={[0, 0.3, 0]} s={[0.3, 0.28, 0.3]}/>
+    <P g="sphere" c={tone} p={[0.05, 0.42, 0.02]} s={[0.2, 0.18, 0.2]}/>
   </group>;
 }
 
 function House({ x, z, wall, roof, ry = 0 }: { x: number; z: number; wall: string; roof: string; ry?: number }) {
   return <group position={[x, 0.04, z]} rotation={[0, ry, 0]}>
-    <P c={wall} p={[0, 0.15, 0]} s={[0.46, 0.3, 0.38]}/>
-    <P g="prism" c={roof} p={[0, 0.3, 0]} s={[0.52, 0.2, 0.44]}/>
-    <P c="#6b4f3c" p={[0.06, 0.09, 0.192]} s={[0.09, 0.15, 0.01]} shadow={false}/>
-    <P c="#cfe3ea" p={[-0.12, 0.17, 0.192]} s={[0.09, 0.08, 0.01]} shadow={false}/>
+    <P c={wall} p={[0, 0.17, 0]} s={[0.62, 0.34, 0.5]}/>
+    <P g="prism" c={roof} p={[0, 0.34, 0]} s={[0.7, 0.24, 0.58]}/>
+    <P c="#6b4f3c" p={[0.1, 0.1, 0.252]} s={[0.12, 0.18, 0.01]} shadow={false}/>
+    <P c="#cfe3ea" p={[-0.15, 0.2, 0.252]} s={[0.13, 0.1, 0.01]} shadow={false}/>
   </group>;
 }
 
 function Clinic({ x, z }: { x: number; z: number }) {
   return <group position={[x, 0.04, z]}>
-    <P c="#f8f7f0" p={[0, 0.32, 0]} s={[1.0, 0.64, 0.72]}/>
-    <P c="#dfe9ec" p={[0, 0.2, 0.362]} s={[0.84, 0.12, 0.01]} shadow={false}/>
-    <P c="#dfe9ec" p={[0, 0.44, 0.362]} s={[0.84, 0.12, 0.01]} shadow={false}/>
-    <P c="#9fc3cf" p={[0, 0.07, 0.37]} s={[0.24, 0.14, 0.02]} shadow={false}/>
-    {/* Red cross on the roof and over the door */}
-    <P c="#c8102e" p={[0, 0.655, 0]} s={[0.36, 0.025, 0.1]}/>
-    <P c="#c8102e" p={[0, 0.655, 0]} s={[0.1, 0.025, 0.36]}/>
-    <P c="#c8102e" p={[0.36, 0.53, 0.37]} s={[0.12, 0.035, 0.01]} shadow={false}/>
-    <P c="#c8102e" p={[0.36, 0.53, 0.37]} s={[0.035, 0.12, 0.01]} shadow={false}/>
+    <P c="#f8f7f0" p={[0, 0.25, 0]} s={[0.86, 0.5, 0.66]}/>
+    <P c="#dfe9ec" p={[0, 0.27, 0.332]} s={[0.7, 0.12, 0.01]} shadow={false}/>
+    <P c="#9fc3cf" p={[0, 0.08, 0.335]} s={[0.22, 0.16, 0.01]} shadow={false}/>
+    <P c="#c8102e" p={[0, 0.51, 0]} s={[0.34, 0.025, 0.1]}/>
+    <P c="#c8102e" p={[0, 0.51, 0]} s={[0.1, 0.025, 0.34]}/>
   </group>;
 }
 
-/** "Savings" bank with columns and a pediment. */
+/** Savings bank with columns and a pediment. */
 function Bank({ x, z }: { x: number; z: number }) {
   return <group position={[x, 0.04, z]}>
-    <P c="#e6dcc6" p={[0, 0.03, 0.02]} s={[0.98, 0.06, 0.8]}/>
-    <P c="#f2ebdb" p={[0, 0.3, -0.06]} s={[0.84, 0.48, 0.56]}/>
-    {[-0.33, -0.11, 0.11, 0.33].map((cx) => <P key={cx} g="cylLow" c="#fbf7ee" p={[cx, 0.3, 0.3]} s={[0.07, 0.48, 0.07]}/>)}
-    <P c="#e6dcc6" p={[0, 0.56, 0.02]} s={[0.94, 0.05, 0.72]}/>
-    <P g="prism" c="#24845b" p={[0, 0.585, 0.02]} s={[0.94, 0.18, 0.72]}/>
+    <P c="#e6dcc6" p={[0, 0.03, 0.02]} s={[0.9, 0.06, 0.74]}/>
+    <P c="#f2ebdb" p={[0, 0.25, -0.06]} s={[0.76, 0.4, 0.5]}/>
+    {[-0.28, -0.09, 0.09, 0.28].map((cx) => <P key={cx} g="cylLow" c="#fbf7ee" p={[cx, 0.25, 0.27]} s={[0.065, 0.4, 0.065]}/>)}
+    <P c="#e6dcc6" p={[0, 0.47, 0.02]} s={[0.86, 0.05, 0.66]}/>
+    <P g="prism" c="#24845b" p={[0, 0.495, 0.02]} s={[0.86, 0.16, 0.66]}/>
   </group>;
 }
 
-function Cafe({ x, z }: { x: number; z: number }) {
-  return <group position={[x, 0.04, z]}>
-    <P c="#f0d9bc" p={[0, 0.2, 0]} s={[0.7, 0.4, 0.48]}/>
-    <P c="#6b4f3c" p={[0, 0.42, 0]} s={[0.74, 0.04, 0.52]}/>
-    {[0, 1, 2, 3, 4].map((i) => <P key={i} c={i % 2 ? '#fbf8f2' : '#c8102e'} p={[-0.28 + i * 0.14, 0.31, 0.3]} s={[0.14, 0.03, 0.16]} r={[0.45, 0, 0]}/>)}
-    <P c="#cfe3ea" p={[0, 0.15, 0.242]} s={[0.5, 0.16, 0.01]} shadow={false}/>
-    {[-0.18, 0.18].map((tx) => <group key={tx} position={[tx, 0, 0.52]}>
-      <P g="cylLow" c="#4b5a63" p={[0, 0.06, 0]} s={[0.02, 0.12, 0.02]}/>
-      <P g="cyl" c="#fbf8f2" p={[0, 0.125, 0]} s={[0.12, 0.012, 0.12]}/>
-    </group>)}
-  </group>;
-}
-
-/** Small insurance office ("cover"): blue with a shield sign. */
+/** Insurance office ("cover"): blue roof and a shield sign. */
 function CoverOffice({ x, z }: { x: number; z: number }) {
   return <group position={[x, 0.04, z]}>
-    <P c="#c9dbe6" p={[0, 0.27, 0]} s={[0.56, 0.54, 0.5]}/>
-    <P c="#457a9b" p={[0, 0.56, 0]} s={[0.6, 0.04, 0.54]}/>
-    <P g="cylLow" c="#457a9b" p={[0, 0.36, 0.255]} s={[0.16, 0.18, 0.01]} r={[Math.PI / 2, 0, 0]} shadow={false}/>
-    <P c="#9fc3cf" p={[0, 0.08, 0.255]} s={[0.16, 0.16, 0.01]} shadow={false}/>
+    <P c="#dbe7ee" p={[0, 0.22, 0]} s={[0.62, 0.44, 0.52]}/>
+    <P c="#457a9b" p={[0, 0.46, 0]} s={[0.68, 0.05, 0.58]}/>
+    <P g="cylLow" c="#457a9b" p={[0, 0.3, 0.262]} s={[0.17, 0.2, 0.012]} r={[Math.PI / 2, 0, 0]} shadow={false}/>
+    <P c="#9fc3cf" p={[0, 0.08, 0.262]} s={[0.16, 0.16, 0.01]} shadow={false}/>
   </group>;
 }
 
-/** Centre of the board: roads, blocks and landmarks for each board category. */
+/**
+ * Calm centre: a low park with a fountain, four small landmarks (one per money theme) and
+ * the plaza where the die lands. Everything stays under 0.6 units tall so nothing competes
+ * with, or hides, the board spaces and pawns.
+ */
 export function CityBlock() {
+  const lot = 5.1;
   return <group>
-    {/* Lot, pavements and roads */}
-    <P c="#d8e5d6" p={[0, 0.02, 0]} s={[6.5, 0.04, 4.3]} shadow={false}/>
-    <P c="#e4e0d6" p={[0, 0.045, 0.2]} s={[6.5, 0.012, 0.66]} shadow={false}/>
-    <P c="#e4e0d6" p={[0.3, 0.045, 0]} s={[0.66, 0.012, 4.3]} shadow={false}/>
-    <P c="#687781" p={[0, 0.053, 0.2]} s={[6.5, 0.006, 0.42]} shadow={false}/>
-    <P c="#687781" p={[0.3, 0.054, 0]} s={[0.42, 0.006, 4.3]} shadow={false}/>
-    {[-2.8, -2.2, -1.6, -1.0, -0.4, 1.0, 1.6, 2.2, 2.8].map((x) => <P key={`dx${x}`} c="#f3f1e8" p={[x, 0.058, 0.2]} s={[0.22, 0.004, 0.03]} shadow={false}/>)}
-    {[-1.8, -1.2, -0.6, 0.9, 1.5].map((z) => <P key={`dz${z}`} c="#f3f1e8" p={[0.3, 0.058, z]} s={[0.03, 0.004, 0.22]} shadow={false}/>)}
-    {/*
-      Isometric occlusion rule: a building of height h at (x, z) hides the ground up to (x - h, z - h).
-      Tall towers therefore stand in the front-right block, and only low buildings sit near the
-      back rows, so no building ever covers a board tile or pawn.
-    */}
-    {/* Back-left: park (rest) and family homes */}
-    <P c="#a9cf9c" p={[-2.05, 0.05, -1.2]} s={[1.75, 0.02, 1.35]} shadow={false}/>
-    <P g="cyl" c="#7fb4c9" p={[-2.25, 0.065, -1.15]} s={[0.7, 0.015, 0.46]} shadow={false}/>
-    <P c="#9b7a5b" p={[-1.6, 0.1, -0.7]} s={[0.32, 0.03, 0.08]}/>
-    <Tree x={-2.55} z={-1.55} s={0.7}/><Tree x={-1.55} z={-1.6} s={0.8} tone="#6d9e72"/><Tree x={-1.4} z={-1.05} s={0.7} tone="#4f7f63"/><Tree x={-2.65} z={-0.75} s={0.65}/>
-    <House x={-0.62} z={-1.5} wall="#e7be9e" roof="#b5523b"/>
-    <House x={-0.62} z={-0.72} wall="#f8f7f0" roof="#7d68a6"/>
-    {/* Back-right: bank (savings) and clinic (medical) */}
-    <Bank x={1.15} z={-1.15}/>
-    <Clinic x={2.5} z={-1.1}/>
-    {/* Front-left: plaza where the die lands, café and cover office */}
-    <P g="cyl" c="#efe9dc" p={[-2.3, 0.05, 1.25]} s={[1.0, 0.02, 1.0]} shadow={false}/>
-    <P g="ring" c="#d6a44b" p={[-2.3, 0.062, 1.25]} s={[0.92, 0.92, 0.4]} r={[Math.PI / 2, 0, 0]} shadow={false}/>
-    <Cafe x={-0.95} z={0.95}/>
-    <CoverOffice x={-0.95} z={1.72}/>
-    {/* Front-right: office towers */}
-    <Tower x={1.3} z={0.95} w={0.56} h={1.05} d={0.56} c="#c6d7d0"/>
-    <Tower x={1.45} z={1.72} w={0.6} h={1.4} d={0.5} c="#b8d0d4"/>
-    <Tower x={2.55} z={1.3} w={0.7} h={1.9} d={0.7} c="#87a9b1"/>
-    {/* Street furniture */}
-    <Lamp x={-1.45} z={-0.25}/><Lamp x={0.9} z={-0.25}/><Lamp x={-1.6} z={0.65}/><Lamp x={2.0} z={0.65}/><Lamp x={0.75} z={-1.9}/>
-    <Tree x={-0.05} z={-1.85} s={0.7}/><Tree x={1.9} z={-0.5} s={0.65} tone="#6d9e72"/><Tree x={3.0} z={0.65} s={0.7}/>
+    <P c="#d6e6d2" p={[0, 0.02, 0]} s={[lot, 0.04, lot]} shadow={false}/>
+    {/* Paths: a ring and a cross, in pale stone */}
+    <P g="ring" c="#ece6d8" p={[0, 0.042, 0]} s={[3.1, 3.1, 0.5]} r={[Math.PI / 2, 0, 0]} shadow={false}/>
+    <P c="#ece6d8" p={[0, 0.043, 0]} s={[lot - 0.3, 0.004, 0.22]} shadow={false}/>
+    <P c="#ece6d8" p={[0, 0.043, 0]} s={[0.22, 0.004, lot - 0.3]} shadow={false}/>
+    {/* Fountain */}
+    <P g="cyl" c="#e6dfd0" p={[0, 0.07, 0]} s={[0.9, 0.06, 0.9]}/>
+    <P g="cyl" c="#8cc0d6" p={[0, 0.102, 0]} s={[0.76, 0.01, 0.76]} shadow={false}/>
+    <P g="cylLow" c="#e6dfd0" p={[0, 0.2, 0]} s={[0.1, 0.22, 0.1]}/>
+    <P g="cyl" c="#e6dfd0" p={[0, 0.31, 0]} s={[0.3, 0.03, 0.3]}/>
+    {/* Landmarks: savings (bank), medical (clinic), family (home), cover (insurance) */}
+    <Bank x={-1.45} z={-1.45}/>
+    <Clinic x={1.45} z={-1.45}/>
+    <House x={-1.45} z={1.45} wall="#f0d9bc" roof="#b5523b"/>
+    <CoverOffice x={1.45} z={0.2}/>
+    {/* Plaza where the die lands */}
+    <P g="cyl" c="#efe9dc" p={[1.45, 0.05, 1.5]} s={[0.95, 0.02, 0.95]} shadow={false}/>
+    <P g="ring" c="#d6a44b" p={[1.45, 0.062, 1.5]} s={[0.88, 0.88, 0.4]} r={[Math.PI / 2, 0, 0]} shadow={false}/>
+    <Tree x={-0.55} z={-1.9} s={0.9}/><Tree x={0.6} z={-1.95} s={0.8} tone="#6d9e72"/><Tree x={-2.05} z={-0.4} s={0.85} tone="#4f7f63"/>
+    <Tree x={-2.0} z={0.55} s={0.75}/><Tree x={-0.5} z={2.0} s={0.8} tone="#6d9e72"/><Tree x={2.05} z={-0.75} s={0.7}/>
   </group>;
 }

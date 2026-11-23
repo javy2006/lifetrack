@@ -7,6 +7,7 @@ import { getAiTurnsForRound, getCurrentEvent } from '../game/gameReducer.ts';
 import { CityScene } from '../components/CityScene.tsx';
 import { CharacterArt } from '../components/CharacterArt.tsx';
 import { STEP_HOP_SHARE } from './boardTiming.ts';
+import { routeSpaces } from '../board3d/boardWorld.ts';
 import { BOARD_POINTS, BOARD_ROUTE, getBoardSpaceIndex, getEventBoardCategory, tokenOffset, type BoardCategory, type BoardProgress } from './boardTypes.ts';
 
 const categoryColor:Record<BoardCategory,string>={salary:'#d6a44b',medical:'#c8102e',accident:'#e77c43',family:'#7d68a6',savings:'#24845b',protection:'#457a9b',lucky:'#df9c3e',rest:'#748b8d'};
@@ -43,7 +44,7 @@ export function BoardScene({state,progress,rolling,movementStep,dieTumbling,dieV
       {players.map(({player,character,index})=>{const p=BOARD_POINTS[index],offset=tokenOffset(index,player.id,progress?.positions??({} as Record<typeof player.id,number>));const x=p.x+offset.x,y=p.y+offset.y;return <g key={player.id} transform={`translate(${x} ${y})`} className={`board-token ${player.id===state.humanId?'board-token-human':''} ${mover===player.id?'board-token-moving':''}`} aria-label={`${character.name}${player.controller==='human'?' (you)':' (AI)'} on space ${index+1}`}>
         <ellipse cy="-5" rx="13" ry="5" fill="#173247" opacity=".22"/><circle cy="-20" r="14" fill={categoryColor[character.id==='alex'?'savings':character.id==='meiling'?'family':character.id==='daniel'?'protection':'salary']} stroke="#fff" strokeWidth="2"/><foreignObject x="-11" y="-33" width="22" height="27"><CharacterArt characterId={player.id} title={character.name}/></foreignObject>
       </g>})}
-    </svg>;if(!renderBoard)return svgBoard;const positions=Object.fromEntries(players.map(({player,index})=>[player.id,index])) as Board3DView["positions"];return renderBoard(svgBoard,{playerIds:state.players.map(p=>p.id),humanId:state.humanId,positions,activePlayer:mover,currentSpace:current,highlightCategory:state.phase==="event"&&event?highlight:null,dieValue:dieTumbling?null:shownRoll,dieRolling:dieTumbling,stepSeconds:(stepMs*STEP_HOP_SHARE)/1000},boardLabel);})()}</div>
+    </svg>;if(!renderBoard)return svgBoard;const positions=Object.fromEntries(players.map(({player,index})=>[player.id,index])) as Board3DView["positions"];return renderBoard(svgBoard,{playerIds:state.players.map(p=>p.id),humanId:state.humanId,positions,activePlayer:mover,currentSpace:current,highlightCategory:state.phase==="event"&&event?highlight:null,dieValue:dieTumbling?null:shownRoll,dieRolling:dieTumbling,stepSeconds:(stepMs*STEP_HOP_SHARE)/1000,route:mover&&!dieTumbling&&dieValue!==null&&progress?routeSpaces(progress.positions[mover],dieValue):[],routeOwner:mover},boardLabel);})()}</div>
     {(()=>{const move=progress?.lastMovement;const name=(id:string|null|undefined)=>CHARACTERS.find(c=>c.id===id)?.name??'';const isYou=(id:string|null|undefined)=>id===state.humanId;
       // One short status line that follows the turn: rolling → rolled → landed.
       const status=dieTumbling?(isYou(mover)?'Rolling…':`${name(mover)} is rolling…`)

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BOARD_ROUTE } from '../board/boardTypes.ts';
-import { PAWN_BASE_Y, SPACE_WORLD, TILE_SIZE, headingTowards, hopHeight, landingSquash, lerpAngle, tileCaption, lerpWorld, pawnWorld, spaceCategory, spaceWorld, svgToWorld } from './boardWorld.ts';
+import { PAWN_BASE_Y, RING_HALF, SPACE_WORLD, TILE_PITCH, TILE_SIZE, routeSpaces, headingTowards, hopHeight, landingSquash, lerpAngle, tileCaption, lerpWorld, pawnWorld, spaceCategory, spaceWorld, svgToWorld } from './boardWorld.ts';
 import { DEFAULT_RENDERER, readRendererOverride } from './rendererPreference.ts';
 
 test('every route space has a distinct world position centred on the origin', () => {
@@ -9,7 +9,7 @@ test('every route space has a distinct world position centred on the origin', ()
   assert.equal(new Set(SPACE_WORLD.map((p) => `${p.x.toFixed(3)},${p.z.toFixed(3)}`)).size, 24);
   const cx = SPACE_WORLD.reduce((n, p) => n + p.x, 0) / 24, cz = SPACE_WORLD.reduce((n, p) => n + p.z, 0) / 24;
   assert.ok(Math.abs(cx) < 0.05 && Math.abs(cz) < 0.05, `centre ${cx},${cz}`);
-  assert.ok(SPACE_WORLD.every((p) => p.y === 0 && Math.abs(p.x) < 4.5 && Math.abs(p.z) < 3.2));
+  assert.ok(SPACE_WORLD.every((p) => p.y === 0 && Math.abs(p.x) <= RING_HALF + 1e-9 && Math.abs(p.z) <= RING_HALF + 1e-9));
 });
 
 test('mapping preserves the SVG loop order and orientation', () => {
@@ -21,7 +21,7 @@ test('mapping preserves the SVG loop order and orientation', () => {
     const a = spaceWorld(i), b = spaceWorld(i + 1);
     const d = Math.hypot(a.x - b.x, a.z - b.z);
     assert.ok(d < 1.5, `gap ${i}->${i + 1} = ${d}`);
-    if (i % 6 !== 5) assert.ok(d >= Math.min(TILE_SIZE.width, TILE_SIZE.depth), `tiles ${i},${i + 1} overlap`);
+    assert.ok(Math.abs(d - TILE_PITCH) < 1e-9 && d >= Math.max(TILE_SIZE.width, TILE_SIZE.depth), `tiles ${i},${i + 1}: ${d}`);
   }
   assert.deepEqual(spaceWorld(24), spaceWorld(0));
   assert.deepEqual(spaceWorld(-1), spaceWorld(23));
@@ -36,11 +36,26 @@ test('no two tile footprints (including the 0.02 plinth lip) intersect, corners 
   }
 });
 
+test('a pawn alone on a space stands in its centre', () => {
+  const p = pawnWorld(4, 'alex', { alex: 4, meiling: 0, daniel: 0, aisyah: 9 });
+  assert.equal(p.x, SPACE_WORLD[4]!.x); assert.equal(p.z, SPACE_WORLD[4]!.z);
+});
+
+test('route preview lists the spaces a roll crosses, wrapping round the loop', () => {
+  assert.deepEqual(routeSpaces(3, 4), [4, 5, 6, 7]);
+  assert.deepEqual(routeSpaces(22, 3), [23, 0, 1]);
+  assert.deepEqual(routeSpaces(0, 0), []);
+  assert.deepEqual(routeSpaces(0, Number.NaN), []);
+});
+
 test('pawns sharing a space are separated and sit on the tile', () => {
   const positions = { alex: 3, meiling: 3, daniel: 3, aisyah: 3 };
   const pts = (['alex', 'meiling', 'daniel', 'aisyah'] as const).map((id) => pawnWorld(3, id, positions));
   assert.equal(new Set(pts.map((p) => `${p.x.toFixed(3)},${p.z.toFixed(3)}`)).size, 4);
   assert.ok(pts.every((p) => p.y === PAWN_BASE_Y && p.y > TILE_SIZE.height));
+  const c = SPACE_WORLD[3]!, baseRadius = 0.13;
+  for (const p of pts) assert.ok(Math.abs(p.x - c.x) + baseRadius <= TILE_SIZE.width / 2 && Math.abs(p.z - c.z) + baseRadius <= TILE_SIZE.depth / 2, 'pawn base stays on its tile');
+  for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++) assert.ok(Math.hypot(pts[i]!.x - pts[j]!.x, pts[i]!.z - pts[j]!.z) >= 2 * baseRadius, 'pawn bases do not overlap');
 });
 
 test('animation helpers are bounded and deterministic', () => {

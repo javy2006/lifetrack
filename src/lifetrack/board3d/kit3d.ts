@@ -4,14 +4,14 @@
  * Everything here is presentation-only and is released by `disposeKit()` when the
  * 3D board unmounts.
  */
-import { BoxGeometry, CanvasTexture, ConeGeometry, CylinderGeometry, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PlaneGeometry, SphereGeometry, SRGBColorSpace, TorusGeometry, type BufferGeometry, type Material, type Texture } from 'three';
+import { BoxGeometry, CanvasTexture, CapsuleGeometry, ConeGeometry, CylinderGeometry, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PlaneGeometry, SphereGeometry, SRGBColorSpace, TorusGeometry, type BufferGeometry, type Material, type Texture } from 'three';
 
 let geometries: Record<string, BufferGeometry> | null = null;
 const materials = new Map<string, MeshStandardMaterial | MeshBasicMaterial>();
 const textures = new Map<string, Texture>();
 
 /** Unit shapes: box 1x1x1, cylinder radius 0.5 height 1, sphere radius 0.5, cone radius 0.5 height 1. */
-export function geo(): Record<'box' | 'cyl' | 'cylLow' | 'sphere' | 'dome' | 'cone' | 'prism' | 'ring' | 'gem' | 'plane', BufferGeometry> {
+export function geo(): Record<'box' | 'cyl' | 'cylLow' | 'sphere' | 'dome' | 'cone' | 'prism' | 'ring' | 'gem' | 'plane' | 'capsule' | 'frustum', BufferGeometry> {
   geometries ??= {
     box: new BoxGeometry(1, 1, 1),
     cyl: new CylinderGeometry(0.5, 0.5, 1, 18),
@@ -23,6 +23,10 @@ export function geo(): Record<'box' | 'cyl' | 'cylLow' | 'sphere' | 'dome' | 'co
     prism: new CylinderGeometry(0.5, 0.5, 1, 3).rotateZ(Math.PI / 2).rotateX(-Math.PI / 2).translate(0, 0.25, 0).scale(1, 1 / 0.75, 1 / 0.866),
     ring: new TorusGeometry(0.5, 0.06, 6, 28),
     gem: new OctahedronGeometry(0.5, 0),
+    // Rounded limbs and torsos: radius 0.5, total height 2 (scale y by half the wanted length).
+    capsule: new CapsuleGeometry(0.5, 1, 6, 14),
+    // Tapered cylinder (skirts, vases): top radius 0.3, bottom 0.5, height 1.
+    frustum: new CylinderGeometry(0.3, 0.5, 1, 20),
     // Flat 1x1 decal lying on the ground (faces +Y).
     plane: new PlaneGeometry(1, 1).rotateX(-Math.PI / 2),
   };
@@ -76,15 +80,31 @@ export function windowTexture(): Texture {
   });
 }
 
-/** Painted tile caption (dark ink on transparent), readable from the isometric camera. */
-export function captionTexture(text: string, ink: string): Texture {
-  return canvasTexture(`caption|${text}|${ink}`, 256, 80, (g, w, h) => {
-    g.fillStyle = ink;
+type IconDrawer = (g: CanvasRenderingContext2D) => void;
+/** Simple category glyphs drawn in a 100x100 box (stroke/fill colour set by the caller). */
+const ICONS: Record<string, IconDrawer> = {
+  salary: (g) => { g.beginPath(); g.arc(50, 50, 36, 0, Math.PI * 2); g.stroke(); g.font = '800 34px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('RM', 50, 53); },
+  savings: (g) => { g.save(); g.strokeStyle = '#f7f3e8'; g.lineWidth = 6; for (let i = 0; i < 3; i++) { g.beginPath(); g.ellipse(50, 76 - i * 20, 34, 13, 0, 0, Math.PI * 2); g.fill(); g.stroke(); } g.restore(); },
+  medical: (g) => { g.fillRect(38, 14, 24, 72); g.fillRect(14, 38, 72, 24); },
+  accident: (g) => { g.beginPath(); g.moveTo(50, 10); g.lineTo(92, 86); g.lineTo(8, 86); g.closePath(); g.stroke(); g.fillRect(45, 36, 10, 28); g.fillRect(45, 70, 10, 9); },
+  family: (g) => { g.beginPath(); g.moveTo(50, 12); g.lineTo(90, 48); g.lineTo(78, 48); g.lineTo(78, 88); g.lineTo(22, 88); g.lineTo(22, 48); g.lineTo(10, 48); g.closePath(); g.fill(); },
+  protection: (g) => { g.beginPath(); g.moveTo(50, 8); g.lineTo(86, 22); g.quadraticCurveTo(84, 70, 50, 92); g.quadraticCurveTo(16, 70, 14, 22); g.closePath(); g.fill(); },
+  lucky: (g) => { g.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 17 : 42, a = -Math.PI / 2 + (i * Math.PI) / 5; g.lineTo(50 + Math.cos(a) * r, 52 + Math.sin(a) * r); } g.closePath(); g.fill(); },
+  rest: (g) => { g.beginPath(); g.arc(50, 50, 36, 0.35 * Math.PI, 1.65 * Math.PI); g.arc(66, 42, 30, 1.55 * Math.PI, 0.45 * Math.PI, true); g.closePath(); g.fill(); },
+};
+
+/** Painted tile face: category icon above the caption, dark ink on transparent. */
+export function captionTexture(text: string, ink: string, category = ''): Texture {
+  return canvasTexture(`caption|${text}|${ink}|${category}`, 256, 256, (g, w) => {
+    g.fillStyle = ink; g.strokeStyle = ink; g.lineWidth = 9; g.lineJoin = 'round';
+    const icon = ICONS[category];
+    if (icon) { g.save(); g.translate(w / 2 - 46, 22); g.scale(0.92, 0.92); icon(g); g.restore(); }
     g.textAlign = 'center'; g.textBaseline = 'middle';
-    let size = 46;
-    g.font = `800 ${size}px system-ui, -apple-system, 'Segoe UI', sans-serif`;
-    while (g.measureText(text).width > w - 16 && size > 20) { size -= 2; g.font = `800 ${size}px system-ui, -apple-system, 'Segoe UI', sans-serif`; }
-    g.fillText(text, w / 2, h / 2 + 2);
+    let size = 50;
+    const font = () => `800 ${size}px system-ui, -apple-system, 'Segoe UI', sans-serif`;
+    g.font = font();
+    while (g.measureText(text).width > w - 20 && size > 22) { size -= 2; g.font = font(); }
+    g.fillText(text, w / 2, 178);
   });
 }
 

@@ -7,7 +7,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { CanvasTexture, Euler, Quaternion, SRGBColorSpace, Vector3, type Mesh } from 'three';
 import type { CharacterId } from '../game/types.ts';
 import type { BoardCategory } from '../board/boardTypes.ts';
-import { DIE_FACE_ORDER, SPACE_WORLD, dieRestRotation, spaceCategory } from './boardWorld.ts';
+import { DIE_FACE_ORDER, PLAYER_COLOR, RING_HALF, SPACE_WORLD, TILE_SIZE, dieRestRotation, spaceCategory } from './boardWorld.ts';
 import { CityBlock, TileBase, TileGlow } from './City3D.tsx';
 import { StaticBatch } from './StaticBatch.tsx';
 import { Pawn3D } from './Pawn3D.tsx';
@@ -21,6 +21,9 @@ export interface Board3DView {
   activePlayer: CharacterId | null;
   currentSpace: number;
   highlightCategory: BoardCategory | null;
+  /** Spaces the moving pawn is about to cross (shown once its roll is revealed), and who is moving. */
+  route: readonly number[];
+  routeOwner: CharacterId | null;
   /** Face decided by the seeded board die (never by this scene); null when no roll is shown. */
   dieValue: number | null;
   /** True only while the decided value is still hidden (the tumble phase). */
@@ -34,7 +37,9 @@ function prefersReducedMotion(): boolean {
 }
 
 /** Board table half extents (x, z) and vertical range, used to fit the camera. */
-const BOARD_HALF = { x: 4.65, z: 3.35, yMin: -0.31, yMax: 0.3 } as const;
+/** Table half size: ring of tiles plus a margin and the wooden rim. */
+const TABLE_HALF = RING_HALF + TILE_SIZE.width / 2 + 0.3;
+const BOARD_HALF = { x: TABLE_HALF + 0.15, z: TABLE_HALF + 0.15, yMin: -0.31, yMax: 0.3 } as const;
 const FIT_MARGIN = 1.04;
 
 /** Fits the whole board table into the canvas for the fixed isometric camera (projects its corners). */
@@ -92,10 +97,34 @@ function Die({ value, rolling, reducedMotion }: { value: number | null; rolling:
     if (m.quaternion.angleTo(rest) > 0.002 || Math.abs(m.position.y - 0.42) > 0.002) invalidate();
   });
   if (value === null && !rolling) return null;
-  return <mesh ref={mesh} position={[-2.3, 0.42, 1.25]} castShadow>
+  return <mesh ref={mesh} position={[DIE_SPOT.x, 0.42, DIE_SPOT.z]} castShadow>
     <boxGeometry args={[0.5, 0.5, 0.5]}/>
     {textures.map((t, i) => <meshStandardMaterial key={i} attach={`material-${i}`} map={t}/>)}
   </mesh>;
+}
+
+/**
+ * Front-facing three-quarter view (no yaw, 42° pitch). The square board then projects at its
+ * side length rather than its diagonal, so tiles are ~40% larger on portrait phones, and the
+ * captions read straight across.
+ */
+const CAMERA_PITCH = (42 * Math.PI) / 180;
+const CAMERA_POSITION: [number, number, number] = [0, 10 * Math.sin(CAMERA_PITCH), 10 * Math.cos(CAMERA_PITCH)];
+
+/** Plaza in the city centre where the die lands (matches City3D). */
+const DIE_SPOT = { x: 1.45, z: 1.5 } as const;
+
+/** Route preview: a dot in the mover's colour on each space the pawn is about to cross. */
+function RouteDots({ route, owner }: { route: readonly number[]; owner: CharacterId | null }) {
+  if (!owner || route.length === 0) return null;
+  const color = PLAYER_COLOR[owner];
+  return <group>
+    {route.map((space, i) => {
+      const p = SPACE_WORLD[space]!;
+      const last = i === route.length - 1;
+      return <mesh key={space} geometry={geo().cyl} material={mat(color, { emissive: color, emissiveIntensity: 0.35 })} position={[p.x - 0.34, TILE_SIZE.height + 0.034, p.z - 0.34]} scale={last ? [0.16, 0.012, 0.16] : [0.09, 0.012, 0.09]}/>;
+    })}
+  </group>;
 }
 
 /** Release the shared city geometries, materials and textures when the board unmounts. */
@@ -107,8 +136,8 @@ function KitLifetime() {
 /** Board table: a wooden rim under the cream play surface. */
 function BoardBase() {
   return <group>
-    <mesh geometry={geo().box} material={mat('#b99a72')} position={[0, -0.2, 0]} scale={[9.3, 0.22, 6.7]} receiveShadow/>
-    <mesh geometry={geo().box} material={mat('#f3efe4')} position={[0, -0.07, 0]} scale={[9, 0.1, 6.4]} receiveShadow/>
+    <mesh geometry={geo().box} material={mat('#b99a72')} position={[0, -0.2, 0]} scale={[2 * TABLE_HALF + 0.3, 0.22, 2 * TABLE_HALF + 0.3]} receiveShadow/>
+    <mesh geometry={geo().box} material={mat('#f3efe4')} position={[0, -0.07, 0]} scale={[2 * TABLE_HALF, 0.1, 2 * TABLE_HALF]} receiveShadow/>
   </group>;
 }
 
@@ -122,7 +151,7 @@ export default function Board3DScene({ view, onContextLost }: { view: Board3DVie
     dpr={[1, 2]}
     shadows="percentage"
     gl={{ antialias: true, powerPreference: 'low-power' }}
-    camera={{ position: [8, 8, 8], zoom: 60, near: 0.1, far: 100 }}
+    camera={{ position: CAMERA_POSITION, zoom: 60, near: 0.1, far: 100 }}
     onCreated={({ camera, gl }) => {
       camera.lookAt(0, 0, 0);
       // A lost GPU context (common on mobile) hands the board back to the SVG renderer.
@@ -157,6 +186,7 @@ export default function Board3DScene({ view, onContextLost }: { view: Board3DVie
       {tiles.map((i) => <TileBase key={i} index={i}/>)}
     </StaticBatch>
     {tiles.filter((i) => i === view.currentSpace || (view.highlightCategory !== null && spaceCategory(i) === view.highlightCategory)).map((i) => <TileGlow key={i} index={i} active={i === view.currentSpace} reducedMotion={reducedMotion}/>)}
+    <RouteDots route={view.route} owner={view.routeOwner}/>
     {view.playerIds.map((id) => <Pawn3D key={id} id={id} index={view.positions[id] ?? 0} positions={view.positions} human={id === view.humanId} active={view.activePlayer === id} stepSeconds={view.stepSeconds} reducedMotion={reducedMotion}/>)}
     <Die value={view.dieValue} rolling={view.dieRolling} reducedMotion={reducedMotion}/>
   </Canvas>;

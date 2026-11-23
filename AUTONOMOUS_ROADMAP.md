@@ -110,6 +110,16 @@ Owner priorities: P1 visible dice and pawn movement · P2 simpler interface · P
 | No manual switching in the game UI | ✅ | 2D/3D toggle removed from the heading; SVG remains the automatic fallback (no WebGL, load/scene error, context loss) |
 | QA | ✅ | 81/81 unit; tsc clean; main 325.73 kB. `renderer-default.mjs` 15/15 (3D at 5 viewports with a stored "svg", no toggle, 0 errors). `board3d.mjs` 14/14 (leak test now remounts the board via Exit → Continue; +3.4 MB over 20 remounts). Journey default URL 61/61, `?renderer=svg` 61/61. Phone readability of the 3D board is addressed in P4 |
 
+### P4: 3D visual quality and readability ✅
+| Task | Status | Evidence |
+| --- | --- | --- |
+| Larger, clearer spaces | ✅ | 3D layout is now its own square ring of 24 equal 1×1 tiles (7 per side, shared corners, pitch 1.08) instead of the SVG-derived 0.86×0.6 tiles; each tile has a canvas-drawn category icon (RM coin, coins, cross, warning, house, shield, star, moon) above its caption, and a start flag on space 1 |
+| Camera | ✅ | Front-facing ¾ view (yaw 0, 42° pitch) replaces the diagonal isometric camera: the board projects at its side length rather than its diagonal (~40% larger tiles on portrait phones) and captions read straight across. Pawns rest facing the camera |
+| Calmer centre | ✅ | Towers, roads, lamps, café and extra houses removed. Low park with a ring path and fountain, four small landmarks (bank, clinic, home, cover office), six trees and the die plaza; nothing is taller than ~0.6 units |
+| Characters | ✅ | `Figure3D.tsx`: chibi board-game miniatures with faces (eyes with highlights, brows, mouth, blush, ears), capsule limbs and distinct silhouettes: Alex glasses and piggy bank, Mei Ling bun, skirt and tablet, Daniel hard hat and hi-vis vest, Aisyah big wavy hair with red headband. Player-colour base, red rim for you |
+| Route and positions | ✅ | A pawn alone on a space stands in its centre; shared spaces spread up to 4 pawns without overlap (tested). Once a roll is revealed, dots in the mover's colour mark the spaces it will cross (bigger dot on the destination; `routeSpaces`, tested) |
+| QA | ✅ | 83/83 unit; tsc clean; build OK (main 327.92 kB); engine diff empty. Journey default 61/61 and `?renderer=svg` 61/61; `board3d.mjs` 14/14 (~186 draws/frame, +3.1 MB over 20 remounts); `renderer-default.mjs` 15/15 |
+
 ## How to run QA (for the next session)
 
 1. `pnpm test`, `pnpm typecheck`, `pnpm build`, then `npx vite preview --port 4174`.
