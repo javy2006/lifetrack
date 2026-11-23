@@ -18,6 +18,33 @@ Ground rule: `src/lifetrack/game/` (reducer, calculations, AI strategies, polici
 | 4.3C-2d | Phone: "Money" drawer overlaps board heading | Open (cosmetic) |
 | 5.x | Three.js + React Three Fiber 9 board renderer | Not started (dependencies not installed) |
 
+## Final audio and presentation polish (2026-11-24) — complete
+
+| Item | Status | Files |
+| --- | --- | --- |
+| Background music: **"Cheery Monday"** (Kevin MacLeod, CC BY 4.0) is the default, as chosen by the owner; "Sunshine" is kept as an unplayed backup. Seamless loop at a measured loop point (65.88 s) | Done | `public/audio/music-cheery-monday.mp3`, `components/MusicPlayer.ts` |
+| Tabletop effects: dice shake/roll variations, wooden token steps and landings (weightier on key spaces), card draw/place/confirm/turn, coins, purse, savings stack, policy folder, pizzicato jingles | Done | `public/audio/*.mp3`, `scripts/assets/build_audio.py` |
+| Defaults: music and effects on at 100%; independent music/effects switches and volumes plus master mute; saved only once changed (`lifetrack.audio.v3`) | Done | `components/audioPrefs.ts` (+test), `components/AudioControls.tsx` |
+| Autoplay: starts on first interaction, retries on the next if refused, waiting state shown; fades; no restart across screens; pauses with the tab; music ducks under jingles | Done | `MusicPlayer.ts`, `AudioControls.tsx` |
+| Demo presentation intro (6.5 s, skippable, 4 languages, reduced motion) | Done | `demo/DemoIntro.tsx`, `demo/DemoGame.tsx` |
+| Hero/intro 3D fog follows camera distance (portrait views were washed out) | Done | `board3d/Board3DScene.tsx` |
+| Credits | Done | `docs/AUDIO_CREDITS.md` (attribution also in the sound settings panel) |
+
+| Demo "Next milestone" race (it could run past the next recap at fast-forward speed) | Fixed | `demo/demoUi.tsx`, `demo/DemoGame.tsx` |
+
+QA (production build): unit tests 110/110; tsc clean; build OK.
+- `audio.mjs` 34/34:
+  - nothing loads before the first interaction, and the first click starts Cheery Monday;
+  - one instance across home, setup, game, resume and modals, continuing through income, bills, dice and decisions;
+  - gap-free loop hand-over; tab pause and resume;
+  - music on/off and volume work without restarting; effects controls never start music;
+  - settings persist through language change and reload;
+  - a blocked first play retries on the next interaction; missing files degrade gracefully.
+- `demo.mjs` 28/28; `intro.mjs` 63/63 (4 languages × 3 sizes, reduced motion, never in normal play); journey 95/95.
+
+Not verified by the developer: how the music and effects actually sound. They were checked technically
+(decoding, levels, loop seam, playback state), not by ear. The owner's listening test is pending.
+
 ## Release: polish, immersive 3D, audio, languages, demo (2026-11-24) — complete
 
 Resume point if interrupted: everything below is committed and pushed; nothing is in progress.

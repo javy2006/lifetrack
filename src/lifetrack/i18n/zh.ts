@@ -119,10 +119,11 @@ const pack: LanguagePack = {
       kept: '{name} 这个月保留了现金。', did: '{name}{actions}。', bought: '购买了{list}', saved: '把 {amount} 存入应急储蓄', and: '，并', listSep: '、',
       reasonBarely: '已有 {saved} 储蓄，{premium} 的保费几乎不影响每月预算。',
     },
-    audio: { on: '声音开', muted: '静音', mute: '关闭声音', turnOn: '打开声音', settings: '声音设置', music: '音乐', effects: '音效', note: '默认开启轻柔音效，关闭音乐' },
+    audio: { on: '声音开', muted: '静音', mute: '关闭声音', turnOn: '打开声音', settings: '声音设置', music: '音乐', effects: '音效', note: '音乐和音效已开启，可随时调整。', credit: '音乐：{credit}', blocked: '首次点击后开始播放音乐' },
     portrait: { failed: '{name} 的头像无法显示' },
     demo: {
-      badge: '演示', title: '演示模式', play: '播放', pause: '暂停', speed: '速度', skip: '跳过动画', next: '下一个里程碑', results: '直接看结果',
+    skipIntro: '跳过片头', introLead: '四位玩家，六个月，一座充满理财抉择的城市。',
+    badge: '演示', title: '演示模式', play: '播放', pause: '暂停', speed: '速度', skip: '跳过动画', next: '下一个里程碑', results: '直接看结果',
       restart: '重新开始演示', exit: '退出演示', controls: '演示控制', paused: '已暂停', isolated: '演示游戏：不会影响你已保存的游戏',
       tipStart: '四位玩家以相同的资金起步，各有不同的理财风格。', tipDecide: '每个月：两个行动。储蓄、购买保障，或保留现金。',
       tipEvent: '一个共同的生活事件影响所有人。保险只赔付承保范围内的事项。', tipClaim: '保障、储蓄和现金共同承担费用。来看看本月结果。',

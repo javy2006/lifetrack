@@ -178,7 +178,7 @@ export function GameScreen({ state, dispatch, onExit, demo }: { state: GameState
       else if (result && result.outOfPocket > 0) playEffect('warning');
     }
     if (previous.phase === 'claims' && state.phase === 'summary') playEffect('month');
-    if (previous.status === 'review' && state.status === 'complete') playEffect(getFinalStandings(state)[0]?.playerId === state.humanId ? 'winner' : 'month');
+    if (previous.status === 'review' && state.status === 'complete') playEffect(getFinalStandings(state)[0]?.playerId === state.humanId ? 'winner' : 'results');
     previousState.current = state;
   }, [state, playEffect, demo]);
   // Board sounds follow the turn sequence (presentation only; they never affect the game).
@@ -186,7 +186,12 @@ export function GameScreen({ state, dispatch, onExit, demo }: { state: GameState
   useEffect(() => { if (board.dieValue !== null && !board.dieTumbling) playEffect('dice-land'); }, [board.dieValue, board.dieTumbling, playEffect]);
   useEffect(() => { if (board.progress?.stage === 'human-landed' && state.phase === 'decisions') playEffect('card'); }, [board.progress?.stage, state.phase, playEffect]);
   useEffect(() => { if (board.movementStep) playEffect('step'); }, [board.movementStep?.playerId, board.movementStep?.position, playEffect]);
-  useEffect(() => { if (board.landing) playEffect('land'); }, [board.landing, playEffect]);
+  // Landing: a weightier placement on the spaces that matter most (salary, cover, the final checkpoint).
+  useEffect(() => {
+    if (!board.landing) return;
+    const space = BOARD_ROUTE[board.landing.space]!;
+    playEffect(space.label === 'CHECKPOINT' || space.category === 'salary' || space.category === 'protection' ? 'land-key' : 'land');
+  }, [board.landing, playEffect]);
   const month = t(`months.${state.round - 1}`);
   const title = useMemo(() => state.status === 'review' ? t('game.review') : state.status === 'complete' ? t('game.results') : state.phase === 'event' || state.phase === 'event-draw' ? t('game.lifeHappens') : state.phase === 'claims' ? t('game.numbers') : state.phase === 'summary' ? t('game.navigated') : t('game.plan', { month }), [state, t, month]);
   const lastMove = board.progress?.lastMovement;

@@ -119,10 +119,11 @@ const pack: LanguagePack = {
       kept: '{name} menyimpan tunainya bulan ini.', did: '{name} {actions}.', bought: 'membeli {list}', saved: 'memindahkan {amount} ke simpanan kecemasan', and: ' dan ', listSep: ', ',
       reasonBarely: 'Dengan simpanan {saved}, premium {premium} hampir tidak menjejaskan bajet bulanan.',
     },
-    audio: { on: 'Bunyi hidup', muted: 'Senyap', mute: 'Senyapkan bunyi', turnOn: 'Hidupkan bunyi', settings: 'Tetapan bunyi', music: 'Muzik', effects: 'Kesan bunyi', note: 'Kesan bunyi lembut hidup, muzik dimatikan secara lalai' },
+    audio: { on: 'Bunyi hidup', muted: 'Senyap', mute: 'Senyapkan bunyi', turnOn: 'Hidupkan bunyi', settings: 'Tetapan bunyi', music: 'Muzik', effects: 'Kesan bunyi', note: 'Muzik dan kesan bunyi dihidupkan. Ubah bila-bila masa.', credit: 'Muzik: {credit}', blocked: 'Muzik bermula selepas sentuhan atau klik pertama anda' },
     portrait: { failed: 'Potret {name} tidak tersedia' },
     demo: {
-      badge: 'DEMO', title: 'Demo pembentangan', play: 'Main', pause: 'Jeda', speed: 'Kelajuan', skip: 'Langkau animasi', next: 'Peristiwa penting seterusnya', results: 'Langkau ke keputusan',
+    skipIntro: 'Langkau pengenalan', introLead: 'Empat pemain. Enam bulan. Satu bandar penuh pilihan kewangan.',
+    badge: 'DEMO', title: 'Demo pembentangan', play: 'Main', pause: 'Jeda', speed: 'Kelajuan', skip: 'Langkau animasi', next: 'Peristiwa penting seterusnya', results: 'Langkau ke keputusan',
       restart: 'Mula semula demo', exit: 'Keluar demo', controls: 'Kawalan demo', paused: 'Dijeda', isolated: 'Permainan demo: permainan tersimpan anda tidak terjejas',
       tipStart: 'Empat pemain bermula dengan wang yang sama. Setiap seorang ada gaya kewangan berbeza.', tipDecide: 'Setiap bulan: dua langkah. Simpan, beli perlindungan, atau simpan tunai.',
       tipEvent: 'Satu peristiwa hidup menimpa semua. Insurans hanya membayar apa yang dilindungi.', tipClaim: 'Perlindungan, simpanan dan tunai menanggung kos. Inilah hasil bulan ini.',

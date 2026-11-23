@@ -1,73 +1,83 @@
-"""Builds LifeTrack's sound set: trims, normalises and encodes chosen CC0 clips to small mono MP3s.
-Usage: python build_audio.py <kenney-extract-root> <project-public-audio-dir>"""
+"""Builds LifeTrack's sound set from CC0 Kenney packs and the CC BY music track.
+
+Trims silence, peak-normalises each effect to a level balanced for 100% default volume, adds a short
+fade-out and encodes small MP3s. The music loop is level-matched (about -23 dBFS RMS) and cut at a
+measured loop point so the player can overlap passes seamlessly.
+
+Usage: python build_audio.py <kenney-extract-root> <music-dir> <project-public-audio-dir>
+  kenney root holds x-casino-audio, x-interface-sounds, x-impact-sounds, x-rpg-audio, x-music-jingles
+  music dir holds "Cheery Monday.mp3" and "Sunshine.mp3" (Kevin MacLeod, incompetech.com, CC BY 4.0)
+"""
 import sys, os, json
 import numpy as np, soundfile as sf, lameenc
 
-src_root, out_dir = sys.argv[1], sys.argv[2]
-K = {
-  'casino': os.path.join(src_root, 'x-casino-audio'),
-  'ui': os.path.join(src_root, 'x-interface-sounds'),
-}
-def find(pack, name):
-    for d, _, files in os.walk(K[pack]):
+kenney, music_dir, out_dir = sys.argv[1:4]
+
+def find(name):
+    for d, _, files in os.walk(kenney):
         if name in files: return os.path.join(d, name)
     raise FileNotFoundError(name)
 
-# output name -> (pack, source file, peak gain)
-MAP = {
-  'dice-shake':   ('casino', 'dice-shake-1.ogg', 0.75),
-  'dice-land':    ('casino', 'die-throw-1.ogg', 0.8),
-  'step-1':       ('casino', 'chip-lay-1.ogg', 0.5),
-  'step-2':       ('casino', 'chip-lay-2.ogg', 0.5),
-  'step-3':       ('casino', 'chip-lay-3.ogg', 0.5),
-  'land':         ('casino', 'chips-collide-1.ogg', 0.75),
-  'coins':        ('casino', 'chips-handle-3.ogg', 0.75),
-  'pay':          ('casino', 'chips-stack-2.ogg', 0.7),
-  'save':         ('casino', 'chips-stack-4.ogg', 0.7),
-  'card':         ('casino', 'card-place-1.ogg', 0.7),
-  'event':        ('casino', 'card-slide-3.ogg', 0.75),
-  'month':        ('casino', 'card-fan-1.ogg', 0.7),
-  'click':        ('ui', 'click_002.ogg', 0.55),
-  'select':       ('ui', 'select_002.ogg', 0.6),
-  'purchase':     ('ui', 'confirmation_002.ogg', 0.6),
-  'confirm':      ('ui', 'confirmation_001.ogg', 0.6),
-  'claim':        ('ui', 'confirmation_004.ogg', 0.65),
-  'warning':      ('ui', 'error_004.ogg', 0.55),
-  'quiz-correct': ('ui', 'confirmation_003.ogg', 0.6),
-  'quiz-wrong':   ('ui', 'error_006.ogg', 0.5),
+# output file -> (source clip, peak level). Several outputs per sound give natural variation.
+EFFECTS = {
+    'dice-shake-1': ('dice-shake-1.ogg', .55), 'dice-shake-2': ('dice-shake-2.ogg', .55), 'dice-shake-3': ('dice-shake-3.ogg', .55),
+    'dice-land-1': ('die-throw-1.ogg', .6), 'dice-land-2': ('die-throw-2.ogg', .6), 'dice-land-3': ('die-throw-3.ogg', .6),
+    'step-1': ('impactWood_light_000.ogg', .3), 'step-2': ('impactWood_light_001.ogg', .3), 'step-3': ('impactWood_light_002.ogg', .3), 'step-4': ('impactWood_light_003.ogg', .3),
+    'land-1': ('impactWood_medium_000.ogg', .45), 'land-2': ('impactWood_medium_001.ogg', .45),
+    'land-key': ('bookPlace1.ogg', .5),
+    'card-1': ('card-slide-1.ogg', .4), 'card-2': ('card-slide-2.ogg', .4), 'card-3': ('card-slide-3.ogg', .4),
+    'select-1': ('card-place-1.ogg', .4), 'select-2': ('card-place-2.ogg', .4), 'select-3': ('card-place-3.ogg', .4),
+    'confirm': ('card-shove-1.ogg', .45),
+    'event': ('card-fan-1.ogg', .45),
+    'coins-1': ('handleCoins.ogg', .5), 'coins-2': ('handleCoins2.ogg', .5),
+    'pay': ('handleSmallLeather.ogg', .45),
+    'save-1': ('chips-stack-4.ogg', .42), 'save-2': ('chips-stack-5.ogg', .42),
+    'purchase': ('bookClose.ogg', .5),
+    'warning': ('dropLeather.ogg', .45),
+    'claim': ('jingles_PIZZI16.ogg', .4),
+    'month': ('jingles_PIZZI15.ogg', .35),
+    'winner': ('jingles_PIZZI02.ogg', .45),
+    'results': ('jingles_PIZZI10.ogg', .4),
+    'quiz-correct': ('jingles_PIZZI04.ogg', .35),
+    'quiz-wrong': ('jingles_PIZZI09.ogg', .3),
+    'click': ('click_002.ogg', .22),
 }
 
-def encode(data, rate, path, kbps=96):
+def encode(data, rate, path, kbps, channels=1):
     pcm = (np.clip(data, -1, 1) * 32767).astype(np.int16)
-    enc = lameenc.Encoder(); enc.set_bit_rate(kbps); enc.set_in_sample_rate(rate); enc.set_channels(1); enc.set_quality(2)
+    enc = lameenc.Encoder(); enc.set_bit_rate(kbps); enc.set_in_sample_rate(rate); enc.set_channels(channels); enc.set_quality(2)
     open(path, 'wb').write(enc.encode(pcm.tobytes()) + enc.flush())
 
-def prepare(data, gain, max_s=None, rate=44100):
+def prepare(data, peak, rate, max_s=1.8):
     if data.ndim > 1: data = data.mean(axis=1)
     data = data.astype(np.float64)
     nz = np.where(np.abs(data) > 0.004)[0]
     if len(nz): data = data[max(0, nz[0] - 32): min(len(data), nz[-1] + 400)]
-    if max_s: data = data[: int(max_s * rate)]
-    fade = min(len(data) // 4, int(0.02 * rate))
+    data = data[: int(max_s * rate)]
+    fade = min(len(data) // 4, int(0.025 * rate))
     if fade > 0: data[-fade:] *= np.linspace(1, 0, fade)
-    peak = np.max(np.abs(data)) or 1
-    return data / peak * gain
+    return data / (np.max(np.abs(data)) or 1) * peak
 
 report = {}
-for name, (pack, file, gain) in MAP.items():
-    data, rate = sf.read(find(pack, file))
-    out = prepare(data, gain, max_s=1.6, rate=rate)
-    path = os.path.join(out_dir, name + '.mp3'); encode(out, rate, path)
-    report[name] = {'source': f'{pack}/{file}', 'seconds': round(len(out) / rate, 2), 'bytes': os.path.getsize(path)}
+for name, (file, peak) in EFFECTS.items():
+    data, rate = sf.read(find(file))
+    out = prepare(data, peak, rate)
+    path = os.path.join(out_dir, name + '.mp3'); encode(out, rate, path, 96)
+    report[name] = {'source': file, 'seconds': round(len(out) / rate, 2), 'bytes': os.path.getsize(path)}
 
-# Our own generated cues (no third-party licence): results fanfare and the optional ambience loop.
-for name, kbps, gain in (('winner', 96, 0.8), ('lifetrack-ambience', 64, 0.6)):
-    wav = os.path.join(out_dir, name + '.wav')
-    if os.path.exists(wav):
-        data, rate = sf.read(wav)
-        if data.ndim > 1: data = data.mean(axis=1)
-        data = data / (np.max(np.abs(data)) or 1) * gain
-        path = os.path.join(out_dir, name + '.mp3'); encode(data, rate, path, kbps)
-        report[name] = {'source': 'generated (LifeTrack)', 'seconds': round(len(data) / rate, 2), 'bytes': os.path.getsize(path)}
+# Music: stereo, level-matched (about -23 dBFS RMS). Each file runs 1.2 s past its loop point, where
+# the song returns to its opening material (found by matching the first 6 s against the last 40 s
+# by chroma), so the player can overlap the next pass with identical material.
+#   Cheery Monday (default): loop at 65.88 s, similarity 0.974 against 0.76 on average.
+#   Sunshine (backup, not played by default): loop at 163.63 s, similarity 0.907 against 0.81.
+for out_name, src, loop_end in (('music-cheery-monday', 'Cheery Monday.mp3', 65.88), ('music-sunshine', 'Sunshine.mp3', 163.63)):
+    x, rate = sf.read(os.path.join(music_dir, src))
+    loop = x[: int((loop_end + 1.2) * rate)].astype(np.float64)
+    rms_db = 20 * np.log10(np.sqrt(np.mean(loop ** 2)))
+    gain = 10 ** ((-23 - rms_db) / 20)
+    loop = loop * gain
+    peak = np.max(np.abs(loop)); loop = loop / peak * 0.89 if peak > 0.89 else loop
+    path = os.path.join(out_dir, out_name + '.mp3'); encode(loop, rate, path, 112, channels=2)
+    report[out_name] = {'loop_end': loop_end, 'source': src, 'seconds': round(len(loop) / rate, 2), 'bytes': os.path.getsize(path), 'gain_db': round(20 * np.log10(gain), 1)}
 print(json.dumps(report, indent=1))
-print('total bytes', sum(v['bytes'] for v in report.values()))
+print('effects bytes', sum(v['bytes'] for k, v in report.items() if not k.startswith('music-')))

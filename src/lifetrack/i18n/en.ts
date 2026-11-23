@@ -120,9 +120,10 @@ const en = {
     kept: '{name} kept their cash this month.', did: '{name} {actions}.', bought: 'purchased {list}', saved: 'moved {amount} into emergency savings', and: ' and ', listSep: ', ',
     reasonBarely: 'With {saved} saved, a {premium} premium barely dents the monthly budget.',
   },
-  audio: { on: 'Sound on', muted: 'Muted', mute: 'Mute sound', turnOn: 'Turn sound on', settings: 'Sound settings', music: 'Music', effects: 'Sound effects', note: 'Subtle effects on, music off by default' },
+  audio: { on: 'Sound on', muted: 'Muted', mute: 'Mute sound', turnOn: 'Turn sound on', settings: 'Sound settings', music: 'Music', effects: 'Sound effects', note: 'Music and sound effects are on. Change them any time.', credit: 'Music: {credit}', blocked: 'Music starts after your first tap or click' },
   portrait: { failed: 'Portrait of {name} unavailable' },
   demo: {
+    skipIntro: 'Skip intro', introLead: 'Four players. Six months. One city full of money choices.',
     badge: 'DEMO', title: 'Presentation demo', play: 'Play', pause: 'Pause', speed: 'Speed', skip: 'Skip animation', next: 'Next milestone', results: 'Skip to results',
     restart: 'Restart demo', exit: 'Exit demo', controls: 'Demo controls', paused: 'Paused', isolated: 'Demo game: your saved game is not affected',
     tipStart: 'Four players start with the same money. Each plays a different money style.', tipDecide: 'Each month: two moves. Save, buy cover, or keep the cash.',
