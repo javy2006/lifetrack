@@ -20,6 +20,9 @@ export interface DemoSession {
   speed: number;
   paused: boolean;
   fastForward: boolean;
+  /** Next milestone: the autopilot holds at the first month recap after this round and calls onMilestone. */
+  holdAfterRound: number | null;
+  onMilestone: () => void;
   setPaused: (paused: boolean) => void;
   setSpeed: (speed: number) => void;
   nextMilestone: () => void;
@@ -33,6 +36,7 @@ export function useDemoAutopilot(session: DemoSession | undefined, state: GameSt
   const stage = board.progress?.stage ?? null;
   useEffect(() => {
     if (!session || session.paused) return;
+    if (session.holdAfterRound !== null && state.status === 'playing' && state.phase === 'summary' && state.round > session.holdAfterRound) { session.onMilestone(); return; }
     const step = nextDemoStep(state, stage);
     if (step.kind === 'done' || step.kind === 'wait') return;
     if (step.kind === 'roll' && board.rolling) return;

@@ -293,6 +293,9 @@ function HeroCamera({ reducedMotion }: { reducedMotion: boolean }) {
     const { yaw, pitch } = viewAngles(Math.max(aspect, 1.3));
     return { yaw, pitch, distance: fitDistance(BOARD_CORNERS, ORIGIN, cameraDirection(yaw, pitch), (FOV_DEG * Math.PI) / 180, aspect, 0.92) };
   }, [aspect]);
+  // Same as the game camera: fog follows the camera distance, so a tall (portrait) view that pulls far back is not washed out.
+  const { scene } = useThree();
+  useEffect(() => { const fog = scene.fog as Fog | null; if (fog) { fog.near = base.distance * 1.1; fog.far = base.distance * 2.4; invalidate(); } }, [scene, base.distance, invalidate]);
   useEffect(() => {
     if (reducedMotion) return;
     const id = window.setInterval(() => { if (document.visibilityState === 'visible') invalidate(); }, 50);

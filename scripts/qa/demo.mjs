@@ -47,9 +47,11 @@ for (const [tag, viewport] of [['desk', { width: 1366, height: 768 }], ['phone',
   await page.waitForTimeout(2500);
   check(`${tag}: pause holds the current step`, (await page.locator('.content-heading h1').textContent()) === heldTitle && await page.locator('.demo-state').isVisible());
   // Next milestone: jumps to the next month's recap, then pauses there.
+  // Next milestone: from the month it is paused on, it plays to the following month's recap and pauses there.
+  const pausedRound = await page.evaluate(() => Number((document.querySelector('.content-heading .eyebrow')?.textContent.match(/\d+/) ?? [0])[0]));
   await page.getByRole('button', { name: /next milestone/i }).click();
-  const month2 = await page.locator('.summary-card .eyebrow', { hasText: '2' }).waitFor({ timeout: 60000 }).then(() => true, () => false);
-  check(`${tag}: next milestone reaches the month 2 recap`, month2);
+  const nextRecap = await page.waitForFunction((r) => { const e = document.querySelector('.summary-card .eyebrow'); return e && Number((e.textContent.match(/\d+/) ?? [0])[0]) === r + 1; }, pausedRound, { timeout: 60000 }).then(() => true, () => false);
+  check(`${tag}: next milestone reaches the next month's recap`, nextRecap, `paused in month ${pausedRound}`);
   check(`${tag}: and pauses there`, await page.locator('.demo-state').waitFor({ timeout: 4000 }).then(() => true, () => false));
   // Skip to results.
   await page.getByRole('button', { name: /skip to results/i }).click();
