@@ -56,12 +56,13 @@ Status: ✅ done · 🔄 in progress · ⏳ planned · ⛔ blocked
 | 4.4 2D/3D toggle (`aria-pressed`, persisted, default 2D) | ✅ | Browser: default svg → toggle 3d (stored) → reload keeps 3d → toggle back svg |
 | QA | ✅ | Journey `?renderer=3d` 57/57 (3D canvas active at 4 viewports) and `?renderer=svg` 53/53; 70/70 unit; tsc clean; engine diff empty. Known: R3F 9.8.2 logs a `THREE.Clock` deprecation **warning** on three 0.187 (harmless) |
 
-### M5: Phase 5.3, motion
+### M5: Phase 5.3, motion ✅
 | Task | Status | Evidence |
 | --- | --- | --- |
-| 5.1 Pawns ease along the route following `movementStep`/`positions` in `useFrame` (refs only, no per-frame React state) | ⏳ | |
-| 5.2 Visual 3D die that lands on the already-decided `rollBoardDie` face | ⏳ | |
-| 5.3 `prefers-reduced-motion`: snap instead of tween | ⏳ | |
+| 5.1 Pawns ease along the route following `movementStep`/`positions` in `useFrame` (refs only, no per-frame React state) | ✅ | Pure `stepPawnTween` (tested: hop, exact landing, no hop when still). Browser frame mid AI turn shows pawns in transit; final positions equal the seeded rolls |
+| 5.2 Visual 3D die that lands on the already-decided `rollBoardDie` face | ✅ | `dieRestRotation` verified with three.js Euler for all 6 faces; die receives `dieValue` from the controller, and the guard test forbids `rollBoardDie`/`Math.random` in `board3d/` |
+| 5.3 `prefers-reduced-motion`: snap instead of tween | ✅ | Unit test for snapping; browser run with `reducedMotion: 'reduce'` completes with 0 errors |
+| QA | ✅ | 72/72 unit; tsc clean; journey `?renderer=3d` 57/57; main 326.94 kB (+0.06 kB); engine diff empty |
 
 ### M6: Phase 5.4, miniature city art
 | Task | Status | Evidence |

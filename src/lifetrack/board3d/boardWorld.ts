@@ -55,3 +55,33 @@ export function hopHeight(t: number, peak = 0.22): number {
   const k = Math.min(1, Math.max(0, t));
   return 4 * peak * k * (1 - k);
 }
+
+/** Seconds a pawn takes to hop one space (matches the controller's 135 ms step cadence). */
+export const PAWN_STEP_SECONDS = 0.13;
+
+export interface PawnTween { from: WorldPoint; to: WorldPoint; t: number }
+
+/** Advances a pawn tween by `delta` seconds. Returns the new tween and the point to render (with hop). */
+export function stepPawnTween(tween: PawnTween, delta: number, duration = PAWN_STEP_SECONDS, reducedMotion = false): { tween: PawnTween; point: WorldPoint; done: boolean } {
+  const t = reducedMotion || duration <= 0 ? 1 : Math.min(1, tween.t + Math.max(0, delta) / duration);
+  const flat = lerpWorld(tween.from, tween.to, t);
+  const moved = Math.hypot(tween.to.x - tween.from.x, tween.to.z - tween.from.z) > 1e-6;
+  return { tween: { ...tween, t }, point: { ...flat, y: flat.y + (moved && !reducedMotion ? hopHeight(t) : 0) }, done: t >= 1 };
+}
+
+/**
+ * Euler rotation (x, y, z in radians) that puts `value` on top of a die whose
+ * BoxGeometry faces are numbered [+x:1, -x:6, +y:2, -y:5, +z:3, -z:4]
+ * (opposite faces sum to 7). Invalid values fall back to 2 (identity).
+ */
+export const DIE_FACE_ORDER = [1, 6, 2, 5, 3, 4] as const;
+export function dieRestRotation(value: number): [number, number, number] {
+  switch (value) {
+    case 1: return [0, 0, Math.PI / 2];
+    case 6: return [0, 0, -Math.PI / 2];
+    case 3: return [-Math.PI / 2, 0, 0];
+    case 4: return [Math.PI / 2, 0, 0];
+    case 5: return [Math.PI, 0, 0];
+    default: return [0, 0, 0];
+  }
+}

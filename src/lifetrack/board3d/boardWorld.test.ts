@@ -61,3 +61,31 @@ test('renderer preference defaults to svg, honours storage and URL override, ign
   assert.doesNotThrow(() => writeRendererPreference(broken, '3d'));
   assert.equal(readRendererPreference(null), 'svg');
 });
+
+test('pawn tween hops between spaces, finishes exactly on target, and snaps for reduced motion', async () => {
+  const { stepPawnTween } = await import('./boardWorld.ts');
+  const from = spaceWorld(0), to = spaceWorld(1);
+  let r = stepPawnTween({ from, to, t: 0 }, 0.065, 0.13);
+  assert.ok(r.point.y > 0 && !r.done, 'mid-step hop');
+  r = stepPawnTween(r.tween, 1, 0.13);
+  assert.ok(r.done);
+  assert.deepEqual([r.point.x, r.point.y, r.point.z], [to.x, to.y, to.z]);
+  const snap = stepPawnTween({ from, to, t: 0 }, 0.001, 0.13, true);
+  assert.ok(snap.done && snap.point.y === to.y && snap.point.x === to.x, 'reduced motion snaps');
+  const still = stepPawnTween({ from: to, to, t: 0 }, 0.065, 0.13);
+  assert.equal(still.point.y, to.y, 'no hop when not moving');
+  assert.equal(stepPawnTween({ from, to, t: 0 }, -5, 0.13).tween.t, 0, 'negative delta ignored');
+});
+
+test('3D die rest rotation shows the already-decided face on top for every value', async () => {
+  const { Euler, Vector3 } = await import('three');
+  const { DIE_FACE_ORDER, dieRestRotation } = await import('./boardWorld.ts');
+  const normals = [new Vector3(1, 0, 0), new Vector3(-1, 0, 0), new Vector3(0, 1, 0), new Vector3(0, -1, 0), new Vector3(0, 0, 1), new Vector3(0, 0, -1)];
+  assert.deepEqual([...DIE_FACE_ORDER].sort(), [1, 2, 3, 4, 5, 6]);
+  for (let value = 1; value <= 6; value++) {
+    const euler = new Euler(...dieRestRotation(value));
+    const top = normals.findIndex((n) => n.clone().applyEuler(euler).y > 0.999);
+    assert.equal(DIE_FACE_ORDER[top], value, `value ${value} on top`);
+  }
+  assert.deepEqual(dieRestRotation(99), [0, 0, 0]);
+});
