@@ -4,11 +4,12 @@
  */
 import { useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { CanvasTexture, Euler, Quaternion, SRGBColorSpace, Vector3, type Mesh, type MeshBasicMaterial } from 'three';
+import { CanvasTexture, Euler, Quaternion, SRGBColorSpace, type Fog, type Group, type Mesh, type MeshBasicMaterial } from 'three';
 import type { CharacterId } from '../game/types.ts';
 import type { BoardCategory } from '../board/boardTypes.ts';
-import { DIE_FACE_ORDER, PLAYER_COLOR, RING_HALF, SPACE_WORLD, TILE_SIZE, dieRestRotation, spaceCategory } from './boardWorld.ts';
-import { CityBlock, TileBase, TileGlow } from './City3D.tsx';
+import { DIE_FACE_ORDER, PLAYER_COLOR, RING_HALF, SPACE_WORLD, TILE_SIZE, dieRestRotation, pawnWorld, spaceCategory, type WorldPoint } from './boardWorld.ts';
+import { CityBlock, GROUND_Y, OUTER_ROAD_CENTER, OuterCity, TileBase, TileGlow } from './City3D.tsx';
+import { cameraDirection, damp, fitDistance, viewAngles, type Vec3 } from './camera.ts';
 import { StaticBatch } from './StaticBatch.tsx';
 import { Pawn3D } from './Pawn3D.tsx';
 import { disposeKit, geo, mat } from './kit3d.ts';
@@ -23,6 +24,8 @@ export interface Board3DView {
   highlightCategory: BoardCategory | null;
   /** Spaces the moving pawn is about to cross (shown once its roll is revealed), and who is moving. */
   route: readonly number[];
+  /** Player whose token the camera follows during a turn (null: show the whole board). */
+  focus: CharacterId | null;
   /** Space a pawn has just landed on (during the landing pause), for the landing effect. */
   landingSpace: number | null;
   routeOwner: CharacterId | null;
@@ -38,29 +41,76 @@ function prefersReducedMotion(): boolean {
   try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; }
 }
 
-/** Board table half extents (x, z) and vertical range, used to fit the camera. */
 /** Table half size: ring of tiles plus a margin and the wooden rim. */
 const TABLE_HALF = RING_HALF + TILE_SIZE.width / 2 + 0.3;
-const BOARD_HALF = { x: TABLE_HALF + 0.15, z: TABLE_HALF + 0.15, yMin: -0.31, yMax: 0.3 } as const;
-const FIT_MARGIN = 1.04;
+const FOV_DEG = 32;
+/** Points the overview must keep on screen: the table's corners (top and underside). */
+const BOARD_CORNERS: Vec3[] = [-1, 1].flatMap((sx) => [-1, 1].flatMap((sz) => [-0.31, 0.3].map((y) => ({ x: sx * (TABLE_HALF + 0.15), y, z: sz * (TABLE_HALF + 0.15) }))));
+const ORIGIN: Vec3 = { x: 0, y: 0, z: 0 };
 
-/** Fits the whole board table into the canvas for the fixed isometric camera (projects its corners). */
-function FitCamera() {
-  const { camera, size } = useThree();
-  const span = useMemo(() => {
-    camera.lookAt(0, 0, 0); // idempotent; also applied in onCreated
-    camera.updateMatrixWorld();
-    let x = 0, y = 0;
-    const v = new Vector3();
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) for (const cy of [BOARD_HALF.yMin, BOARD_HALF.yMax]) {
-      v.set(sx * BOARD_HALF.x, cy, sz * BOARD_HALF.z).applyMatrix4(camera.matrixWorldInverse);
-      x = Math.max(x, Math.abs(v.x)); y = Math.max(y, Math.abs(v.y));
-    }
-    return { x: 2 * x * FIT_MARGIN, y: 2 * y * FIT_MARGIN };
-  }, [camera]);
-  const zoom = Math.max(12, Math.min(size.width / span.x, size.height / span.y));
-  if (camera.zoom !== zoom) { camera.zoom = zoom; camera.updateProjectionMatrix(); }
+/**
+ * Angled perspective camera. At rest it frames the whole board (every space readable); while a
+ * token is moving it eases in to follow that token, then eases back out. Reduced motion keeps the
+ * overview. Presentation only.
+ */
+function CameraRig({ focus, reducedMotion }: { focus: WorldPoint | null; reducedMotion: boolean }) {
+  const { camera, size, invalidate, scene } = useThree();
+  const aspect = size.width / Math.max(1, size.height);
+  const pose = useMemo(() => {
+    const { yaw, pitch } = viewAngles(aspect);
+    const dir = cameraDirection(yaw, pitch);
+    return { dir, distance: fitDistance(BOARD_CORNERS, ORIGIN, dir, (FOV_DEG * Math.PI) / 180, aspect) };
+  }, [aspect]);
+  // Fog starts beyond the board at any camera distance (portrait phones sit further back), so only the outer city fades.
+  useEffect(() => { const fog = scene.fog as Fog | null; if (fog) { fog.near = pose.distance * 1.1; fog.far = pose.distance * 2.4; invalidate(); } }, [scene, pose.distance, invalidate]);
+  const follow = focus !== null && !reducedMotion;
+  const goal = follow
+    ? { target: { x: focus!.x * 0.9, y: 0.25, z: focus!.z * 0.9 }, distance: Math.max(6, pose.distance * 0.58) }
+    : { target: ORIGIN, distance: pose.distance };
+  const current = useRef<{ target: Vec3; distance: number } | null>(null);
+  useEffect(() => { invalidate(); }, [goal.target.x, goal.target.z, goal.distance, invalidate]);
+  useFrame((_, dt) => {
+    const c = current.current ?? (current.current = { target: { ...goal.target }, distance: goal.distance });
+    const k = reducedMotion ? 1 : damp(follow ? 3.2 : 2.4, dt);
+    c.target.x += (goal.target.x - c.target.x) * k; c.target.y += (goal.target.y - c.target.y) * k; c.target.z += (goal.target.z - c.target.z) * k;
+    c.distance += (goal.distance - c.distance) * k;
+    camera.position.set(c.target.x + pose.dir.x * c.distance, c.target.y + pose.dir.y * c.distance, c.target.z + pose.dir.z * c.distance);
+    camera.lookAt(c.target.x, c.target.y, c.target.z);
+    const settling = Math.abs(goal.distance - c.distance) > 0.005 || Math.hypot(goal.target.x - c.target.x, goal.target.z - c.target.z) > 0.005;
+    if (settling) invalidate();
+  });
   return null;
+}
+
+/**
+ * Two small cars driving round the outer ring road. Drawn at ~15 fps only on devices with a fine
+ * pointer (desktops/laptops) and never with reduced motion, so phones stay idle between turns.
+ */
+function AmbientCars({ enabled }: { enabled: boolean }) {
+  const cars = useRef<(Group | null)[]>([]);
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => {
+    if (!enabled) return;
+    const id = window.setInterval(() => { if (document.visibilityState === 'visible') invalidate(); }, 66);
+    return () => window.clearInterval(id);
+  }, [enabled, invalidate]);
+  useFrame((state) => {
+    const r = OUTER_ROAD_CENTER, perimeter = 8 * r;
+    cars.current.forEach((g, i) => {
+      if (!g) return;
+      const t = enabled ? state.clock.elapsedTime : 0;
+      let d = ((t * 0.55 + i * perimeter * 0.5) % perimeter + perimeter) % perimeter;
+      const side = Math.floor(d / (2 * r)); d -= side * 2 * r;
+      const lane = i === 0 ? -0.17 : 0.17;
+      const [x, z, yaw] = side === 0 ? [-r + d, -r - lane, Math.PI / 2] : side === 1 ? [r + lane, -r + d, 0] : side === 2 ? [r - d, r + lane, -Math.PI / 2] : [-r - lane, r - d, Math.PI];
+      g.position.set(x, GROUND_Y + 0.07, z); g.rotation.y = yaw;
+    });
+  });
+  return <>{['#c8102e', '#457a9b'].map((color, i) => <group key={i} ref={(g) => { cars.current[i] = g; }}>
+    <mesh geometry={geo().box} material={mat(color, { roughness: 0.4 })} scale={[0.2, 0.1, 0.38]} position={[0, 0.04, 0]} castShadow/>
+    <mesh geometry={geo().box} material={mat('#dfe9ef')} scale={[0.17, 0.08, 0.2]} position={[0, 0.12, -0.02]} castShadow/>
+    {[-1, 1].flatMap((sx) => [-1, 1].map((sz) => <mesh key={`${sx}${sz}`} geometry={geo().cyl} material={mat('#262a2e')} scale={[0.07, 0.04, 0.07]} position={[sx * 0.1, -0.01, sz * 0.12]} rotation={[0, 0, Math.PI / 2]}/>))}
+  </group>)}</>;
 }
 
 const PIPS: Record<number, [number, number][]> = { 1: [[0.5, 0.5]], 2: [[0.27, 0.27], [0.73, 0.73]], 3: [[0.27, 0.27], [0.5, 0.5], [0.73, 0.73]], 4: [[0.27, 0.27], [0.73, 0.27], [0.27, 0.73], [0.73, 0.73]], 5: [[0.27, 0.27], [0.73, 0.27], [0.5, 0.5], [0.27, 0.73], [0.73, 0.73]], 6: [[0.27, 0.25], [0.73, 0.25], [0.27, 0.5], [0.73, 0.5], [0.27, 0.75], [0.73, 0.75]] };
@@ -105,16 +155,9 @@ function Die({ value, rolling, reducedMotion }: { value: number | null; rolling:
   </mesh>;
 }
 
-/**
- * Front-facing three-quarter view (no yaw, 42° pitch). The square board then projects at its
- * side length rather than its diagonal, so tiles are ~40% larger on portrait phones, and the
- * captions read straight across.
- */
-const CAMERA_PITCH = (42 * Math.PI) / 180;
-const CAMERA_POSITION: [number, number, number] = [0, 10 * Math.sin(CAMERA_PITCH), 10 * Math.cos(CAMERA_PITCH)];
 
 /** Spot on the central plaza where the die lands (matches City3D). */
-const DIE_SPOT = { x: 0.45, z: 0.42 } as const;
+const DIE_SPOT = { x: 0.85, z: 0.75 } as const;
 
 /** Landing effect: a ring in the mover's colour that expands and fades on the landing space. */
 function LandingBurst({ space, owner, reducedMotion }: { space: number | null; owner: CharacterId | null; reducedMotion: boolean }) {
@@ -172,14 +215,14 @@ function BoardBase() {
 export default function Board3DScene({ view, onContextLost }: { view: Board3DView; onContextLost?: () => void }) {
   const tiles = useMemo(() => SPACE_WORLD.map((_, i) => i), []);
   const reducedMotion = useMemo(prefersReducedMotion, []);
+  const ambient = useMemo(() => { try { return !reducedMotion && window.matchMedia('(pointer: fine)').matches; } catch { return false; } }, [reducedMotion]);
   return <Canvas
     className="board-3d-canvas"
-    orthographic
     frameloop="demand"
     dpr={[1, 2]}
     shadows="percentage"
     gl={{ antialias: true, powerPreference: 'low-power' }}
-    camera={{ position: CAMERA_POSITION, zoom: 60, near: 0.1, far: 100 }}
+    camera={{ position: [0, 12, 12], fov: FOV_DEG, near: 0.5, far: 80 }}
     onCreated={({ camera, gl }) => {
       camera.lookAt(0, 0, 0);
       // A lost GPU context (common on mobile) hands the board back to the SVG renderer.
@@ -188,27 +231,29 @@ export default function Board3DScene({ view, onContextLost }: { view: Board3DVie
     aria-hidden="true"
   >
     <KitLifetime/>
-    <FitCamera/>
-    <color attach="background" args={['#e7eee5']}/>
-    <hemisphereLight args={['#ffffff', '#b9c8b4', 0.95]}/>
+    <CameraRig focus={view.focus ? pawnWorld(view.positions[view.focus] ?? 0, view.focus, view.positions) : null} reducedMotion={reducedMotion}/>
+    <color attach="background" args={['#dcead0']}/>
+    <fog attach="fog" args={['#dcead0', 22, 44]}/>
+    <hemisphereLight args={['#fffaf0', '#b7cfa6', 1.0]}/>
     {/* Key light from the upper left of the screen so shadows fall toward the viewer's lower right. */}
     <directionalLight
       position={[-5, 9, 2.5]}
       intensity={1.7}
       color="#fff6e8"
       castShadow
-      shadow-mapSize={[1024, 1024]}
+      shadow-mapSize={[2048, 2048]}
       shadow-bias={-0.0004}
       shadow-normalBias={0.02}
-      shadow-camera-left={-6}
-      shadow-camera-right={6}
-      shadow-camera-top={6}
-      shadow-camera-bottom={-6}
+      shadow-camera-left={-10}
+      shadow-camera-right={10}
+      shadow-camera-top={10}
+      shadow-camera-bottom={-10}
       shadow-camera-near={1}
       shadow-camera-far={25}
     />
     <directionalLight position={[6, 4, 6]} intensity={0.35} color="#dfeaf2"/>
     <StaticBatch>
+      <OuterCity/>
       <BoardBase/>
       <CityBlock/>
       {tiles.map((i) => <TileBase key={i} index={i}/>)}
@@ -218,5 +263,53 @@ export default function Board3DScene({ view, onContextLost }: { view: Board3DVie
     <LandingBurst key={view.landingSpace ?? 'none'} space={view.landingSpace} owner={view.routeOwner} reducedMotion={reducedMotion}/>
     {view.playerIds.map((id) => <Pawn3D key={id} id={id} index={view.positions[id] ?? 0} positions={view.positions} human={id === view.humanId} active={view.activePlayer === id} stepSeconds={view.stepSeconds} reducedMotion={reducedMotion}/>)}
     <Die value={view.dieValue} rolling={view.dieRolling} reducedMotion={reducedMotion}/>
+    <AmbientCars enabled={ambient}/>
+  </Canvas>;
+}
+
+/** Homepage camera: the overview pose with a slow, gentle drift (static with reduced motion). */
+function HeroCamera({ reducedMotion }: { reducedMotion: boolean }) {
+  const { camera, size, invalidate } = useThree();
+  const aspect = size.width / Math.max(1, size.height);
+  const base = useMemo(() => {
+    const { yaw, pitch } = viewAngles(Math.max(aspect, 1.3));
+    return { yaw, pitch, distance: fitDistance(BOARD_CORNERS, ORIGIN, cameraDirection(yaw, pitch), (FOV_DEG * Math.PI) / 180, aspect, 0.92) };
+  }, [aspect]);
+  useEffect(() => {
+    if (reducedMotion) return;
+    const id = window.setInterval(() => { if (document.visibilityState === 'visible') invalidate(); }, 50);
+    return () => window.clearInterval(id);
+  }, [reducedMotion, invalidate]);
+  useFrame((state) => {
+    const t = reducedMotion ? 0 : state.clock.elapsedTime;
+    const dir = cameraDirection(base.yaw + Math.sin(t * 0.12) * 0.16, base.pitch);
+    camera.position.set(dir.x * base.distance, dir.y * base.distance, dir.z * base.distance);
+    camera.lookAt(0, 0, 0);
+  });
+  return null;
+}
+
+const HERO_POSITIONS: Record<CharacterId, number> = { alex: 2, meiling: 8, daniel: 14, aisyah: 20 };
+
+/** Homepage illustration: the real 3D city board with the four profession tokens (decorative). */
+export function HeroScene() {
+  const reducedMotion = useMemo(prefersReducedMotion, []);
+  const tiles = useMemo(() => SPACE_WORLD.map((_, i) => i), []);
+  return <Canvas className="hero-3d-canvas" frameloop="demand" dpr={[1, 2]} shadows="percentage" gl={{ antialias: true, powerPreference: 'low-power' }} camera={{ position: [0, 12, 12], fov: FOV_DEG, near: 0.5, far: 80 }} aria-hidden="true">
+    <KitLifetime/>
+    <HeroCamera reducedMotion={reducedMotion}/>
+    <color attach="background" args={['#dcead0']}/>
+    <fog attach="fog" args={['#dcead0', 22, 44]}/>
+    <hemisphereLight args={['#fffaf0', '#b7cfa6', 1.0]}/>
+    <directionalLight position={[-5, 9, 2.5]} intensity={1.7} color="#fff6e8" castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-0.0004} shadow-normalBias={0.02} shadow-camera-left={-10} shadow-camera-right={10} shadow-camera-top={10} shadow-camera-bottom={-10} shadow-camera-near={1} shadow-camera-far={25}/>
+    <directionalLight position={[6, 4, 6]} intensity={0.35} color="#dfeaf2"/>
+    <StaticBatch>
+      <OuterCity/>
+      <BoardBase/>
+      <CityBlock/>
+      {tiles.map((i) => <TileBase key={i} index={i}/>)}
+    </StaticBatch>
+    {(Object.keys(HERO_POSITIONS) as CharacterId[]).map((id) => <Pawn3D key={id} id={id} index={HERO_POSITIONS[id]} positions={HERO_POSITIONS} human={false} active={false} stepSeconds={0.3} reducedMotion={reducedMotion}/>)}
+    <AmbientCars enabled={!reducedMotion}/>
   </Canvas>;
 }

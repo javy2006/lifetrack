@@ -9,10 +9,10 @@ import type { CharacterId } from '../game/types.ts';
 import { PLAYER_COLOR, headingTowards, landingSquash, lerpAngle, pawnWorld, stepPawnTween, type PawnTween } from './boardWorld.ts';
 import { geo, mat } from './kit3d.ts';
 import { StaticBatch } from './StaticBatch.tsx';
+import { viewAngles } from './camera.ts';
 import { FIGURE_TOP, Figure } from './Figure3D.tsx';
 
-/** Resting pawns face the camera (+Z) so faces stay readable. */
-const REST_YAW = 0;
+
 /** Height of the turn marker above the base (just over the tallest figure). */
 const MARKER_Y = FIGURE_TOP + 0.16;
 
@@ -22,7 +22,10 @@ export function Pawn3D({ id, index, positions, human, active, stepSeconds, reduc
   const marker = useRef<Group>(null);
   const target = pawnWorld(index, id, positions);
   const tween = useRef<PawnTween>({ from: target, to: target, t: 1 });
-  const yaw = useRef(REST_YAW);
+  // Resting tokens turn to face the camera, whose angle depends on the screen shape.
+  const size = useThree((state) => state.size);
+  const restYaw = viewAngles(size.width / Math.max(1, size.height)).yaw;
+  const yaw = useRef(restYaw);
   const invalidate = useThree((state) => state.invalidate);
   useEffect(() => {
     const g = group.current;
@@ -35,7 +38,7 @@ export function Pawn3D({ id, index, positions, human, active, stepSeconds, reduc
     const g = group.current, b = body.current;
     if (!g || !b) return;
     let busy = false;
-    let wantYaw = REST_YAW;
+    let wantYaw = restYaw;
     if (tween.current.t < 1) {
       const { from, to } = tween.current;
       const r = stepPawnTween(tween.current, delta, stepSeconds, reducedMotion);
@@ -63,7 +66,7 @@ export function Pawn3D({ id, index, positions, human, active, stepSeconds, reduc
     if (busy) invalidate();
   });
   return <group ref={group} position={[target.x, target.y, target.z]}>
-    <group ref={body} rotation={[0, REST_YAW, 0]}><StaticBatch key={`${id}|${human}`}><Figure id={id} human={human}/></StaticBatch></group>
+    <group ref={body} rotation={[0, restYaw, 0]}><StaticBatch key={`${id}|${human}`}><Figure id={id} human={human}/></StaticBatch></group>
     <group ref={marker} position={[0, MARKER_Y, 0]} visible={active}>
       <mesh geometry={geo().gem} material={mat(PLAYER_COLOR[id], { emissive: PLAYER_COLOR[id], emissiveIntensity: 0.35 })} scale={[0.09, 0.12, 0.09]}/>
     </group>

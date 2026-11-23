@@ -26,10 +26,13 @@ function MoveArt() {
     {tiles.map(([c, x]) => <g key={x}><rect x={x} y="56" width="26" height="18" rx="4" fill="#d8d0bf"/><rect x={x} y="52" width="26" height="18" rx="4" fill={c}/><rect x={x + 3} y="55" width="20" height="12" rx="2" fill="#f7f3e8"/></g>)}
     <path d="M31 48q15-20 30 0M61 48q15-20 30 0" stroke="#c8102e" strokeWidth="2.5" strokeDasharray="3 5" strokeLinecap="round" fill="none"/>
     <g className="htp-pawn">
-      <ellipse cx="91" cy="60" rx="8" ry="2.5" fill="#c8102e" opacity=".5"/>
-      <rect x="86" y="40" width="10" height="18" rx="5" fill="#27324f"/>
-      <circle cx="91" cy="34" r="7" fill="#d29973"/>
-      <path d="M84 33q1-9 7-9t7 9q-3-4-7-4t-7 4Z" fill="#1b1c21"/>
+      {/* A profession token: hard hat on a base, like the board pieces */}
+      <ellipse cx="91" cy="60" rx="11" ry="3.5" fill="#457a9b"/>
+      <ellipse cx="91" cy="57" rx="11" ry="3.5" fill="#f6f1e6"/>
+      <rect x="80" y="50" width="22" height="7" rx="3.5" fill="#3c6e9e"/>
+      <path d="M81 50q0-14 10-14t10 14Z" fill="#f2c22e"/>
+      <rect x="78" y="48.5" width="26" height="3" rx="1.5" fill="#e8b52a"/>
+      <rect x="89.5" y="36" width="3" height="12" rx="1.5" fill="#f6d66a"/>
     </g>
   </svg>;
 }
@@ -52,10 +55,10 @@ function FinishArt() {
 }
 
 const STEPS = [
-  { label: 'Roll', text: 'Roll the dice to see how far you move.', Art: DieArt },
-  { label: 'Move', text: 'Watch your character travel round the city board.', Art: MoveArt },
-  { label: 'Decide', text: `Save, buy cover or pass with your ${GAME_CONFIG.actionPointsPerRound} moves.`, Art: DecideArt },
-  { label: 'Finish', text: `Play ${GAME_CONFIG.totalRounds} months, then compare everyone's results.`, Art: FinishArt },
+  { label: 'Roll', text: 'Tap Roll to throw the dice.', Art: DieArt },
+  { label: 'Move', text: 'Your token travels round the city board.', Art: MoveArt },
+  { label: 'Decide', text: `Pick ${GAME_CONFIG.actionPointsPerRound} money moves when you land.`, Art: DecideArt },
+  { label: 'Finish', text: `After ${GAME_CONFIG.totalRounds} months, compare results.`, Art: FinishArt },
 ] as const;
 
 export function HowToPlay() {

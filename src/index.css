@@ -241,3 +241,111 @@ img.mini-avatar { padding: 0; }
 }
 @media (max-height: 500px) and (orientation: landscape) { .game-scene-content .player-dashboard { display: none; } }
 @media (prefers-reduced-motion: reduce) { .pd-card { transition: none; } }
+
+/* 3D board loading placeholder (never the old SVG board). */
+.board-3d-loading { display: grid; place-items: center; gap: 12px; }
+.board-loading-table { width: min(70%, 420px); aspect-ratio: 1.6; border-radius: 18px; background: linear-gradient(160deg, #efe9dc, #e2dccd); box-shadow: inset 0 -10px 0 #c9b28f, 0 18px 30px #1d2f3d1f; animation: board-loading 1.4s ease-in-out infinite alternate; }
+.board-loading-label { color: #66778b; font-size: 12px; font-weight: 700; }
+@keyframes board-loading { from { opacity: .55; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .board-loading-table { animation: none; } }
+
+/* The perspective 3D board fills its whole area (the camera frames the board itself). */
+.game-scene-content .board-3d { width: 100%; height: 100%; aspect-ratio: auto; max-width: none; }
+.game-scene-content .board-viewport:has(>.board-3d) { place-items: stretch; background: #dcead0; }
+
+/* Main action on the board: the big Roll button (or whose turn it is), never a dock form button. */
+.board-viewport { position: relative; }
+.board-main-action { position: absolute; left: 50%; bottom: 14px; z-index: 3; display: grid; justify-items: center; gap: 8px; transform: translateX(-50%); pointer-events: none; }
+.board-turn-label { padding: 5px 12px; border-radius: 30px; background: #ffffffe6; box-shadow: 0 4px 14px #1d2f3d26; color: #0f294a; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.board-turn-ai { background: #0f294ae0; color: #fff; }
+.roll-main { pointer-events: auto; display: grid; place-items: center; gap: 2px; width: 96px; height: 88px; padding-top: 4px; border: 0; border-radius: 26px; color: #fff; font-size: 15px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+  background: linear-gradient(180deg, #e8424d 0%, #c8102e 55%, #a80d26 100%);
+  box-shadow: inset 0 2px 0 #ffffff59, inset 0 -3px 0 #00000026, 0 7px 0 #7d0a1d, 0 14px 22px #7d0a1d55;
+  transition: transform .08s ease, box-shadow .08s ease, filter .2s; }
+.roll-main:hover:not(:disabled) { filter: brightness(1.06); }
+.roll-main:active:not(:disabled) { transform: translateY(5px); box-shadow: inset 0 2px 0 #ffffff59, inset 0 -3px 0 #00000026, 0 2px 0 #7d0a1d, 0 6px 12px #7d0a1d55; }
+.roll-main:focus-visible { outline: 3px solid #0f294a; outline-offset: 4px; }
+.roll-main:disabled { cursor: default; }
+.roll-main.is-rolling { filter: saturate(.85); animation: roll-pulse .5s ease-in-out infinite alternate; }
+@keyframes roll-pulse { from { transform: translateY(0); } to { transform: translateY(3px); } }
+@media (max-width: 640px) { .roll-main { width: 80px; height: 72px; border-radius: 22px; font-size: 13px; } .board-main-action { bottom: 10px; gap: 6px; } .board-turn-label { font-size: 11px; } }
+@media (prefers-reduced-motion: reduce) { .roll-main.is-rolling { animation: none; } .roll-main { transition: none; } }
+
+/* Board-game cards: thick colour band, big category icon, card stock and a lifted shadow. */
+.game-card { position: relative; overflow: hidden; border-radius: 20px; background: linear-gradient(180deg, #fffdf8, #f8f4ea); box-shadow: 0 0 0 1px #e9e1d0, 0 16px 34px #1d2f3d2b, 0 3px 0 #e3d9c4; }
+.game-card-band { display: flex; align-items: center; gap: 12px; padding: 14px 18px; color: #fff; }
+.game-card-band .eyebrow { margin: 0; color: #ffffffd9; }
+.game-card-band h2 { margin: 2px 0 0; color: #fff; font-size: 22px; line-height: 1.15; }
+.game-card-icon { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: 14px; background: #ffffff2e; box-shadow: inset 0 0 0 2px #ffffff40; }
+.band-decide { background: linear-gradient(120deg, #0f294a, #2f5d7a); }
+.decision-card-v2.is-confirmed .band-decide { background: linear-gradient(120deg, #1b6a48, #24845b); }
+.decision-applied { display: flex; align-items: center; gap: 6px; margin: 10px 18px 0; color: #1b6a48; font-size: 12px; font-weight: 700; }
+.link-button { display: inline-flex; align-items: center; gap: 3px; margin-left: 8px; color: #2f5d7a; font-size: 12px; font-weight: 700; text-decoration: underline; }
+.decision-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; padding: 14px 18px 4px; }
+.decision-option { display: grid; align-content: start; gap: 2px; }
+.decision-pick { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; width: 100%; min-height: 64px; padding: 10px 12px; border-radius: 14px; background: #fff; box-shadow: inset 0 0 0 1.5px #e3e7ea, 0 2px 0 #e9e1d0; text-align: left; transition: box-shadow .15s, transform .15s, background .15s; }
+.decision-pick:hover:not(:disabled) { transform: translateY(-2px); box-shadow: inset 0 0 0 1.5px #b8c6d1, 0 6px 14px #1d2f3d1a; }
+.decision-pick:focus-visible { outline: 3px solid #2f5d7a; outline-offset: 2px; }
+.decision-pick[aria-pressed="true"] { background: #fff7f8; box-shadow: inset 0 0 0 2.5px #c8102e, 0 6px 14px #c8102e26; }
+.decision-pick:disabled { opacity: .5; cursor: not-allowed; }
+.decision-option.is-owned .decision-pick { opacity: .75; background: #f1f7f3; box-shadow: inset 0 0 0 1.5px #bcd9c8; }
+.decision-option-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 11px; background: #eef3f6; color: #2f5d7a; }
+.save-action .decision-option-icon { background: #e3f1e9; color: #1b6a48; }
+.policy-medical .decision-option-icon { background: #fbe6e9; color: #c8102e; }
+.policy-accident .decision-option-icon { background: #fdeee4; color: #b5521f; }
+.policy-critical .decision-option-icon { background: #efeaf6; color: #5c4987; }
+.decision-option-text { display: grid; min-width: 0; }
+.decision-option-text b { color: #0f294a; font-size: 14px; }
+.decision-option-text small { color: #66778b; font-size: 11px; line-height: 1.35; }
+.decision-option-mark { display: grid; place-items: center; min-width: 26px; height: 26px; border-radius: 50%; color: #fff; font-size: 11px; font-weight: 800; }
+.decision-pick[aria-pressed="true"] .decision-option-mark { background: #c8102e; }
+.is-owned .decision-option-mark { background: #24845b; }
+.decision-option .learn-more { margin: 2px 4px 0; }
+.decision-summary { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 14px; margin-top: 10px; padding: 12px 18px 16px; border-top: 1px dashed #e0d6c2; }
+.decision-slots { display: flex; flex-wrap: wrap; gap: 6px; }
+.decision-slot { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 0 12px; border-radius: 20px; background: #f1ede3; color: #8a8270; font-size: 12px; font-weight: 700; box-shadow: inset 0 0 0 1.5px #e3dccd; }
+.decision-slot.is-filled { background: #0f294a; color: #fff; box-shadow: none; cursor: pointer; }
+.decision-slot.is-filled:hover { background: #c8102e; }
+.decision-cash { display: grid; text-align: right; line-height: 1.2; }
+.decision-cash small { color: #8693a1; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; }
+.decision-cash b { color: #0f294a; font-size: 18px; font-variant-numeric: tabular-nums; }
+.decision-card-v2.is-confirmed .decision-confirm { background: #24845b; }
+.decision-card-v2.is-confirmed { animation: card-lock .5s ease; }
+@keyframes card-lock { 0% { transform: scale(1); } 40% { transform: scale(1.015); } 100% { transform: scale(1); } }
+@media (max-width: 640px) {
+  .decision-options { grid-template-columns: 1fr; gap: 8px; padding: 12px 12px 4px; }
+  .decision-summary { grid-template-columns: 1fr auto; padding: 12px; }
+  .decision-summary .decision-confirm { grid-column: 1 / -1; }
+  .game-card-band { padding: 12px; } .game-card-band h2 { font-size: 19px; }
+}
+@media (prefers-reduced-motion: reduce) { .decision-card-v2.is-confirmed { animation: none; } .decision-pick { transition: none; } }
+
+/* The other month cards share the same physical card look (band colour per category). */
+.phase-card, .event-card, .claim-card, .claim-learning, .summary-card { position: relative; border-radius: 20px; background: linear-gradient(180deg, #fffdf8, #f8f4ea); box-shadow: 0 0 0 1px #e9e1d0, 0 16px 34px #1d2f3d2b, 0 3px 0 #e3d9c4; border: 0; }
+.phase-card::before, .claim-card::before, .summary-card::before { content: ''; position: absolute; inset: 0 0 auto; height: 8px; border-radius: 20px 20px 0 0; background: #2f5d7a; }
+.income-phase::before { background: #d6a44b; } .expenses-phase::before { background: #a03a32; } .claim-card::before { background: #457a9b; } .summary-card::before { background: #24845b; }
+.decision-pick.pass-action > .decision-option-text, .decision-pick.pass-action > .decision-option-mark { background: none; color: inherit; }
+.decision-card-v2 > .disclaimer { margin: 0; padding: 0 18px 12px; }
+@media (max-width: 640px) { .game-fullscreen .game-footer { display: none; } }
+
+/* Homepage: the live 3D city board (or its still image). */
+.hero-board-frame { position: relative; overflow: hidden; background: #dcead0; }
+.hero-board, .hero-board canvas, .hero-poster { position: absolute !important; inset: 0; width: 100% !important; height: 100% !important; }
+.hero-poster { object-fit: cover; }
+.hero-poster-empty { background: linear-gradient(160deg, #e4efd8, #cfe0c2); }
+.hero-board-frame .scene-caption { z-index: 2; }
+
+/* How to play: larger visuals and type. */
+.htp-step { padding: 18px 12px 18px; gap: 8px; }
+.htp-art { max-width: 160px; }
+.htp-step b { font-size: 18px; }
+.htp-step > span:last-child { font-size: 14px; }
+.htp-number { width: 28px; height: 28px; font-size: 14px; }
+/* The page heading already names the month and phase; the board itself gets that space.
+   Rows without the heading: board (fills), status line, dashboard. */
+.game-scene-content .board-heading { display: none; }
+.game-scene-content .board-card { grid-template-rows: minmax(0, 1fr) auto auto; }
+@media (min-width: 1100px) {
+  .game-scene-content .board-card { grid-template-rows: minmax(0, 1fr) auto; }
+  .game-scene-content .board-card > .player-dashboard { grid-row: 1 / span 2; }
+}

@@ -6,7 +6,8 @@ import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import type { Mesh } from 'three';
 import { CATEGORY_COLOR, SPACE_WORLD, TILE_SIZE, spaceCategory, tileCaption } from './boardWorld.ts';
-import { captionTexture, decal, geo, mat } from './kit3d.ts';
+import { captionTexture, decal, geo, mat, windowTexture } from './kit3d.ts';
+import { RING_HALF } from './boardWorld.ts';
 
 type V3 = [number, number, number];
 type Shape = keyof ReturnType<typeof geo>;
@@ -71,6 +72,26 @@ function PulseRing({ color, y, animate }: { color: string; y: number; animate: b
     <ringGeometry args={[0.66, 0.74, 48]}/>
     <meshBasicMaterial color={color} transparent opacity={0.75} toneMapped={false}/>
   </mesh>;
+}
+
+/** LifeTrack landmark: a slim white tower with the red shield emblem, rising from a fountain basin. */
+function Landmark() {
+  return <group>
+    <P g="cyl" c="#e6dfd0" p={[0, 0.085, 0]} s={[0.95, 0.07, 0.95]}/>
+    <P g="cyl" c="#8cc0d6" p={[0, 0.122, 0]} s={[0.82, 0.01, 0.82]} shadow={false}/>
+    <P c="#efe8da" p={[0, 0.17, 0]} s={[0.36, 0.1, 0.36]}/>
+    <P c="#fbf8f2" p={[0, 0.6, 0]} s={[0.22, 0.8, 0.22]}/>
+    <P c="#c8102e" p={[0, 0.6, 0.112]} s={[0.05, 0.78, 0.006]} shadow={false}/>
+    <P c="#efe8da" p={[0, 1.02, 0]} s={[0.3, 0.06, 0.3]}/>
+    {/* Shield emblem facing the camera side */}
+    <group position={[0, 1.24, 0]} rotation={[0, Math.PI / 4, 0]}>
+      <P c="#c8102e" p={[0, 0.03, 0]} s={[0.3, 0.24, 0.07]}/>
+      <P g="cone" c="#c8102e" p={[0, -0.15, 0]} s={[0.3, 0.14, 0.07]} r={[Math.PI, 0, 0]}/>
+      <P c="#fbf8f2" p={[0, 0.03, 0.04]} s={[0.05, 0.16, 0.01]} shadow={false}/>
+      <P c="#fbf8f2" p={[0, 0.06, 0.04]} s={[0.14, 0.05, 0.01]} shadow={false}/>
+    </group>
+    <P g="sphere" c="#d6a44b" p={[0, 1.46, 0]} s={[0.07, 0.07, 0.07]}/>
+  </group>;
 }
 
 function Tree({ x, z, s = 1, tone = '#588b70' }: { x: number; z: number; s?: number; tone?: string }) {
@@ -156,7 +177,7 @@ function Road({ axis, dir }: { axis: 'x' | 'z'; dir: 1 | -1 }) {
 export function CityBlock() {
   const lot = 5.1;
   return <group>
-    <P c="#d6e6d2" p={[0, 0.02, 0]} s={[lot, 0.04, lot]} shadow={false}/>
+    <P c="#c3dfae" p={[0, 0.02, 0]} s={[lot, 0.04, lot]} shadow={false}/>
     <District x={-1.62} z={-1.62} color="#cfe3cf"/>
     <District x={1.62} z={-1.62} color="#d5e4ec"/>
     <District x={-1.62} z={1.62} color="#eadfcc"/>
@@ -165,10 +186,7 @@ export function CityBlock() {
     {/* Central plaza */}
     <P g="cyl" c="#ece6d8" p={[0, 0.05, 0]} s={[2.1, 0.02, 2.1]} shadow={false}/>
     <P g="ring" c="#d6a44b" p={[0, 0.062, 0]} s={[2.06, 2.06, 0.35]} r={[Math.PI / 2, 0, 0]} shadow={false}/>
-    <P g="cyl" c="#e6dfd0" p={[-0.25, 0.08, -0.25]} s={[0.62, 0.06, 0.62]}/>
-    <P g="cyl" c="#8cc0d6" p={[-0.25, 0.112, -0.25]} s={[0.5, 0.01, 0.5]} shadow={false}/>
-    <P g="cylLow" c="#e6dfd0" p={[-0.25, 0.19, -0.25]} s={[0.08, 0.18, 0.08]}/>
-    <P g="cyl" c="#e6dfd0" p={[-0.25, 0.28, -0.25]} s={[0.22, 0.025, 0.22]}/>
+    <Landmark/>
     {/* Finance */}
     <Bank x={-1.6} z={-1.5}/>
     <Tree x={-2.2} z={-0.75} s={0.7}/>
@@ -184,5 +202,65 @@ export function CityBlock() {
     <CoverOffice x={1.75} z={1.85}/>
     <Shop x={2.0} z={1.0}/>
     <Tree x={1.0} z={2.2} s={0.65}/>
+  </group>;
+}
+
+/** Office tower with window facades (outer city, behind the board so it never hides a tile). */
+function Tower({ x, z, w, h, d, c }: { x: number; z: number; w: number; h: number; d: number; c: string }) {
+  const win = mat(c, { map: windowTexture() }), roof = mat('#e9e4d8');
+  return <group position={[x, 0, z]}>
+    <mesh geometry={geo().box} material={[win, win, roof, roof, win, win]} position={[0, h / 2, 0]} scale={[w, h, d]} castShadow receiveShadow/>
+    <P c="#cfc8b8" p={[0, h + 0.04, 0]} s={[w * 0.55, 0.08, d * 0.55]}/>
+  </group>;
+}
+
+function Lamp({ x, z }: { x: number; z: number }) {
+  return <group position={[x, 0, z]}>
+    <P g="cylLow" c="#4b5a63" p={[0, 0.24, 0]} s={[0.025, 0.48, 0.025]}/>
+    <mesh geometry={geo().sphere} material={mat('#fff3c4', { emissive: '#ffd77a', emissiveIntensity: 0.7 })} position={[0, 0.5, 0]} scale={0.07}/>
+  </group>;
+}
+
+/** Outer ring road: centre line radius (a square loop) used by the board and by the ambient cars. */
+export const OUTER_ROAD = { inner: RING_HALF + 1.15, width: 0.8 } as const;
+export const OUTER_ROAD_CENTER = OUTER_ROAD.inner + OUTER_ROAD.width / 2;
+
+/**
+ * The city around the board: pavements, a ring road and a sparse band of buildings. Tall towers
+ * stand behind the board (the -X/-Z sides, away from the camera) and only low houses, shops and
+ * trees stand in front, so the surroundings frame the board without covering any space.
+ * Everything sits at ground level (y = GROUND_Y), below the raised board table.
+ */
+export const GROUND_Y = -0.31;
+export function OuterCity() {
+  const r0 = OUTER_ROAD.inner, w = OUTER_ROAD.width, rc = OUTER_ROAD_CENTER, len = 2 * (r0 + w) + 0.6;
+  const side = (fn: (sx: number, sz: number, rot: boolean) => React.ReactNode) => [[0, -1, false], [0, 1, false], [-1, 0, true], [1, 0, true]].map(([sx, sz, rot], i) => <group key={i}>{fn(sx as number, sz as number, rot as boolean)}</group>);
+  return <group position={[0, GROUND_Y, 0]}>
+    <P c="#bcd6a4" p={[0, -0.02, 0]} s={[44, 0.04, 44]} shadow={false}/>
+    {side((sx, sz, rot) => <>
+      {/* Inner pavement, road and outer pavement on each side */}
+      <P c="#efe7d6" p={[sx * (r0 - 0.15), 0.005, sz * (r0 - 0.15)]} s={rot ? [0.3, 0.01, len - 1.6] : [len - 1.6, 0.01, 0.3]} shadow={false}/>
+      <P c="#8b949a" p={[sx * rc, 0.01, sz * rc]} s={rot ? [w, 0.01, len] : [len, 0.01, w]} shadow={false}/>
+      <P c="#efe7d6" p={[sx * (r0 + w + 0.15), 0.005, sz * (r0 + w + 0.15)]} s={rot ? [0.3, 0.01, len + 0.6] : [len + 0.6, 0.01, 0.3]} shadow={false}/>
+      {[-3.6, -2.4, -1.2, 0, 1.2, 2.4, 3.6].map((k) => <P key={k} c="#f2efe4" p={rot ? [sx * rc, 0.017, k] : [k, 0.017, sz * rc]} s={rot ? [0.04, 0.004, 0.34] : [0.34, 0.004, 0.04]} shadow={false}/>)}
+    </>)}
+    {/* Behind the board: a short skyline of offices */}
+    <Tower x={-4.6} z={-7.0} w={1.1} h={2.2} d={1.0} c="#87a9b1"/>
+    <Tower x={-1.6} z={-7.2} w={1.0} h={1.6} d={1.0} c="#b8d0d4"/>
+    <Tower x={1.6} z={-7.0} w={1.2} h={2.6} d={1.0} c="#9fb7c4"/>
+    <Tower x={4.6} z={-7.1} w={1.0} h={1.8} d={1.0} c="#c6d7d0"/>
+    <Tower x={-7.0} z={-3.4} w={1.0} h={1.9} d={1.1} c="#a9c2c8"/>
+    <Tower x={-7.1} z={0.2} w={1.0} h={1.4} d={1.0} c="#c6d7d0"/>
+    <Tower x={-7.0} z={3.6} w={1.0} h={1.2} d={1.1} c="#b8d0d4"/>
+    {/* In front: low homes, shops and trees */}
+    <House x={-3.8} z={6.6} wall="#f0d9bc" roof="#b5523b"/>
+    <House x={-1.2} z={6.8} wall="#f8f7f0" roof="#457a9b" ry={0.15}/>
+    <Shop x={1.6} z={6.6}/>
+    <House x={4.4} z={6.7} wall="#eadfcc" roof="#7d68a6"/>
+    <Shop x={6.6} z={3.2}/>
+    <House x={6.7} z={0.2} wall="#f0d9bc" roof="#24845b" ry={Math.PI / 2}/>
+    <House x={6.6} z={-3.4} wall="#f8f7f0" roof="#b5523b" ry={Math.PI / 2}/>
+    {[[-5.9, 5.9], [0.2, 6.3], [3.0, 6.2], [6.0, 6.0], [6.2, -1.6], [6.2, 1.8], [-6.2, 5.8], [6.0, -6.0], [-6.0, -6.1]].map(([x, z], i) => <Tree key={i} x={x!} z={z!} s={0.95} tone={i % 2 ? '#6d9e72' : '#588b70'}/>)}
+    {[-3, 0, 3].flatMap((k) => [[k, -(r0 + w + 0.4)], [k, r0 + w + 0.4], [-(r0 + w + 0.4), k], [r0 + w + 0.4, k]]).map(([x, z], i) => <Lamp key={i} x={x!} z={z!}/>)}
   </group>;
 }

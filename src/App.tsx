@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { GameProvider, useGame } from './lifetrack/hooks/useGame.tsx';
 import { createSeed } from './lifetrack/game/rng.ts';
 import type { CharacterId } from './lifetrack/game/types.ts';
@@ -8,6 +8,7 @@ import { GameScreen } from './lifetrack/screens/GameScreen.tsx';
 import { HowToPlay } from './lifetrack/components/HowToPlay.tsx';
 import { Disclaimer } from './lifetrack/components/ui.tsx';
 import { AudioProvider } from './lifetrack/components/AudioControls.tsx';
+import { preloadBoard3D } from './lifetrack/board3d/Board3DSlot.tsx';
 
 type SetupScreen = 'home' | 'characters' | 'introduction';
 function Application() {
@@ -17,6 +18,8 @@ function Application() {
   // Always land on the menu first; a validated save is resumed only on request.
   const [paused, setPaused] = useState(true);
   const [modal, setModal] = useState<'how'|'learning'|null>(null);
+  // Fetch the 3D board while the player is on the menu, so the game opens straight onto it.
+  useEffect(()=>{const w=window as Window&{requestIdleCallback?:(cb:()=>void)=>number};const id=w.requestIdleCallback?w.requestIdleCallback(preloadBoard3D):window.setTimeout(preloadBoard3D,800);return()=>{if(!w.requestIdleCallback)window.clearTimeout(id);};},[]);
 
   const startNew = () => {
     if (state && state.status !== 'complete' && !window.confirm('Starting a new game will replace your saved progress. Continue?')) return;

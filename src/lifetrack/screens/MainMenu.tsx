@@ -1,6 +1,6 @@
 import { ArrowRight, BookOpen, Building2, HeartHandshake, ShieldCheck, Sparkles } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { CityScene } from '../components/CityScene.tsx';
+import { HeroBoard } from '../board3d/HeroBoard.tsx';
 import { AudioControls } from '../components/AudioControls.tsx';
 import { Brand, Button, Disclaimer, Eyebrow } from '../components/ui.tsx';
 
@@ -12,7 +12,7 @@ export function MainMenu({ onPlay, onNew, onHowToPlay, onLearning, canResume }: 
         <div className="hero-actions"><Button onClick={canResume?onPlay:onNew}>{canResume?'Continue saved game':'Play the game'} <ArrowRight size={17}/></Button>{canResume&&<Button variant="secondary" onClick={onNew}>Start a new game</Button>}</div>
         <div className="hero-links"><button onClick={onHowToPlay}><BookOpen size={16}/> How to play</button><button onClick={onLearning}><HeartHandshake size={16}/> Insurance learning</button></div><p className="hero-meta"><Sparkles size={15}/> A six-month challenge · About 8–12 minutes</p>
       </div>
-      <div className="city-scene"><CityScene/><div className="scene-label label-cafe"><Building2 size={12}/> Kopi &amp; Co.</div><div className="scene-label label-clinic"><span className="clinic-plus">+</span> Care clinic</div><div className="scene-caption"><Building2 size={16}/> Kuala Lumpur · Your story starts here</div></div>
+      <div className="city-scene hero-board-frame"><HeroBoard/><div className="scene-caption"><Building2 size={16}/> Your city board · Kuala Lumpur</div></div>
     </section>
     <section className="value-row"><div><span className="value-icon green"><Building2 size={18}/></span><p><b>Build a buffer</b><small>Learn how small savings grow into resilience.</small></p></div><div><span className="value-icon red"><ShieldCheck size={18}/></span><p><b>Choose your cover</b><small>Explore what fictional policies can and cannot do.</small></p></div><div><span className="value-icon blue"><Sparkles size={18}/></span><p><b>Learn as you go</b><small>Life events turn money concepts into decisions.</small></p></div></section>
     <footer className="landing-footer"><Disclaimer compact/><span>Designed for learning in Malaysia · RM currency</span></footer>

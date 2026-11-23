@@ -4,14 +4,14 @@
  * Everything here is presentation-only and is released by `disposeKit()` when the
  * 3D board unmounts.
  */
-import { BoxGeometry, CanvasTexture, CapsuleGeometry, ConeGeometry, CylinderGeometry, LatheGeometry, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PlaneGeometry, SphereGeometry, SRGBColorSpace, TextureLoader, TorusGeometry, Vector2, type BufferGeometry, type Material, type Texture } from 'three';
+import { BoxGeometry, CanvasTexture, ConeGeometry, CylinderGeometry, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PlaneGeometry, SphereGeometry, SRGBColorSpace, TorusGeometry, type BufferGeometry, type Material, type Texture } from 'three';
 
 let geometries: Record<string, BufferGeometry> | null = null;
 const materials = new Map<string, MeshStandardMaterial | MeshBasicMaterial>();
 const textures = new Map<string, Texture>();
 
 /** Unit shapes: box 1x1x1, cylinder radius 0.5 height 1, sphere radius 0.5, cone radius 0.5 height 1. */
-export function geo(): Record<'box' | 'cyl' | 'cylLow' | 'sphere' | 'dome' | 'cone' | 'prism' | 'ring' | 'gem' | 'plane' | 'capsule' | 'frustum' | 'taper' | 'torso' | 'faceShell' | 'hoodBack' | 'hoodTop', BufferGeometry> {
+export function geo(): Record<'box' | 'cyl' | 'cylLow' | 'sphere' | 'dome' | 'cone' | 'prism' | 'ring' | 'gem' | 'plane' | 'frustum', BufferGeometry> {
   geometries ??= {
     box: new BoxGeometry(1, 1, 1),
     cyl: new CylinderGeometry(0.5, 0.5, 1, 18),
@@ -23,36 +23,12 @@ export function geo(): Record<'box' | 'cyl' | 'cylLow' | 'sphere' | 'dome' | 'co
     prism: new CylinderGeometry(0.5, 0.5, 1, 3).rotateZ(Math.PI / 2).rotateX(-Math.PI / 2).translate(0, 0.25, 0).scale(1, 1 / 0.75, 1 / 0.866),
     ring: new TorusGeometry(0.5, 0.06, 6, 28),
     gem: new OctahedronGeometry(0.5, 0),
-    // Rounded limbs and torsos: radius 0.5, total height 2 (scale y by half the wanted length).
-    capsule: new CapsuleGeometry(0.5, 1, 6, 14),
     // Tapered cylinder (skirts, vases): top radius 0.3, bottom 0.5, height 1.
     frustum: new CylinderGeometry(0.3, 0.5, 1, 20),
-    // Tapered limb (trouser legs): top radius 0.5, bottom 0.4, height 1.
-    taper: new CylinderGeometry(0.5, 0.4, 1, 16),
-    // Jacket/torso for a 1-unit-tall figure (hip y 0.46 to shoulders y 0.8), flattened front to back.
-    torso: new LatheGeometry([[0.0, 0.455], [0.104, 0.46], [0.098, 0.54], [0.106, 0.62], [0.122, 0.7], [0.13, 0.755], [0.112, 0.79], [0.05, 0.808], [0.0, 0.81]].map(([r, y]) => new Vector2(r, y)), 22).scale(1, 1, 0.6),
-    // Front cap of the head that carries the face texture (planar UVs; see faceShellGeometry).
-    faceShell: faceShellGeometry(),
-    // Hijab: a sphere with a face opening at the front (back/sides piece + forehead cap).
-    hoodBack: new SphereGeometry(0.5, 28, 18, Math.PI / 2 + 0.95, Math.PI * 2 - 1.9, 0, Math.PI * 0.84),
-    hoodTop: new SphereGeometry(0.5, 14, 6, Math.PI / 2 - 0.95, 1.9, 0, 0.6),
     // Flat 1x1 decal lying on the ground (faces +Y).
     plane: new PlaneGeometry(1, 1).rotateX(-Math.PI / 2),
   };
-  return geometries as never;
-}
-
-/**
- * Front cap of a unit sphere (radius 0.5) with planar UVs: the face texture spans x/y in
- * [-0.35, 0.35] around a centre 0.12 below the equator, so it lands brow-to-chin on the head.
- */
-function faceShellGeometry(): BufferGeometry {
-  const g = new SphereGeometry(0.5, 28, 20, Math.PI / 2 - 1.15, 2.3, 0.55, 1.9);
-  const pos = g.getAttribute('position'), uv = g.getAttribute('uv');
-  const half = 0.35, cy = -0.12;
-  for (let i = 0; i < pos.count; i++) uv.setXY(i, 0.5 + pos.getX(i) / (2 * half), 0.5 + (pos.getY(i) - cy) / (2 * half));
-  uv.needsUpdate = true;
-  return g;
+  return geometries as ReturnType<typeof geo>;
 }
 
 /** Cached matte material for a colour (optionally emissive). */
@@ -71,33 +47,6 @@ export function decal(map: Texture): MeshBasicMaterial {
   const key = `decal|${map.uuid}`;
   let m = materials.get(key) as MeshBasicMaterial | undefined;
   if (!m) { m = new MeshBasicMaterial({ map, transparent: true, depthWrite: false, toneMapped: false }); materials.set(key, m); }
-  return m;
-}
-
-/**
- * Face material for a character: plain skin until the face texture (cropped from the official
- * reference, see scripts/assets) has loaded, then textured. Never blocks or breaks the scene:
- * a missing texture simply leaves the skin colour.
- */
-export function faceMaterial(id: string, skin: string, onReady: () => void): MeshStandardMaterial {
-  const key = `face|${id}`;
-  let m = materials.get(key) as MeshStandardMaterial | undefined;
-  if (!m) {
-    const material = new MeshStandardMaterial({ color: '#ffffff', roughness: 0.62 });
-    material.color.set(skin);
-    materials.set(key, material);
-    m = material;
-    const url = `${import.meta.env.BASE_URL}assets/characters/faces/${id}.jpg`;
-    new TextureLoader().load(url, (t) => {
-      if (materials.get(key) !== material) { t.dispose(); return; } // kit disposed meanwhile
-      t.colorSpace = SRGBColorSpace; t.anisotropy = 4;
-      textures.set(key, t);
-      // A little self-lighting keeps small faces readable under the board's key light.
-      material.map = t; material.emissiveMap = t; material.emissive.set('#ffffff'); material.emissiveIntensity = 0.28;
-      material.color.set('#ffffff'); material.needsUpdate = true;
-      onReady();
-    }, undefined, () => { /* keep the skin colour */ });
-  }
   return m;
 }
 

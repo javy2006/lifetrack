@@ -14,6 +14,11 @@ const check = (name, ok, detail = '') => { results.checks.push({ name, ok, detai
 
 async function newPage(viewport, label) {
   const ctx = await browser.newContext({ viewport, deviceScaleFactor: 1 });
+  // Records whether the old SVG board is ever mounted, even for a moment (it must not be when 3D is active).
+  await ctx.addInitScript(() => {
+    globalThis.__sawSvgBoard = false;
+    new MutationObserver(() => { if (document.querySelector('.life-board')) globalThis.__sawSvgBoard = true; }).observe(document, { childList: true, subtree: true });
+  });
   const page = await ctx.newPage();
   page.on('console', (m) => { if (m.type() === 'error') results.errors.push(`[${label}] ${m.text()}`); });
   page.on('pageerror', (e) => results.errors.push(`[${label}] pageerror ${e.message}`));
@@ -46,7 +51,7 @@ async function startGame(page, tag, character = 0) {
 async function playMonth(page, month, tag, { loseBoardAtEventDraw = false } = {}) {
   await click(page, /Collect monthly income/);
   await click(page, /Pay monthly essentials/);
-  await btn(page, /Roll Dice/).waitFor();
+  await page.getByRole('button', { name: 'Roll Dice' }).waitFor();
   if (month === 1) {
     await shot(page, `${tag}-02-roll`);
     if (url.includes('renderer=3d')) check(`${tag}: 3D board canvas is active (not the fallback)`, (await page.locator('.board-3d canvas').count()) === 1 && (await page.locator('.life-board').count()) === 0);
@@ -66,7 +71,7 @@ async function playMonth(page, month, tag, { loseBoardAtEventDraw = false } = {}
     check(`${tag}: board visible (>=120px tall, <=10% under the dock)`, fit.h >= 120 && fit.covered <= 10, `h=${fit.h} covered=${fit.covered}%`);
   }
   const rolledAt = Date.now();
-  await page.locator('.game-action-layer button', { hasText: /Roll Dice/ }).click();
+  await page.getByRole('button', { name: 'Roll Dice' }).click();
   if (month === 1) {
     await page.waitForTimeout(1900); // after tumble + reveal: the pawn is hopping
     const covering = await page.locator('.dice-overlay, .game-action-modal').count();
@@ -79,11 +84,28 @@ async function playMonth(page, month, tag, { loseBoardAtEventDraw = false } = {}
     check(`${tag}: decisions open only after the pawn finishes moving`, roll >= 1 && elapsed >= minimum, `roll=${roll} ${elapsed}ms >= ${minimum}ms`);
   }
   if (month === 1) { await shot(page, `${tag}-03-decisions`); await overflow(page, `${tag} decisions`); }
+  const before = await game(page), cashBefore = before.players.find((p) => p.id === before.humanId).cash;
+  if (month === 1) {
+    // Picks are a draft: select, change and remove freely; nothing is charged before confirming.
+    const pass = page.locator('button.pass-action');
+    await pass.click();
+    check(`${tag}: picked option shows as selected`, (await pass.getAttribute('aria-pressed')) === 'true');
+    await page.locator('.decision-slot.is-filled').first().click(); // remove it again
+    check(`${tag}: a pick can be removed before confirming`, (await pass.getAttribute('aria-pressed')) === 'false');
+  }
   for (let i = 0; i < 2; i++) {
     const save = page.locator('button.save-action');
     if (await save.isEnabled()) await save.click(); else await page.locator('button.pass-action').click();
   }
-  await click(page, /Confirm decisions/);
+  const draftCash = (await game(page)).players.find((p) => p.id === before.humanId).cash;
+  if (month === 1) check(`${tag}: no money moves until moves are confirmed`, draftCash === cashBefore, `${cashBefore} -> ${draftCash}`);
+  // Double-click the confirm button: the transactions must still apply exactly once.
+  await page.locator('button.decision-confirm').dblclick();
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem('lifetrack.game.v1') ?? 'null')?.phase !== 'decisions', null, { timeout: 10000 });
+  if (month === 1) {
+    const g1 = await game(page), h1 = g1.players.find((p) => p.id === g1.humanId), rec = h1.history[0];
+    check(`${tag}: confirming applies the moves exactly once`, rec.actions.length === 2 && h1.savings === rec.actions.filter((a) => a.kind === 'save').length * 300, `actions=${rec.actions.length} savings=${h1.savings}`);
+  }
   if (month === 1 || month === 4) {
     // Four-player dashboard shows the same cash and net worth (cash + savings) as the saved game state.
     await page.waitForTimeout(300);
@@ -131,6 +153,7 @@ async function playMonth(page, month, tag, { loseBoardAtEventDraw = false } = {}
   await click(page, /See final results/);
   await btn(page, /Play again/).waitFor();
   await shot(page, `${tag}-06-results`);
+  if (!url.includes('renderer=svg')) check('3D: the old SVG board never appeared (new game, reload and resume)', !(await page.evaluate(() => globalThis.__sawSvgBoard)));
   check('results page uses the name Vikram, never Daniel', !(await page.evaluate(() => /Daniel/.test(document.body.innerText))) && (await page.evaluate(() => /Vikram/.test(document.body.innerText))));
   const g = await game(page);
   check('game complete', g.status === 'complete');
@@ -163,6 +186,7 @@ for (const [tag, viewport, character] of [['phone', { width: 390, height: 844 },
   check(`${tag}: playing as character ${character}`, (await game(page))?.humanId === ['alex', 'meiling', 'daniel', 'aisyah'][character]);
   await overflow(page, `${tag} income`);
   await playMonth(page, 1, tag);
+  if (!url.includes('renderer=svg')) check(`${tag}: 3D: the old SVG board never appeared`, !(await page.evaluate(() => globalThis.__sawSvgBoard)));
   await page.context().close();
 }
 
