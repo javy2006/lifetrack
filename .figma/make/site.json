@@ -1,0 +1,10 @@
+{
+  "description": "Play a six-round financial strategy game for young adults in Malaysia, balancing savings, expenses, insurance and unexpected events to build financial resilience.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
