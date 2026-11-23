@@ -49,13 +49,14 @@ export function useI18n(): I18nValue {
 }
 
 /** Compact language selector (native select: keyboard and screen-reader friendly). */
-export function LanguageSelect({ className = '' }: { className?: string }) {
+/** `short`: option text is the short code (EN, BM, 中文, தமிழ்), for tight bars; the full name stays in the tooltip/label. */
+export function LanguageSelect({ className = '', short = false }: { className?: string; short?: boolean }) {
   const { lang, setLang, t } = useI18n();
   return <label className={`language-select ${className}`} title={t('lang.label')}>
     <Languages size={15} aria-hidden="true"/>
     <span className="sr-only">{t('lang.label')}</span>
     <select value={lang} onChange={(e) => setLang(e.target.value as Lang)} aria-label={t('lang.label')}>
-      {LANGS.map((l) => <option key={l.id} value={l.id} lang={l.htmlLang}>{l.label}</option>)}
+      {LANGS.map((l) => <option key={l.id} value={l.id} lang={l.htmlLang} title={l.label}>{short ? l.short : l.label}</option>)}
     </select>
   </label>;
 }

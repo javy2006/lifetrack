@@ -202,6 +202,8 @@ const pack: LanguagePack = {
       'recurring-premium': { title: 'கோரிக்கை இல்லாத மாதம்', explanation: 'கோரிக்கை இல்லாவிட்டாலும் இந்த மாதம் பிரீமியம் செலுத்தினீர்கள். காப்பீடு நிச்சயமற்ற நிதி அபாயங்களை நிர்வகிக்கும் வழி; உத்தரவாதமான வருமானம் அல்ல.', example: 'இந்த மாதம் {premiums} பிரீமியம் செலுத்தினீர்கள், கோரிக்கை இல்லை.', exampleNone: 'இந்த மாதம் செலுத்த பிரீமியமும் இல்லை, கோரிக்கையும் இல்லை.', takeaway: 'அமைதியான மாதங்கள் உங்கள் இருப்பை உருவாக்க ஒரு வாய்ப்பு.' },
     },
     aiReasons: {
+      'Basic cover is in place, so savings grow steadily.': 'அடிப்படைப் பாதுகாப்பு உள்ளது; எனவே சேமிப்பு சீராக வளர்கிறது.',
+      'Saving while keeping options open.': 'வாய்ப்புகளைத் திறந்து வைத்தபடி சேமிக்கிறார்.',
       'A big hospital bill is the shock to cover first.': 'பெரிய மருத்துவமனைக் கட்டணமே முதலில் பாதுகாக்க வேண்டிய அதிர்ச்சி.',
       'Building the emergency cushion comes first.': 'அவசரச் சேமிப்பை உருவாக்குவதே முதன்மை.',
       'Chosen protection is active, so the rest goes to savings.': 'தேர்ந்தெடுத்த பாதுகாப்பு செயலில் உள்ளது; மீதி சேமிப்புக்குச் செல்கிறது.',

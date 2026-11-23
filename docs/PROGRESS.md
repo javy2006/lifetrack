@@ -18,6 +18,25 @@ Ground rule: `src/lifetrack/game/` (reducer, calculations, AI strategies, polici
 | 4.3C-2d | Phone: "Money" drawer overlaps board heading | Open (cosmetic) |
 | 5.x | Three.js + React Three Fiber 9 board renderer | Not started (dependencies not installed) |
 
+## Release: polish, immersive 3D, audio, languages, demo (2026-11-24) — complete
+
+Resume point if interrupted: everything below is committed and pushed; nothing is in progress.
+
+| Milestone | Status | Commit | Key files |
+| --- | --- | --- | --- |
+| Phase 1 re-verification (2.5D flash, decision select/confirm, landscape, results, card overflow) | Done | 3a8a7a8 | `src/index.css`, `DecisionCard.tsx` |
+| Languages EN/BM/ZH/TA, demo mode, recap/results charts, focus mode | Done | 938bb40 | `src/lifetrack/i18n/*`, `src/lifetrack/demo/*`, `components/Charts.tsx`, `screens/GameScreen.tsx` |
+| Licensed local audio (Kenney CC0 + own cues) | Done | bb8239f | `public/audio/*.mp3`, `docs/AUDIO_CREDITS.md`, `AudioControls.tsx`, `synthSounds.ts` |
+| Immersive board (Roll placement, light mood, fitting dashboard) | Done | 8336a37 | `board3d/Board3DScene.tsx`, `src/index.css` |
+| Polish (Tamil headings, CJK/Tamil 3D captions, table label) | Done | 6a79b81 | `src/index.css`, `board3d/kit3d.ts` |
+| Dynamic-content translation audit, narrow/short screens in all languages | Done | see git log | `i18n/dynamic.test.ts`, `i18n/{ms,zh,ta}.ts`, `GameHeader.tsx`, `scripts/qa/i18n.mjs` |
+
+Translation rules: UI strings use stable keys (`t('decision.choose', { count })`); engine content is overlaid by engine IDs (event, policy, character, quiz, concept, insight) and English AI sentences; numbers are always the engine's `formatRM` output passed in as variables. The engine (`src/lifetrack/game/`) is unchanged.
+
+Tests at completion: 108/108 unit (incl. 120 simulated games × 3 languages: every AI explanation, claim reason, insight and event text translated, RM figures identical, all 24 events reached); tsc clean; build OK. Production preview: journey 95/95, `?renderer=svg` 91/91; `i18n.mjs` 0 failures at 1366×768, 390×844, 844×390, 360×640, 320×640, 568×320, 667×375 in all four languages (no leftover English, clipping, off-screen header items, overflow; language switch keeps the save); `demo.mjs` 28/28; `audio.mjs` 30/30; bills/cards overflow at 12 sizes incl. 568×320 and 667×375.
+
+Remaining / optional: native-speaker review of BM, Chinese and Tamil copy; Insight popups still await a product decision.
+
 ## Step 0: Git baseline (2026-11-23)
 
 - Initialized the repo on `main`, with a repo-local identity and Git LFS enabled (local).

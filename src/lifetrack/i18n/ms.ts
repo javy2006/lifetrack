@@ -194,6 +194,8 @@ const pack: LanguagePack = {
       'recurring-premium': { title: 'Bulan tanpa tuntutan', explanation: 'Anda membayar premium bulan ini walaupun tiada tuntutan. Insurans ialah cara mengurus risiko kewangan yang tidak pasti, bukan pulangan yang dijamin.', example: 'Anda membayar {premiums} premium bulan ini dan tiada tuntutan.', exampleNone: 'Anda tiada premium untuk dibayar bulan ini, dan tiada tuntutan untuk dibuat.', takeaway: 'Bulan yang tenang ialah peluang untuk membina penampan anda.' },
     },
     aiReasons: {
+      'Basic cover is in place, so savings grow steadily.': 'Perlindungan asas sudah ada, jadi simpanan berkembang dengan stabil.',
+      'Saving while keeping options open.': 'Menyimpan sambil membiarkan pilihan terbuka.',
       'A big hospital bill is the shock to cover first.': 'Bil hospital yang besar ialah kejutan yang perlu dilindungi dahulu.',
       'Building the emergency cushion comes first.': 'Membina simpanan kecemasan diutamakan.',
       'Chosen protection is active, so the rest goes to savings.': 'Perlindungan pilihan sudah aktif, jadi bakinya untuk simpanan.',

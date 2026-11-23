@@ -194,6 +194,8 @@ const pack: LanguagePack = {
       'recurring-premium': { title: '没有理赔的一个月', explanation: '即使本月没有理赔，你也缴付了保费。保险是管理不确定财务风险的方式，而不是保证回报。', example: '你本月缴付了 {premiums} 保费，没有理赔。', exampleNone: '你本月没有保费要缴，也没有理赔。', takeaway: '平静的月份是累积缓冲的好机会。' },
     },
     aiReasons: {
+      'Basic cover is in place, so savings grow steadily.': '基本保障已到位，储蓄稳步增长。',
+      'Saving while keeping options open.': '一边储蓄，一边保留选择余地。',
       'A big hospital bill is the shock to cover first.': '大额住院账单是最先要防范的冲击。',
       'Building the emergency cushion comes first.': '先建立应急储蓄。',
       'Chosen protection is active, so the rest goes to savings.': '选定的保障已生效，其余的存起来。',

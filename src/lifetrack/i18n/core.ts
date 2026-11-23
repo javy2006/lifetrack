@@ -5,11 +5,11 @@
  * figures in Malaysian Ringgit.
  */
 export type Lang = 'en' | 'ms' | 'zh' | 'ta';
-export const LANGS: readonly { id: Lang; label: string; htmlLang: string }[] = [
-  { id: 'en', label: 'English', htmlLang: 'en-MY' },
-  { id: 'ms', label: 'Bahasa Melayu', htmlLang: 'ms-MY' },
-  { id: 'zh', label: '简体中文', htmlLang: 'zh-Hans-MY' },
-  { id: 'ta', label: 'தமிழ்', htmlLang: 'ta-MY' },
+export const LANGS: readonly { id: Lang; label: string; short: string; htmlLang: string }[] = [
+  { id: 'en', label: 'English', short: 'EN', htmlLang: 'en-MY' },
+  { id: 'ms', label: 'Bahasa Melayu', short: 'BM', htmlLang: 'ms-MY' },
+  { id: 'zh', label: '简体中文', short: '中文', htmlLang: 'zh-Hans-MY' },
+  { id: 'ta', label: 'தமிழ்', short: 'தமிழ்', htmlLang: 'ta-MY' },
 ];
 export const LANG_STORAGE_KEY = 'lifetrack.lang.v1';
 

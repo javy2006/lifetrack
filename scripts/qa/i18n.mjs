@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const [url = 'http://127.0.0.1:5174/', out = './shots', repo = process.cwd(), only = 'en,ms,zh,ta'] = process.argv.slice(2);
+const [url = 'http://127.0.0.1:5174/', out = './shots', repo = process.cwd(), only = 'en,ms,zh,ta', sizeArg = ''] = process.argv.slice(2);
 fs.mkdirSync(out, { recursive: true });
 const imp = (p) => import(pathToFileURL(path.join(repo, p)).href);
 const en = (await imp('src/lifetrack/i18n/en.ts')).default;
@@ -32,10 +32,15 @@ async function scan(page, lang, where) {
     const attrs = [...document.querySelectorAll('[aria-label],[title]')].filter((e) => !e.closest('option')).flatMap((e) => [e.getAttribute('aria-label'), e.getAttribute('title')]).filter(Boolean);
     // Text clipped by its own box (single-line ellipsis-free overflow) in buttons and headings.
     const clipped = [...document.querySelectorAll('button, h1, h2, .eyebrow, .stage-dot, .pd-card dt, .resource-item small')].filter((e) => vis(e) && e.scrollWidth > e.clientWidth + 2 && getComputedStyle(e).overflow !== 'visible').map((e) => e.textContent.trim().slice(0, 40));
-    return { texts, attrs, clipped, sw: document.documentElement.scrollWidth, w: innerWidth };
+    // Header items must sit fully inside the viewport (the game page locks scrolling, so overflow would just be cut off).
+    const offscreen = [...document.querySelectorAll('.game-topbar > *, .topbar-right > *, .resource-strip > *, .landing-nav > *, .setup-topbar > *')].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && (r.left < -1 || r.right > innerWidth + 1); }).map((e) => e.className || e.tagName);
+    const wrappedPill = [...document.querySelectorAll('.round-pill')].filter((e) => vis(e) && e.getBoundingClientRect().height > 40).length;
+    return { texts, attrs, clipped, offscreen, wrappedPill, sw: document.documentElement.scrollWidth, w: innerWidth };
   });
   if (report.sw > report.w + 1) fail(`${lang} ${where}: horizontal overflow ${report.sw} > ${report.w}`);
   if (report.clipped.length) fail(`${lang} ${where}: clipped ${JSON.stringify(report.clipped)}`);
+  if (report.offscreen.length) fail(`${lang} ${where}: outside the viewport ${JSON.stringify(report.offscreen)}`);
+  if (report.wrappedPill) fail(`${lang} ${where}: month pill wraps`);
   if (lang === 'en') return;
   const leftovers = new Set();
   for (const t of [...report.texts, ...report.attrs]) for (const w of words(t)) if (englishWords.has(w) && !own.has(w) && !ALLOW.has(w)) leftovers.add(`${w} ← "${t.slice(0, 60)}"`);
@@ -107,7 +112,9 @@ async function run(lang, viewport, tag) {
 }
 
 for (const lang of only.split(',')) {
-  for (const [name, viewport] of [['desk', { width: 1366, height: 768 }], ['phone', { width: 390, height: 844 }], ['land', { width: 844, height: 390 }]]) {
+  const sizes = sizeArg ? sizeArg.split(',').map((v) => { const [width, height] = v.split('x').map(Number); return [v, { width, height }]; })
+    : [['desk', { width: 1366, height: 768 }], ['phone', { width: 390, height: 844 }], ['land', { width: 844, height: 390 }]];
+  for (const [name, viewport] of sizes) {
     const tag = `${lang}-${name}`;
     try { await run(lang, viewport, tag); console.log('done', tag); } catch (e) { fail(`${tag}: ${e.message.split('\n')[0]}`); }
   }

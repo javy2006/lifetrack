@@ -50,7 +50,7 @@ for (const [lang, pack] of Object.entries(packs)) {
     }
     for (const id of Object.keys(CONCEPTS)) assert.ok(c.concepts?.[id as keyof typeof CONCEPTS]?.label, `${lang} concept ${id}`);
     for (const id of ['shortfall', 'coverage-limit', 'deductible', 'lump-sum', 'fixed-benefit', 'exclusions', 'emergency-savings', 'recurring-premium'] as const) assert.ok(c.insights?.[id]?.title && c.insights[id]!.example, `${lang} insight ${id}`);
-    assert.equal(Object.keys(c.aiReasons ?? {}).length, 8, `${lang} AI reasons`);
+    assert.equal(Object.keys(c.aiReasons ?? {}).length, 10, `${lang} AI reasons`);
   });
 }
 
