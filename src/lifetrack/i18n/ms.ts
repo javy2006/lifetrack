@@ -7,7 +7,7 @@ const pack: LanguagePack = {
     common: {
       you: 'Anda', ai: 'AI', space: 'Petak {n}', cash: 'Tunai', savings: 'Simpanan', emergencySavings: 'Simpanan kecemasan', netWorth: 'Nilai bersih',
       income: 'Pendapatan', expenses: 'Perbelanjaan', premiums: 'Premium', monthlyPremiums: 'Premium bulanan', actionPoints: 'Mata tindakan',
-      perMonth: '{amount}/bulan', learnMore: 'Ketahui lebih lanjut', close: 'Tutup', gotIt: 'Faham', back: 'Kembali', continue: 'Teruskan', exit: 'Keluar',
+      perMonth: '{amount}/bulan', showTable: 'Papar sebagai jadual', learnMore: 'Ketahui lebih lanjut', close: 'Tutup', gotIt: 'Faham', back: 'Kembali', continue: 'Teruskan', exit: 'Keluar',
       exitGame: 'Keluar permainan', fictional: 'Rekaan', loading: 'Memuatkan…',
       disclaimerShort: 'Contoh pendidikan rekaan. Bukan nasihat kewangan.',
       disclaimer: 'Semua polisi insurans, premium, faedah, peristiwa dan nilai kewangan dalam LifeTrack ialah contoh permainan rekaan. Ia tidak mewakili produk insurans atau Takaful sebenar, terma polisi, sebut harga, jaminan perlindungan atau nasihat kewangan.',

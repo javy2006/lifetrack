@@ -47,7 +47,7 @@ export function RecapChart({ player }: { player: PlayerState }) {
       })}
       <line x1={pad.l} x2={W - pad.r} y1={y(0)} y2={y(0)} className="chart-baseline"/>
     </svg>
-    <LearnMore label={t('common.learnMore')}><table className="chart-table"><thead><tr><th/><th>{t('common.cash')}</th><th>{t('common.savings')}</th></tr></thead><tbody>{rows.map((r) => <tr key={r.round}><th>{t(`months.${r.round - 1}`)}</th><td>{formatRM(r.cashAtEnd!)}</td><td>{formatRM(r.savingsAtEnd!)}</td></tr>)}</tbody></table></LearnMore>
+    <LearnMore label={t('common.showTable')}><table className="chart-table"><thead><tr><th/><th>{t('common.cash')}</th><th>{t('common.savings')}</th></tr></thead><tbody>{rows.map((r) => <tr key={r.round}><th>{t(`months.${r.round - 1}`)}</th><td>{formatRM(r.cashAtEnd!)}</td><td>{formatRM(r.savingsAtEnd!)}</td></tr>)}</tbody></table></LearnMore>
   </figure>;
 }
 
@@ -77,6 +77,6 @@ export function NetWorthChart({ state }: { state: GameState }) {
       </g>)}
       {ends.map(({ s, y: ly }) => <text key={s.id} x={W - pad.r + 8} y={ly + 4} className="chart-label">{s.name}</text>)}
     </svg>
-    <LearnMore label={t('common.learnMore')}><table className="chart-table"><thead><tr><th/>{series.map((s) => <th key={s.id}>{s.name}</th>)}</tr></thead><tbody>{[1, 2, 3, 4, 5, 6].map((r) => <tr key={r}><th>{t(`months.${r - 1}`)}</th>{series.map((s) => <td key={s.id}>{formatRM(s.points.find((p) => p.round === r)?.v ?? 0)}</td>)}</tr>)}</tbody></table></LearnMore>
+    <LearnMore label={t('common.showTable')}><table className="chart-table"><thead><tr><th/>{series.map((s) => <th key={s.id}>{s.name}</th>)}</tr></thead><tbody>{[1, 2, 3, 4, 5, 6].map((r) => <tr key={r}><th>{t(`months.${r - 1}`)}</th>{series.map((s) => <td key={s.id}>{formatRM(s.points.find((p) => p.round === r)?.v ?? 0)}</td>)}</tr>)}</tbody></table></LearnMore>
   </figure>;
 }

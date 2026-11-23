@@ -7,7 +7,7 @@ const pack: LanguagePack = {
     common: {
       you: '你', ai: 'AI', space: '第 {n} 格', cash: '现金', savings: '储蓄', emergencySavings: '应急储蓄', netWorth: '净资产',
       income: '收入', expenses: '支出', premiums: '保费', monthlyPremiums: '每月保费', actionPoints: '行动点',
-      perMonth: '每月 {amount}', learnMore: '了解更多', close: '关闭', gotIt: '明白了', back: '返回', continue: '继续', exit: '退出',
+      perMonth: '每月 {amount}', showTable: '以表格显示', learnMore: '了解更多', close: '关闭', gotIt: '明白了', back: '返回', continue: '继续', exit: '退出',
       exitGame: '退出游戏', fictional: '虚构', loading: '加载中…',
       disclaimerShort: '虚构的教育示例，并非理财建议。',
       disclaimer: 'LifeTrack 中的所有保险保单、保费、赔付、事件和财务数值都是虚构的游戏示例，不代表任何真实的保险或回教保险（Takaful）产品、保单条款、报价、保障承诺或理财建议。',

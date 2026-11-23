@@ -183,18 +183,32 @@ Owner priorities: P1 visible dice and pawn movement · P2 simpler interface · P
 | Fixed | Landscape phones: Roll button covered the middle of the small board → moved to the board corner on short screens. Modals taller than the screen (How to play on 844×390) could not scroll, so "Got it" was unreachable → modal panels now scroll within the viewport |
 | Not verified | The live Vercel site sits behind Vercel login (HTTP 302), so it was checked only through GitHub's deployment status, not in a browser |
 
+### Polish, immersive 3D, audio, languages and demo (owner brief, 2026-11-24) ✅
+| Area | Status | Evidence |
+| --- | --- | --- |
+| Phase 1 re-verification | ✅ | Old 2.5D board never mounts with 3D active (`renderer-default.mjs`, journey DOM observer); decision draft/confirm-once, bills/cards overflow at 12 sizes (320x640 to 1440x900), results standings: all re-run after every change below |
+| Immersive 3D | ✅ | Focus mode toggle (Fullscreen API, CSS-only fallback when refused, Esc/toggle exits). Roll button moved to the board's bottom-right corner on wide layouts (no longer covers the nearest tiles). Monthly light mood (sun angle and warmth, static per month). Dashboard figures scale with their card (container query) instead of being cut off |
+| Design / charts | ✅ | Month recap: cash + savings per month (stacked columns); results: net worth per player per month (lines). Engine values only (`cashAtEnd`, `savingsAtEnd`); palette validated (fixed order, CVD-safe), legend, direct labels, per-mark tooltips, "Show as table" view |
+| Audio | ✅ | 20 Kenney CC0 clips + 2 own cues, local mono MP3, ~190 kB (ambience 96 kB only when music is on). Dice shake/land, token hops (3 variations), landing, income, bills, savings, cover, confirm, card, event, claim, warning, quiz, month, results. Preloaded after first gesture; no autoplay; synth fallback; licences in `docs/AUDIO_CREDITS.md` |
+| Languages | ✅ | English, Bahasa Melayu, Simplified Chinese, Tamil (`src/lifetrack/i18n/`, no dependency): all UI, event cards, policies, characters, quiz, insights, AI rationale, board tiles (SVG + 3D captions), aria labels. Stored in `lifetrack.lang.v1` (separate from the save); switching mid-game leaves the save and board byte-identical. BM/ZH/TA packs lazy (12-14 kB gzip each). Font fallbacks and line heights for Chinese and Tamil; short header labels on narrow screens |
+| Demo | ✅ | Homepage "Presentation demo": isolated seeded game (`DEMO_SEED`, Mei Ling scripted, AI as normal) through the real reducer; nothing persisted. Play/pause, 1x/2x/4x/8x, skip animation, next milestone (pauses at the next recap), skip to results, restart, exit; short auto-hiding narration. Tests: reproducible, money conserved, insurance paid |
+| QA | ✅ | 104/104 unit (new: language completeness/placeholders for every key and all engine content, demo reproducibility/money conservation); tsc clean; build OK; engine diff empty. Production preview: journey 95/95 and `?renderer=svg` 91/91 (0 console errors, no overflow); `i18n.mjs` 12 runs (4 languages × desktop/phone/landscape) 0 failures; `demo.mjs` 28/28; `audio.mjs` 30/30; `renderer-default`, `board3d`, `character-images`, bills/cards overflow at 12 sizes all pass |
+
 ## How to run QA (for the next session)
 
 1. `pnpm test`, `pnpm typecheck`, `pnpm build`, then `npx vite preview --port 4174`.
 2. In a folder outside the repo: `npm i playwright-core@1.49.1`, copy `scripts/qa/*.mjs` there (ESM ignores NODE_PATH).
 3. `node journey.mjs http://127.0.0.1:4174/?renderer=3d ./shots` (and `?renderer=svg`), `node board3d.mjs http://127.0.0.1:4174/`, `node renderer-default.mjs http://127.0.0.1:4174/`. Screenshots stay out of the repo.
+4. Languages: `node --experimental-strip-types i18n.mjs http://127.0.0.1:4174/ ./shots <repo path> [en,ms,zh,ta]`; demo: `node demo.mjs <url> ./shots`; audio: `node audio.mjs <url>`.
 
 ## Known remaining issues
 
 - R3F 9.8.2 logs a `THREE.Clock` deprecation warning with three 0.187 (inside R3F; needs an R3F release that uses `THREE.Timer`).
 - Landscape phones hide the renderer toggle with the rest of the heading row (by design since M1); switch in portrait.
 - If a WebGL context were lost before R3F creates its renderer, the error boundary falls back to SVG but React logs the caught error.
-- The 3D chunk is 252 kB gzip; the SVG board shows while it loads, so there is no blank state.
+- The 3D chunk is 255 kB gzip; a neutral board-shaped loader shows while it loads (preloaded on the menu).
+- Translations were written for natural Malaysian usage but have not been reviewed by a native speaker of each language; a review pass is recommended before wider release.
+- Fullscreen is not available on iPhone Safari (no element Fullscreen API); focus mode there uses the CSS layout only.
 
 ## Next steps (suggested)
 

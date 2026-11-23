@@ -7,7 +7,7 @@ const en = {
   common: {
     you: 'You', ai: 'AI', space: 'Space {n}', cash: 'Cash', savings: 'Savings', emergencySavings: 'Emergency savings', netWorth: 'Net worth',
     income: 'Income', expenses: 'Expenses', premiums: 'Premiums', monthlyPremiums: 'Monthly premiums', actionPoints: 'Action points',
-    perMonth: '{amount}/month', learnMore: 'Learn more', close: 'Close', gotIt: 'Got it', back: 'Back', continue: 'Continue', exit: 'Exit',
+    perMonth: '{amount}/month', showTable: 'Show as table', learnMore: 'Learn more', close: 'Close', gotIt: 'Got it', back: 'Back', continue: 'Continue', exit: 'Exit',
     exitGame: 'Exit game', fictional: 'Fictional', loading: 'Loading…',
     disclaimerShort: 'Fictional educational examples. Not financial advice.',
     disclaimer: 'All insurance policies, premiums, benefits, events and financial values in LifeTrack are fictional game examples. They do not represent actual insurance or Takaful products, policy terms, quotations, coverage guarantees or financial advice.',
