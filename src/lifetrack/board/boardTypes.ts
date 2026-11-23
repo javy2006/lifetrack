@@ -64,6 +64,17 @@ export function tokenOffset(position:number,playerId:import('../game/types.ts').
   return {x:Math.cos(angle)*12,y:Math.sin(angle)*10};
 }
 
+export type EventDrawBoardStep='run-ai-turns'|'draw-event';
+
+/**
+ * What the board must do while the reducer waits in `event-draw`. Presentation-only: it never touches money.
+ * `human-roll` here means the board save was lost or stale (decisions only open after the human lands), so the
+ * board skips the human move and runs the rival pawns instead of waiting forever.
+ */
+export function getEventDrawBoardStep(stage:BoardTurnStage):EventDrawBoardStep {
+  return stage==='complete'?'draw-event':'run-ai-turns';
+}
+
 export function getAiTurnOrder(playerIds:readonly import('../game/types.ts').CharacterId[],humanId:import('../game/types.ts').CharacterId) {
   return playerIds.filter(id=>id!==humanId);
 }

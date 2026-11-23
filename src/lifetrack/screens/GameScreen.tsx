@@ -19,6 +19,7 @@ import { EventIllustration } from '../components/EventIllustration.tsx';
 import { CityScene } from '../components/CityScene.tsx';
 import { BoardScene } from '../board/BoardScene.tsx';
 import { useBoardController } from '../board/useBoardController.ts';
+import { getEventDrawBoardStep } from '../board/boardTypes.ts';
 import { useAudio } from '../components/AudioControls.tsx';
 
 function PhaseButton({ label, onClick }: { label: string; onClick: () => void }) { return <Button onClick={onClick}>{label}<ArrowRight size={16}/></Button>; }
@@ -101,8 +102,9 @@ export function GameScreen({state,dispatch,onExit}:{state:GameState;dispatch:(a:
   const previousState=useRef(state);
   useEffect(()=>{
     if(state.status!=='playing'||state.phase!=='event-draw'||!board.progress)return;
-    if(board.progress.stage==='human-landed'||board.progress.stage==='ai-turns')void board.runAiTurns();
-    else if(board.progress.stage==='complete')dispatch({type:'event/draw'});
+    const step=getEventDrawBoardStep(board.progress.stage);
+    if(step==='run-ai-turns')void board.runAiTurns();
+    else if(step==='draw-event')dispatch({type:'event/draw'});
   },[state.status,state.phase,board.progress?.stage,board.runAiTurns,dispatch]);
   useEffect(()=>{
     const previous=previousState.current;
