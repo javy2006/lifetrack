@@ -12,7 +12,7 @@
 @layer base {
   :root { font-family: 'Plus Jakarta Sans', sans-serif; color: #172c43; background: #f5f7fa; font-synthesis: none; text-rendering: optimizeLegibility; }
   * { box-sizing: border-box; }
-  body { margin: 0; min-width: 360px; min-height: 100vh; background: #f5f7fa; }
+  body { margin: 0; min-width: 320px; min-height: 100vh; background: #f5f7fa; }
   button { font: inherit; }
   button:focus-visible { outline: 3px solid #e799a5; outline-offset: 3px; }
   ::selection { color: #0f294a; background: #dce8f5; }
@@ -358,3 +358,36 @@ img.mini-avatar { padding: 0; }
 }
 /* Modals never grow past the screen: on short screens (landscape phones) they scroll, so the close/confirm buttons stay reachable. */
 .modal-panel { max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; }
+
+/* ---- Layout robustness (acceptance fixes): cards adapt to their width, buttons never leave the card ---- */
+.phase-card, .event-card, .claim-card, .claim-learning, .summary-card, .decision-card-v2, .quiz-card, .results-layout > * { min-width: 0; overflow-wrap: anywhere; }
+.phase-card .button, .claim-learning .button, .summary-card .button, .event-copy .button { max-width: 100%; white-space: normal; text-align: center; }
+.bill-breakdown > div, .summary-grid > div, .claim-lines > div { gap: 12px; }
+.bill-breakdown b, .claim-lines b, .summary-grid b { white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* Bills figures in the dock: compact cells, label above amount, so they read at any width. */
+.game-action-dock .bill-breakdown { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.game-action-dock .bill-breakdown > div { flex-direction: column; justify-content: flex-start; gap: 2px; padding: 7px 10px; line-height: 1.25; }
+.game-action-dock .bill-breakdown > div > span { font-size: 11px; }
+.game-action-dock .bill-breakdown > div > b { font-size: 14px; }
+@media (max-width: 640px) {
+  .game-action-dock { max-height: 44dvh; }
+  .game-action-dock .phase-card { grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 14px; }
+  .game-action-dock .phase-card > .button { grid-column: 1; grid-row: auto; width: 100%; min-width: 0; min-height: 46px; margin-top: 8px; }
+  .game-action-dock .bill-breakdown { gap: 5px; }
+  .game-action-dock .bill-breakdown > div { padding: 6px 8px; }
+  .game-action-dock .bill-breakdown > div > span { font-size: 10px; }
+  .game-action-dock .bill-breakdown > div > b { font-size: 13px; }
+}
+/* Short landscape screens: the dock fits the screen height and scrolls; the header strip stays on one line. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .game-action-dock { max-height: calc(100dvh - 110px); overflow-y: auto; }
+  .game-action-dock .phase-card { padding: 10px 14px; }
+  .game-action-dock .phase-card h2 { font-size: 17px; }
+  .game-fullscreen .resource-strip { display: grid; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); overflow: hidden; }
+  .game-fullscreen .resource-strip .resource-item small { display: none; }
+}
+/* The decision summary (picks, cash after, confirm) stays visible at the bottom while options scroll. */
+.decision-summary { position: sticky; bottom: 0; z-index: 2; background: linear-gradient(180deg, #fbf8f1f2, #f8f4ea); backdrop-filter: blur(4px); }
+.decision-card-v2 { overflow: visible; }
+.decision-card-v2 > .game-card-band { border-radius: 20px 20px 0 0; }
+.decision-card-v2 > .decision-summary { border-radius: 0 0 20px 20px; }
