@@ -8,7 +8,8 @@ import { CanvasTexture, Euler, Quaternion, SRGBColorSpace, Vector3, type Mesh } 
 import type { CharacterId } from '../game/types.ts';
 import type { BoardCategory } from '../board/boardTypes.ts';
 import { DIE_FACE_ORDER, SPACE_WORLD, dieRestRotation, spaceCategory } from './boardWorld.ts';
-import { CityBlock, Tile } from './City3D.tsx';
+import { CityBlock, TileBase, TileGlow } from './City3D.tsx';
+import { StaticBatch } from './StaticBatch.tsx';
 import { Pawn3D } from './Pawn3D.tsx';
 import { disposeKit, geo, mat } from './kit3d.ts';
 
@@ -148,9 +149,12 @@ export default function Board3DScene({ view, onContextLost }: { view: Board3DVie
       shadow-camera-far={25}
     />
     <directionalLight position={[6, 4, 6]} intensity={0.35} color="#dfeaf2"/>
-    <BoardBase/>
-    <CityBlock/>
-    {tiles.map((i) => <Tile key={i} index={i} active={i === view.currentSpace} highlighted={view.highlightCategory !== null && spaceCategory(i) === view.highlightCategory} reducedMotion={reducedMotion}/>)}
+    <StaticBatch>
+      <BoardBase/>
+      <CityBlock/>
+      {tiles.map((i) => <TileBase key={i} index={i}/>)}
+    </StaticBatch>
+    {tiles.filter((i) => i === view.currentSpace || (view.highlightCategory !== null && spaceCategory(i) === view.highlightCategory)).map((i) => <TileGlow key={i} index={i} active={i === view.currentSpace} reducedMotion={reducedMotion}/>)}
     {view.playerIds.map((id) => <Pawn3D key={id} id={id} index={view.positions[id] ?? 0} positions={view.positions} human={id === view.humanId} active={view.activePlayer === id} reducedMotion={reducedMotion}/>)}
     <Die value={view.dieValue} rolling={view.dieRolling} reducedMotion={reducedMotion}/>
   </Canvas>;

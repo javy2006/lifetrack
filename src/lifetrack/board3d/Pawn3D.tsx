@@ -9,6 +9,7 @@ import type { CharacterId } from '../game/types.ts';
 import { CHARACTER_LOOKS } from '../components/CharacterArt.tsx';
 import { PLAYER_COLOR, headingTowards, landingSquash, lerpAngle, pawnWorld, stepPawnTween, type PawnTween } from './boardWorld.ts';
 import { geo, mat } from './kit3d.ts';
+import { StaticBatch } from './StaticBatch.tsx';
 
 /** Resting pawns turn to face the isometric camera so faces stay readable. */
 const REST_YAW = Math.PI / 4;
@@ -116,7 +117,7 @@ export function Pawn3D({ id, index, positions, human, active, reducedMotion }: {
     if (busy) invalidate();
   });
   return <group ref={group} position={[target.x, target.y, target.z]}>
-    <group ref={body} rotation={[0, REST_YAW, 0]}><Figure id={id} human={human}/></group>
+    <group ref={body} rotation={[0, REST_YAW, 0]}><StaticBatch><Figure id={id} human={human}/></StaticBatch></group>
     <group ref={marker} position={[0, MARKER_Y, 0]} visible={active}>
       <mesh geometry={geo().gem} material={mat(PLAYER_COLOR[id], { emissive: PLAYER_COLOR[id], emissiveIntensity: 0.35 })} scale={[0.09, 0.12, 0.09]}/>
     </group>

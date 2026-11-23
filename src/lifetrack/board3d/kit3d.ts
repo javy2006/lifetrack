@@ -4,14 +4,14 @@
  * Everything here is presentation-only and is released by `disposeKit()` when the
  * 3D board unmounts.
  */
-import { BoxGeometry, CanvasTexture, ConeGeometry, CylinderGeometry, MeshStandardMaterial, OctahedronGeometry, SphereGeometry, SRGBColorSpace, TorusGeometry, type BufferGeometry, type Material, type Texture } from 'three';
+import { BoxGeometry, CanvasTexture, ConeGeometry, CylinderGeometry, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PlaneGeometry, SphereGeometry, SRGBColorSpace, TorusGeometry, type BufferGeometry, type Material, type Texture } from 'three';
 
 let geometries: Record<string, BufferGeometry> | null = null;
-const materials = new Map<string, MeshStandardMaterial>();
+const materials = new Map<string, MeshStandardMaterial | MeshBasicMaterial>();
 const textures = new Map<string, Texture>();
 
 /** Unit shapes: box 1x1x1, cylinder radius 0.5 height 1, sphere radius 0.5, cone radius 0.5 height 1. */
-export function geo(): Record<'box' | 'cyl' | 'cylLow' | 'sphere' | 'dome' | 'cone' | 'prism' | 'ring' | 'gem', BufferGeometry> {
+export function geo(): Record<'box' | 'cyl' | 'cylLow' | 'sphere' | 'dome' | 'cone' | 'prism' | 'ring' | 'gem' | 'plane', BufferGeometry> {
   geometries ??= {
     box: new BoxGeometry(1, 1, 1),
     cyl: new CylinderGeometry(0.5, 0.5, 1, 18),
@@ -23,6 +23,8 @@ export function geo(): Record<'box' | 'cyl' | 'cylLow' | 'sphere' | 'dome' | 'co
     prism: new CylinderGeometry(0.5, 0.5, 1, 3).rotateZ(Math.PI / 2).rotateX(-Math.PI / 2).translate(0, 0.25, 0).scale(1, 1 / 0.75, 1 / 0.866),
     ring: new TorusGeometry(0.5, 0.06, 6, 28),
     gem: new OctahedronGeometry(0.5, 0),
+    // Flat 1x1 decal lying on the ground (faces +Y).
+    plane: new PlaneGeometry(1, 1).rotateX(-Math.PI / 2),
   };
   return geometries as never;
 }
@@ -30,11 +32,19 @@ export function geo(): Record<'box' | 'cyl' | 'cylLow' | 'sphere' | 'dome' | 'co
 /** Cached matte material for a colour (optionally emissive). */
 export function mat(color: string, opts: { emissive?: string; emissiveIntensity?: number; roughness?: number; metalness?: number; map?: Texture } = {}): MeshStandardMaterial {
   const key = `${color}|${opts.emissive ?? ''}|${opts.emissiveIntensity ?? 0}|${opts.roughness ?? 0.78}|${opts.metalness ?? 0}|${opts.map?.uuid ?? ''}`;
-  let m = materials.get(key);
+  let m = materials.get(key) as MeshStandardMaterial | undefined;
   if (!m) {
     m = new MeshStandardMaterial({ color, roughness: opts.roughness ?? 0.78, metalness: opts.metalness ?? 0, emissive: opts.emissive ?? '#000000', emissiveIntensity: opts.emissiveIntensity ?? 0, map: opts.map ?? null });
     materials.set(key, m);
   }
+  return m;
+}
+
+/** Cached unlit decal material (tile captions): transparent, no depth write, not tone mapped. */
+export function decal(map: Texture): MeshBasicMaterial {
+  const key = `decal|${map.uuid}`;
+  let m = materials.get(key) as MeshBasicMaterial | undefined;
+  if (!m) { m = new MeshBasicMaterial({ map, transparent: true, depthWrite: false, toneMapped: false }); materials.set(key, m); }
   return m;
 }
 

@@ -6,7 +6,7 @@ import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import type { Mesh } from 'three';
 import { CATEGORY_COLOR, SPACE_WORLD, TILE_SIZE, spaceCategory, tileCaption } from './boardWorld.ts';
-import { captionTexture, geo, mat, windowTexture } from './kit3d.ts';
+import { captionTexture, decal, geo, mat, windowTexture } from './kit3d.ts';
 
 type V3 = [number, number, number];
 type Shape = keyof ReturnType<typeof geo>;
@@ -17,25 +17,33 @@ function P({ g = 'box', c, p, s, r, shadow = true }: { g?: Shape; c: string; p: 
 /** Ink colour for captions: the category colour, darkened for contrast on cream. */
 const INK: Record<string, string> = { salary: '#8a6418', medical: '#a50d26', accident: '#b5521f', family: '#5c4987', savings: '#1b6a48', protection: '#2f5d7a', lucky: '#9c6512', rest: '#4f6466' };
 
-export function Tile({ index, active, highlighted, reducedMotion }: { index: number; active: boolean; highlighted: boolean; reducedMotion: boolean }) {
+/** Static part of a tile (batched): plinth, category frame, cream inset, painted caption. */
+export function TileBase({ index }: { index: number }) {
   const p = SPACE_WORLD[index]!;
   const category = spaceCategory(index);
-  const color = CATEGORY_COLOR[category];
   const { width: w, depth: d, height: h } = TILE_SIZE;
-  // Tiles never lift (pawns stand on them); the active and event spaces glow and get a ring instead.
-  const top = h;
+  const captionWidth = w - 0.16;
   return <group position={[p.x, 0, p.z]}>
-    {/* Plinth, coloured frame, cream inset with painted caption */}
     <mesh geometry={geo().box} material={mat('#d8d0bf')} position={[0, h / 2 - 0.01, 0]} scale={[w + 0.04, h, d + 0.04]} receiveShadow castShadow/>
-    <mesh geometry={geo().box} material={mat(color, active || highlighted ? { emissive: color, emissiveIntensity: active ? 0.35 : 0.2 } : {})} position={[0, top + 0.01, 0]} scale={[w, 0.02, d]} receiveShadow/>
-    <mesh geometry={geo().box} material={mat(active || highlighted ? '#fffdf6' : '#f7f3e8')} position={[0, top + 0.022, 0]} scale={[w - 0.1, 0.008, d - 0.1]} receiveShadow/>
-    <mesh position={[0, top + 0.0275, 0.02]} rotation={[-Math.PI / 2, 0, 0]}>
-      <planeGeometry args={[w - 0.16, (w - 0.16) * 0.3125]}/>
-      <meshBasicMaterial map={captionTexture(tileCaption(index), INK[category]!)} transparent depthWrite={false} toneMapped={false}/>
-    </mesh>
+    <mesh geometry={geo().box} material={mat(CATEGORY_COLOR[category])} position={[0, h + 0.01, 0]} scale={[w, 0.02, d]} receiveShadow/>
+    <mesh geometry={geo().box} material={mat('#f7f3e8')} position={[0, h + 0.022, 0]} scale={[w - 0.1, 0.008, d - 0.1]} receiveShadow/>
+    <mesh geometry={geo().plane} material={decal(captionTexture(tileCaption(index), INK[category]!))} position={[0, h + 0.0275, 0.02]} scale={[captionWidth, 1, captionWidth * 0.3125]}/>
     {/* Start marker on the first space */}
-    {index === 0 && <P c="#c8102e" p={[-w / 2 + 0.1, top + 0.05, -d / 2 + 0.1]} s={[0.06, 0.05, 0.06]} g="cyl"/>}
-    {(active || highlighted) && <PulseRing color={color} y={0.012} animate={active && !reducedMotion}/>}
+    {index === 0 && <P c="#c8102e" p={[-w / 2 + 0.1, h + 0.05, -d / 2 + 0.1]} s={[0.06, 0.05, 0.06]} g="cyl"/>}
+  </group>;
+}
+
+/**
+ * Glow for the active space and the spaces of the revealed event's category. Tiles never lift
+ * (pawns stand on them): a glowing frame overlay and a ring mark them instead.
+ */
+export function TileGlow({ index, active, reducedMotion }: { index: number; active: boolean; reducedMotion: boolean }) {
+  const p = SPACE_WORLD[index]!;
+  const color = CATEGORY_COLOR[spaceCategory(index)];
+  const { width: w, depth: d, height: h } = TILE_SIZE;
+  return <group position={[p.x, 0, p.z]}>
+    <mesh geometry={geo().box} material={mat(color, { emissive: color, emissiveIntensity: active ? 0.45 : 0.25 })} position={[0, h + 0.0105, 0]} scale={[w + 0.006, 0.0215, d + 0.006]}/>
+    <PulseRing color={color} y={0.012} animate={active && !reducedMotion}/>
   </group>;
 }
 

@@ -73,12 +73,15 @@ Status: ✅ done · 🔄 in progress · ⏳ planned · ⛔ blocked
 | 6.4 Lighting, shadows, framing | ✅ | Key light from screen upper-left with a 1024² PCF shadow map, fill light, wooden board rim. Fixed: corner tiles intersected (SVG corners are ~0.4 units apart) → `SPACE_WORLD` nudges end tiles inward; new all-pairs footprint test. Fixed: board clipped on phones → `FitCamera` projects the table corners; 3D viewport no longer overflows at 390 px |
 | QA | ✅ | 77/77 unit; tsc clean; journey `?renderer=3d` 57/57, 0 console errors, no overflow; main 327.00 kB (+0.06 kB), 3D chunk 942 kB (251 kB gzip); engine diff empty |
 
-### M7: Phase 5.5, performance and quality
+### M7: Phase 5.5, performance and quality ✅
 | Task | Status | Evidence |
 | --- | --- | --- |
-| 7.1 `frameloop="demand"`, DPR cap, disposal, context-loss fallback | ✅ | `frameloop="demand"` + `dpr={[1,2]}` (M4); die textures disposed on unmount (M5). Context loss: simulated with `WEBGL_lose_context` in dev and in a production build; the SVG board takes over in about 100 ms and the game stays playable. **Known limitation:** R3F logs a caught `WebGLRenderer … 'precision'` console error during the switch (it rebuilds a root on the lost context). The renderer is confirmed not to be rebuilt per render (`createRenderer` only when `!state.gl`) |
-| 7.2 Bundle budget: main chunk ≤ +5 kB vs. pre-3D; 3D chunk lazy | ⏳ | |
-| 7.3 Browser QA with renderer=3d at all viewports; full journey + save/resume | ⏳ | |
+| 7.1 `frameloop="demand"`, DPR cap, disposal, context-loss fallback | ✅ | `frameloop="demand"` + `dpr={[1,2]}`; kit geometries/materials/textures and merged batches disposed on unmount. Context loss after the scene is live: SVG board takes over, game playable, **0 console errors**. The M4 "`precision`" error was a test artifact: the old check lost the context before R3F had created its renderer (traced with a logging `gl` factory). If a context is ever lost before creation, `Board3DBoundary` still falls back to SVG (React logs the caught error) |
+| 7.2 Bundle budget: main chunk ≤ +5 kB vs. pre-3D; 3D chunk lazy | ✅ | Main 327.00 kB vs 322.85 kB pre-3D (+4.15 kB). 3D chunk 948 kB (252.5 kB gzip), loaded only when the 3D board mounts (~0.5–1 s after "Begin month one" locally) |
+| 7.3 Rendering cost | ✅ | `StaticBatch` merges static meshes per material (board, city, tile bases, each pawn figure): ~200 draw calls per frame incl. shadow pass (was ~490). Idle board issues 0 draws; goes idle again after each move |
+| 7.4 Memory | ✅ | 80 2D↔3D round trips: heap +5.2 MB at 20, then flat at ~+3 MB (no leak); no "too many WebGL contexts" warnings |
+| 7.5 Browser QA (production build) | ✅ | `scripts/qa/board3d.mjs` 14/14 (context loss, toggling, idle GPU, draws/frame, no-WebGL at 390 px, reduced motion at 768 px). Journey `?renderer=3d` 57/57 and `?renderer=svg` 53/53: full 6-month desktop game, month-2 board-save loss + reload resume, money conservation, seeded events, phone/tablet/landscape; 0 console errors, no overflow |
+| Known | — | R3F 9.8.2 logs a `THREE.Clock` deprecation **warning** on three 0.187 (inside R3F; harmless, would need an R3F upgrade) |
 
 ### M8: Phase 5.6, 3D as default
 | Task | Status | Evidence |
