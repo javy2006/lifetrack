@@ -48,6 +48,7 @@ async function playMonth(page, month, tag, { loseBoardAtEventDraw = false } = {}
   await btn(page, /Roll Dice/).waitFor();
   if (month === 1) {
     await shot(page, `${tag}-02-roll`);
+    if (url.includes('renderer=3d')) check(`${tag}: 3D board canvas is active (not the fallback)`, (await page.locator('.board-3d canvas').count()) === 1 && (await page.locator('.life-board').count()) === 0);
     const rollButtons = await page.getByRole('button', { name: /Roll Dice/ }).count();
     check(`${tag}: exactly one accessible Roll Dice control`, rollButtons === 1, `found ${rollButtons}`);
     const clash = await page.evaluate(() => {
@@ -57,7 +58,7 @@ async function playMonth(page, month, tag, { loseBoardAtEventDraw = false } = {}
     });
     check(`${tag}: Money drawer does not cover the board heading`, !clash);
     const fit = await page.evaluate(() => {
-      const b = document.querySelector('.life-board')?.getBoundingClientRect(), d = document.querySelector('.game-action-dock')?.getBoundingClientRect();
+      const b = document.querySelector('.board-3d canvas, .life-board')?.getBoundingClientRect(), d = document.querySelector('.game-action-dock')?.getBoundingClientRect();
       const ox = d ? Math.max(0, Math.min(b.right, d.right) - Math.max(b.left, d.left)) : 0, oy = d ? Math.max(0, Math.min(b.bottom, d.bottom) - Math.max(b.top, d.top)) : 0;
       return { h: Math.round(b.height), covered: Math.round((ox * oy) / Math.max(1, b.width * b.height) * 100) };
     });

@@ -47,12 +47,14 @@ Status: ✅ done · 🔄 in progress · ⏳ planned · ⛔ blocked
 | 3.2 Architecture guard test: `game/` only imports `game/`; `board3d/` never references `gameReducer`, `dispatch(`, `rollBoardDie` or `Math.random` | ✅ | `game/__tests__/architecture.test.ts`; scanner verified on 14 files / 39 imports and flags a planted `../board` import |
 | 3.3 Renderer preference (`svg`/`3d`) under `lifetrack.renderer.v1`, default `svg`, `?renderer=` QA override | ✅ | `rendererPreference.ts` + tests (junk values, throwing storage); 70/70, tsc clean |
 
-### M4: Phase 5.2, static 3D board (lazy, with fallback)
+### M4: Phase 5.2, static 3D board (lazy, with fallback) ✅
 | Task | Status | Evidence |
 | --- | --- | --- |
-| 4.1 `Board3DScene` lazy chunk: orthographic isometric camera, tiles, category colors, centre city block | ⏳ | |
-| 4.2 Error boundary + WebGL detection, falling back to the SVG `BoardScene` | ⏳ | |
-| 4.3 DOM HUD stays shared (roster, die panel, overlays); canvas is `aria-hidden` with a text summary | ⏳ | |
+| 4.1 `Board3DScene` lazy chunk: orthographic isometric camera, tiles, category colors, centre city block | ✅ | Lazy chunk 928 kB (246 kB gzip); main +4.0 kB (+1.65 kB gzip), within budget. Visual check on desktop |
+| 4.2 Error boundary + WebGL detection, falling back to the SVG `BoardScene` | ✅ | Edge with `--disable-webgl --disable-3d-apis` + `?renderer=3d`: SVG shown, game playable, 0 errors |
+| 4.3 DOM HUD stays shared (roster, die panel, overlays); canvas is `aria-hidden` with a text summary | ✅ | `BoardScene.renderBoard` slot; `sr-only` board label |
+| 4.4 2D/3D toggle (`aria-pressed`, persisted, default 2D) | ✅ | Browser: default svg → toggle 3d (stored) → reload keeps 3d → toggle back svg |
+| QA | ✅ | Journey `?renderer=3d` 57/57 (3D canvas active at 4 viewports) and `?renderer=svg` 53/53; 70/70 unit; tsc clean; engine diff empty. Known: R3F 9.8.2 logs a `THREE.Clock` deprecation **warning** on three 0.187 (harmless) |
 
 ### M5: Phase 5.3, motion
 | Task | Status | Evidence |
