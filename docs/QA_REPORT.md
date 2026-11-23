@@ -36,6 +36,20 @@ The regression test `src/lifetrack/board/eventDrawRecovery.test.ts` mirrors the 
 | `vite build` | Pass, 2157 modules, JS 322.27 kB (99.78 kB gzip) |
 | `git diff -- src/lifetrack/game` | Empty: the financial engine is unchanged |
 
+## Phase 4.3C-2a: board progress ahead of the game save (2026-11-23)
+
+The regression test `src/lifetrack/board/boardReconcile.test.ts` has 3 tests. Before the fix, 1 failed: `ai-turns`/`complete` during `income`/`expenses`/`decisions` left no usable control.
+
+| Check | Result |
+| --- | --- |
+| Inconsistent stage during income/expenses/decisions | Becomes `human-landed`; positions kept; queue and active pawn cleared |
+| Consistent stage/phase pairs (9 cases) | Same object returned (no state churn) |
+| New round | Still resets to `human-roll`, keeps positions |
+| `pnpm test` | **60/60 pass** |
+| `tsc --noEmit` | Clean |
+| `vite build` | Pass, JS 322.46 kB (99.82 kB gzip) |
+| `git diff -- src/lifetrack/game` | Empty |
+
 ### Not yet verified
 
 - The recovery path has not been run in a real browser yet (covered by unit tests only). This is scheduled for the 4.3C-2 browser QA.

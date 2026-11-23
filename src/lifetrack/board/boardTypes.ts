@@ -64,6 +64,16 @@ export function tokenOffset(position:number,playerId:import('../game/types.ts').
   return {x:Math.cos(angle)*12,y:Math.sin(angle)*10};
 }
 
+/** Aligns restored board progress with the authoritative reducer round/phase. Returns the same object when nothing changes. */
+export function reconcileBoardProgress(progress:BoardProgress,round:number,phase:GameState['phase']):BoardProgress {
+  if(progress.round!==round)return {...progress,round,stage:'human-roll',aiQueue:[],activePlayer:null,lastMovement:null};
+  // Rival turns only start after decision/confirm. If the board is ahead of a pre-confirm game save, the human
+  // has already moved this month: show the decisions again instead of hiding every control (no second roll).
+  const beforeConfirm=phase==='income'||phase==='expenses'||phase==='decisions';
+  if(beforeConfirm&&(progress.stage==='ai-turns'||progress.stage==='complete'))return {...progress,stage:'human-landed',aiQueue:[],activePlayer:null};
+  return progress;
+}
+
 export type EventDrawBoardStep='run-ai-turns'|'draw-event';
 
 /**

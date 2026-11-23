@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CharacterId, GameState } from '../game/types.ts';
-import { createBoardProgress, getAiTurnOrder, isValidBoardProgress, moveBoardPlayer, movePosition, rollBoardDie, type BoardProgress } from './boardTypes.ts';
+import { createBoardProgress, getAiTurnOrder, isValidBoardProgress, moveBoardPlayer, movePosition, reconcileBoardProgress, rollBoardDie, type BoardProgress } from './boardTypes.ts';
 
 export const BOARD_SAVE_KEY='lifetrack.board.v1';
 const wait=(ms:number)=>new Promise<void>(resolve=>window.setTimeout(resolve,ms));
@@ -27,8 +27,7 @@ export function useBoardController(state:GameState|null) {
     if(!state)return;
     setProgress(old=>{
       if(!old||old.seed!==seed)return createBoardProgress(seed,round,ids);
-      if(old.round!==round)return {...old,round,stage:'human-roll',aiQueue:[],activePlayer:null,lastMovement:null};
-      return old;
+      return reconcileBoardProgress(old,round,state.phase);
     });
   },[seed,round,state,ids]);
   useEffect(()=>{

@@ -12,7 +12,9 @@ Ground rule: `src/lifetrack/game/` (reducer, calculations, AI strategies, polici
 | 4.3 | Viewport-fitted full-screen game scene | Done |
 | 4.3C-0 | Git baseline | **Done** (2026-11-23, `df0a775`) |
 | 4.3C-1 | Event-draw board-state recovery soft-lock | **Done** (2026-11-23) |
-| 4.3C-2 | Insight popups decision + browser journey / multi-viewport QA | Next |
+| 4.3C-2a | Board progress ahead of the game save | **Done** (2026-11-23) |
+| 4.3C-2b | Browser journey / multi-viewport QA | Next |
+| 4.3C-2c | Insight popups (needs product decision) | Open |
 | 5.x | Three.js + React Three Fiber 9 board renderer | Not started (dependencies not installed) |
 
 ## Step 0: Git baseline (2026-11-23)
@@ -32,8 +34,13 @@ Ground rule: `src/lifetrack/game/` (reducer, calculations, AI strategies, polici
 
 **Tests.** `src/lifetrack/board/eventDrawRecovery.test.ts`, 6 tests, which failed before the fix and pass after it.
 
+## Phase 4.3C-2a: board ahead of the game save (2026-11-23)
+
+**Bug.** Suppose the board save says `ai-turns`/`complete` for the current round, but the game save is still before `decision/confirm` (`income`/`expenses`/`decisions`). This happens if the game-save write fails while the board-save write succeeds. `GameScreen` then hid the decisions panel, and the roll button needs `human-roll`, so there was no way forward.
+
+**Fix.** The existing round-reset rule moved from `useBoardController` into the pure `reconcileBoardProgress(progress, round, phase)`, which now also maps that inconsistent case to `human-landed`. The human has already moved this month, so there is no second roll. Positions are kept. Consistent progress is returned as the same object, so the effect can't loop. Tests are in `board/boardReconcile.test.ts`, which failed before the fix.
+
 ## Open items carried forward
 
-- **Related, lower-risk stale state.** Suppose the board save says `ai-turns`/`complete` but the game save is still in `decisions` for the same round. This needs the game-save write to fail while the board-save write succeeds. The decisions panel is then hidden and there is no roll button. It should be fixed by reconciling the board stage against the game phase when loading.
 - `state.insight` is set by the reducer but never rendered (no insight popup, and `insight/dismiss` is unused).
 - The full browser journey and multi-viewport QA are not yet run.
