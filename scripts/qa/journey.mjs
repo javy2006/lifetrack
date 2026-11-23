@@ -46,7 +46,19 @@ async function playMonth(page, month, tag, { loseBoardAtEventDraw = false } = {}
   await click(page, /Collect monthly income/);
   await click(page, /Pay monthly essentials/);
   await btn(page, /Roll Dice/).waitFor();
-  if (month === 1) await shot(page, `${tag}-02-roll`);
+  if (month === 1) {
+    await shot(page, `${tag}-02-roll`);
+    const rollButtons = await page.getByRole('button', { name: /Roll Dice/ }).count();
+    check(`${tag}: exactly one accessible Roll Dice control`, rollButtons === 1, `found ${rollButtons}`);
+    const clash = await page.evaluate(() => {
+      const s = document.querySelector('.financial-drawer>summary')?.getBoundingClientRect();
+      const texts = [...document.querySelectorAll('.board-heading .eyebrow, .board-heading h2, .board-key')].map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0);
+      return s ? texts.some((r) => r.left < s.right && r.right > s.left && r.top < s.bottom && r.bottom > s.top) : false;
+    });
+    // Phone is fixed; on tablet/desktop the drawer still covers the board-key (known, out of 4.3C scope).
+    if (tag === 'phone') check(`${tag}: Money drawer does not cover the board heading`, !clash);
+    else log(`INFO ${tag}: drawer/board-key overlap=${clash} (known, tablet/desktop unchanged)`);
+  }
   await page.locator('.game-action-layer button', { hasText: /Roll Dice/ }).click();
   await click(page, /Continue to decisions/);
   if (month === 1) { await shot(page, `${tag}-03-decisions`); await overflow(page, `${tag} decisions`); }
