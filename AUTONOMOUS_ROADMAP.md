@@ -120,6 +120,16 @@ Owner priorities: P1 visible dice and pawn movement · P2 simpler interface · P
 | Route and positions | ✅ | A pawn alone on a space stands in its centre; shared spaces spread up to 4 pawns without overlap (tested). Once a roll is revealed, dots in the mover's colour mark the spaces it will cross (bigger dot on the destination; `routeSpaces`, tested) |
 | QA | ✅ | 83/83 unit; tsc clean; build OK (main 327.92 kB); engine diff empty. Journey default 61/61 and `?renderer=svg` 61/61; `board3d.mjs` 14/14 (~186 draws/frame, +3.1 MB over 20 remounts); `renderer-default.mjs` 15/15 |
 
+### P2: Simpler interface ✅
+| Task | Status | Evidence |
+| --- | --- | --- |
+| Short screens, one obvious action | ✅ | Phase cards are a short title, the key figures and one button ("Payday", "Pay the bills", "Roll the dice", "Pick 2 more"). Month-1-only hints replace instructions repeated every month |
+| Learn more | ✅ | New `LearnMore` (native `<details>`, keyboard accessible, closed by default). Policy cards show name, price and headline benefit; type, deductible/limit, what it responds to, exclusions and explanation sit behind Learn more. Event lesson behind "Why it matters"; claim lesson shows the takeaway with the explanation behind Learn more |
+| Claims and recap | ✅ | Zero-value claim lines hidden (total and out-of-pocket always shown); only owned cover is listed, with "No cover owned. You paid this yourself." otherwise and the other policies under "What other cover would do". Recap drops the repeated lesson and rival count |
+| Setup screens | ✅ | Character select: art, name, job and money-style title (bio and long strategy text removed). Intro: four icon facts built from `GAME_CONFIG` instead of four paragraphs. Disclaimers kept |
+| No rule or data changes | ✅ | Only `src/lifetrack/screens`, `components/ui.tsx` and CSS changed; `src/lifetrack/game` diff empty, so all financial wording and figures still come from the engine |
+| QA | ✅ | 83/83 unit; tsc clean; build OK (main 325.68 kB). Journey default 61/61 and `?renderer=svg` 61/61 (full 6-month game, money conservation, reload resume, 4 viewports, 0 errors, no overflow); `board3d.mjs` 14/14; `renderer-default.mjs` 15/15. Screens reviewed at 1440×900 and 390×844 |
+
 ## How to run QA (for the next session)
 
 1. `pnpm test`, `pnpm typecheck`, `pnpm build`, then `npx vite preview --port 4174`.

@@ -18,6 +18,11 @@ export function Disclaimer({ compact = false }: { compact?: boolean }) {
   return <p className={`disclaimer ${compact ? 'disclaimer-compact' : ''}`}>{compact ? 'Fictional educational examples. Not financial advice.' : DISCLAIMER}</p>;
 }
 
+/** Optional detail, closed by default: keeps screens short while the full explanation stays one tap away. */
+export function LearnMore({ children, label = 'Learn more', className = '' }: { children: ReactNode; label?: string; className?: string }) {
+  return <details className={`learn-more ${className}`}><summary>{label}</summary><div className="learn-more-body">{children}</div></details>;
+}
+
 export function Eyebrow({ children }: { children: ReactNode }) { return <p className="eyebrow">{children}</p>; }
 export function ArrowLink({ children }: { children: ReactNode }) { return <span className="button-content">{children}<ArrowRight size={17} /></span>; }
 
