@@ -29,11 +29,11 @@ Status: ✅ done · 🔄 in progress · ⏳ planned · ⛔ blocked
 | Project skills | ✅ | `4dd25c0` |
 | Phone Money drawer and single Roll Dice control | ✅ | `b15a75b`; browser 44/44, 63/63 tests |
 
-### M1: Phase 4.3C polish leftovers
+### M1: Phase 4.3C polish leftovers ✅
 | Task | Status | Evidence |
 | --- | --- | --- |
-| 1.1 Tablet/desktop: Money drawer covers the board "Current stop" key | ⏳ | |
-| 1.2 Landscape phone (≤700px tall) QA pass | ⏳ | |
+| 1.1 Tablet/desktop: Money drawer covers the board "Current stop" key | ✅ | Heading reserves drawer width ≥481px; browser check "drawer does not cover heading" passes at all 4 viewports |
+| 1.2 Landscape phone (844×390) QA pass | ✅ | Board was 0px tall; now 181px with the dock floating right and the modal below the header. New check "board visible ≥120px, ≤10% under dock" passes at all 4 viewports; browser 53/53. Minor: footer disclaimer touches the die panel |
 
 ### M2: Phase 5.0, 3D dependencies
 | Task | Status | Evidence |

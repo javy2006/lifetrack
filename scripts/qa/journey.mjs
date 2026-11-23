@@ -55,9 +55,13 @@ async function playMonth(page, month, tag, { loseBoardAtEventDraw = false } = {}
       const texts = [...document.querySelectorAll('.board-heading .eyebrow, .board-heading h2, .board-key')].map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0);
       return s ? texts.some((r) => r.left < s.right && r.right > s.left && r.top < s.bottom && r.bottom > s.top) : false;
     });
-    // Phone is fixed; on tablet/desktop the drawer still covers the board-key (known, out of 4.3C scope).
-    if (tag === 'phone') check(`${tag}: Money drawer does not cover the board heading`, !clash);
-    else log(`INFO ${tag}: drawer/board-key overlap=${clash} (known, tablet/desktop unchanged)`);
+    check(`${tag}: Money drawer does not cover the board heading`, !clash);
+    const fit = await page.evaluate(() => {
+      const b = document.querySelector('.life-board')?.getBoundingClientRect(), d = document.querySelector('.game-action-dock')?.getBoundingClientRect();
+      const ox = d ? Math.max(0, Math.min(b.right, d.right) - Math.max(b.left, d.left)) : 0, oy = d ? Math.max(0, Math.min(b.bottom, d.bottom) - Math.max(b.top, d.top)) : 0;
+      return { h: Math.round(b.height), covered: Math.round((ox * oy) / Math.max(1, b.width * b.height) * 100) };
+    });
+    check(`${tag}: board visible (>=120px tall, <=10% under the dock)`, fit.h >= 120 && fit.covered <= 10, `h=${fit.h} covered=${fit.covered}%`);
   }
   await page.locator('.game-action-layer button', { hasText: /Roll Dice/ }).click();
   await click(page, /Continue to decisions/);
@@ -122,7 +126,7 @@ async function playMonth(page, month, tag, { loseBoardAtEventDraw = false } = {}
 }
 
 // 2) Phone and tablet: month 1 screens + layout overflow.
-for (const [tag, viewport] of [['phone', { width: 390, height: 844 }], ['tablet', { width: 768, height: 1024 }]]) {
+for (const [tag, viewport] of [['phone', { width: 390, height: 844 }], ['tablet', { width: 768, height: 1024 }], ['landscape', { width: 844, height: 390 }]]) {
   const page = await newPage(viewport, tag);
   await page.goto(url);
   await btn(page, /Play the game/).waitFor({ timeout: 30000 });
