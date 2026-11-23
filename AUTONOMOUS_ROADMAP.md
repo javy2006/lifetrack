@@ -130,6 +130,14 @@ Owner priorities: P1 visible dice and pawn movement · P2 simpler interface · P
 | No rule or data changes | ✅ | Only `src/lifetrack/screens`, `components/ui.tsx` and CSS changed; `src/lifetrack/game` diff empty, so all financial wording and figures still come from the engine |
 | QA | ✅ | 83/83 unit; tsc clean; build OK (main 325.68 kB). Journey default 61/61 and `?renderer=svg` 61/61 (full 6-month game, money conservation, reload resume, 4 viewports, 0 errors, no overflow); `board3d.mjs` 14/14; `renderer-default.mjs` 15/15. Screens reviewed at 1440×900 and 390×844 |
 
+### Official characters from reference images ✅
+| Task | Status | Evidence |
+| --- | --- | --- |
+| Asset pipeline | ✅ | No image-to-3D service is available (and paid services are out of scope), so the board figures are hand-modelled Three.js approximations of the references, with each head carrying a face texture cropped from the official image. `scripts/assets/build_character_assets.py` (Pillow) builds `public/assets/characters/{portraits,busts,faces}` from `reference/*.jpg`: 192 px WebP portraits (~4 KB), 360×480 WebP busts with the backdrop removed by an edge-connected fill (~16 KB), 256 px face textures faded to the sampled skin tone (~7 KB). The 25 MB references are **not committed** (owner to decide) |
+| 3D board models | ✅ | `CharacterModels.tsx`: one shared ~6-heads-tall body plan (lathe jacket torso, tapered trousers, capsule limbs posed with a `Limb` helper). Alex: navy suit, white shirt, red tie, wallet. Mei Ling: sage blazer with rolled sleeves, cream blouse, long straight hair, laptop, watch. Daniel: yellow hard hat with chin strap, navy work jacket with reflective stripes, ID badge, radio, cargo trousers, boots. Aisyah: coral blazer, lanyard and ID card, long wavy hair, red headband, explaining gesture. Heads ~12% larger and tilted up for board readability; face texture lightly self-lit. No pedestal: a thin player-colour ring at the feet (red for you). Face textures load asynchronously and fall back to skin colour, so a missing file never breaks the 3D board |
+| Portraits | ✅ | `CharacterPortrait` (round, explicit size, alt text) replaces the old SVG art in the top-left HUD, the "Everyone's money journey" comparison table, the board roster, the final standings and the 2D-fallback tokens. Selection cards show the official head-to-waist bust. The old SVG `CharacterArt` and chibi figures were removed (main bundle −4.4 kB) |
+| QA | ✅ | 83/83 unit; tsc clean; build OK; engine diff empty. Journey default 61/61 (4 runs; one run reported a console error whose text was not captured and did not reproduce in 3 reruns) and `?renderer=svg` 61/61; `board3d.mjs` 14/14 (~181 draws/frame); `renderer-default.mjs` 15/15; portraits load 192×192 with no failed requests at 1440×900 and 390×844 |
+
 ## How to run QA (for the next session)
 
 1. `pnpm test`, `pnpm typecheck`, `pnpm build`, then `npx vite preview --port 4174`.
