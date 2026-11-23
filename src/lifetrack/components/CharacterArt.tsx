@@ -1,6 +1,6 @@
 import type { CharacterId } from '../game/types.ts';
 
-const looks: Record<CharacterId, { skin: string; hair: string; shirt: string; pants: string; accent: string; hairStyle: 'short'|'long'|'helmet'|'wave'; accessory?: 'glasses'|'badge' }> = {
+export const CHARACTER_LOOKS: Record<CharacterId, { skin: string; hair: string; shirt: string; pants: string; accent: string; hairStyle: 'short'|'long'|'helmet'|'wave'; accessory?: 'glasses'|'badge' }> = {
   alex: { skin:'#D9A783', hair:'#263844', shirt:'#E7ECE9', pants:'#253D54', accent:'#C8102E', hairStyle:'short', accessory:'glasses' },
   meiling: { skin:'#E5B79C', hair:'#25333A', shirt:'#A85F65', pants:'#263E4C', accent:'#E4C38E', hairStyle:'long' },
   daniel: { skin:'#C88F6D', hair:'#273941', shirt:'#3F7890', pants:'#41534F', accent:'#E5BD61', hairStyle:'helmet' },
@@ -8,7 +8,7 @@ const looks: Record<CharacterId, { skin: string; hair: string; shirt: string; pa
 };
 
 export function CharacterArt({ characterId, className = '', title }: { characterId: CharacterId; className?: string; title?: string }) {
-  const x=looks[characterId];
+  const x=CHARACTER_LOOKS[characterId];
   return <svg className={`character-illustration ${className}`} viewBox="0 0 180 220" role="img" aria-label={title ?? `${characterId} character illustration`} xmlns="http://www.w3.org/2000/svg">
     <defs><linearGradient id={`shirt-${characterId}`} x2="0" y2="1"><stop stopColor={x.shirt}/><stop offset="1" stopColor={x.accent}/></linearGradient></defs>
     {/* Shoes and legs */}

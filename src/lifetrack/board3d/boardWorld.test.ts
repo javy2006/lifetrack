@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BOARD_ROUTE } from '../board/boardTypes.ts';
-import { SPACE_WORLD, TILE_SIZE, hopHeight, lerpWorld, pawnWorld, spaceCategory, spaceWorld, svgToWorld } from './boardWorld.ts';
+import { PAWN_BASE_Y, SPACE_WORLD, TILE_SIZE, headingTowards, hopHeight, landingSquash, lerpAngle, tileCaption, lerpWorld, pawnWorld, spaceCategory, spaceWorld, svgToWorld } from './boardWorld.ts';
 import { DEFAULT_RENDERER, RENDERER_STORAGE_KEY, readRendererPreference, writeRendererPreference } from './rendererPreference.ts';
 
 test('every route space has a distinct world position centred on the origin', () => {
@@ -28,11 +28,19 @@ test('mapping preserves the SVG loop order and orientation', () => {
   assert.equal(spaceCategory(26), BOARD_ROUTE[2]!.category);
 });
 
+test('no two tile footprints (including the 0.02 plinth lip) intersect, corners included', () => {
+  const hw = TILE_SIZE.width / 2 + 0.02, hd = TILE_SIZE.depth / 2 + 0.02;
+  for (let i = 0; i < 24; i++) for (let j = i + 1; j < 24; j++) {
+    const a = SPACE_WORLD[i]!, b = SPACE_WORLD[j]!;
+    assert.ok(Math.abs(a.x - b.x) >= 2 * hw || Math.abs(a.z - b.z) >= 2 * hd, `tiles ${i} and ${j} intersect`);
+  }
+});
+
 test('pawns sharing a space are separated and sit on the tile', () => {
   const positions = { alex: 3, meiling: 3, daniel: 3, aisyah: 3 };
   const pts = (['alex', 'meiling', 'daniel', 'aisyah'] as const).map((id) => pawnWorld(3, id, positions));
   assert.equal(new Set(pts.map((p) => `${p.x.toFixed(3)},${p.z.toFixed(3)}`)).size, 4);
-  assert.ok(pts.every((p) => p.y === TILE_SIZE.height));
+  assert.ok(pts.every((p) => p.y === PAWN_BASE_Y && p.y > TILE_SIZE.height));
 });
 
 test('animation helpers are bounded and deterministic', () => {
@@ -88,4 +96,29 @@ test('3D die rest rotation shows the already-decided face on top for every value
     assert.equal(DIE_FACE_ORDER[top], value, `value ${value} on top`);
   }
   assert.deepEqual(dieRestRotation(99), [0, 0, 0]);
+});
+
+test('pawn heading faces the direction of travel and keeps the fallback when still', () => {
+  assert.equal(headingTowards({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 1 }), 0);
+  assert.ok(Math.abs(headingTowards({ x: 0, y: 0, z: 0 }, { x: 1, y: 0, z: 0 }) - Math.PI / 2) < 1e-9);
+  assert.equal(headingTowards({ x: 1, y: 0, z: 1 }, { x: 1, y: 5, z: 1 }, 0.7), 0.7);
+});
+
+test('angle interpolation takes the short way round and is clamped', () => {
+  const r = lerpAngle(Math.PI - 0.1, -Math.PI + 0.1, 0.5);
+  assert.ok(Math.abs(Math.abs(r) - Math.PI) < 1e-9);
+  assert.equal(lerpAngle(0, 1, 2), 1);
+  assert.equal(lerpAngle(0, 1, -1), 0);
+});
+
+test('landing squash is neutral outside the landing window and volume-balanced inside it', () => {
+  assert.deepEqual(landingSquash(0), [1, 1]);
+  assert.deepEqual(landingSquash(1), [1, 1]);
+  const [h, v] = landingSquash(0.91);
+  assert.ok(h > 1 && v < 1 && Math.abs(h + v - 2) < 1e-9);
+});
+
+test('every space has a short caption', () => {
+  for (let i = 0; i < 24; i++) assert.ok(tileCaption(i).length > 0 && tileCaption(i).length <= 8, `space ${i}`);
+  assert.equal(tileCaption(23), 'CHECK');
 });

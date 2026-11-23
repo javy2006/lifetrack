@@ -12,13 +12,27 @@ export interface WorldPoint { x: number; y: number; z: number }
 export const WORLD_SCALE = 100;
 const SVG_CENTER = { x: 500, y: 380 };
 export const TILE_SIZE = { width: 0.86, depth: 0.6, height: 0.12 } as const;
-export const PAWN_BASE_Y = TILE_SIZE.height;
+/** Pawns stand on the tile's painted top (plinth + frame + inset). */
+export const PAWN_BASE_Y = TILE_SIZE.height + 0.028;
 
 export function svgToWorld(point: { x: number; y: number }, y = 0): WorldPoint {
   return { x: (point.x - SVG_CENTER.x) / WORLD_SCALE, y, z: (point.y - SVG_CENTER.y) / WORLD_SCALE };
 }
 
-export const SPACE_WORLD: readonly WorldPoint[] = BOARD_POINTS.map((p) => svgToWorld(p));
+/**
+ * Inward nudge (world units) for the end tiles of each side. The SVG corners sit
+ * only ~0.4 units apart, so without it the 3D corner tiles would intersect.
+ */
+const CORNER_NUDGE = { row: 0.28, column: 0.22 } as const;
+
+export const SPACE_WORLD: readonly WorldPoint[] = BOARD_POINTS.map((p, i) => {
+  const w = svgToWorld(p);
+  const side = Math.floor(i / 6), step = i % 6;
+  if (step !== 0 && step !== 5) return w;
+  // Sides 0 and 2 are rows (run along x); sides 1 and 3 are columns (run along z).
+  if (side % 2 === 0) return { ...w, x: w.x - Math.sign(w.x) * CORNER_NUDGE.row };
+  return { ...w, z: w.z - Math.sign(w.z) * CORNER_NUDGE.column };
+});
 
 /** World position of a space; out-of-range indexes wrap around the 24-space loop. */
 export function spaceWorld(index: number): WorldPoint {
@@ -84,4 +98,29 @@ export function dieRestRotation(value: number): [number, number, number] {
     case 5: return [Math.PI, 0, 0];
     default: return [0, 0, 0];
   }
+}
+
+/** Yaw (radians about +Y) that faces a pawn from `from` toward `to`; keeps `fallback` when there is no horizontal movement. */
+export function headingTowards(from: WorldPoint, to: WorldPoint, fallback = 0): number {
+  const dx = to.x - from.x, dz = to.z - from.z;
+  return Math.hypot(dx, dz) < 1e-6 ? fallback : Math.atan2(dx, dz);
+}
+
+/** Shortest-path angle interpolation (handles the -PI/PI wrap), k clamped to [0, 1]. */
+export function lerpAngle(a: number, b: number, k: number): number {
+  const d = Math.atan2(Math.sin(b - a), Math.cos(b - a));
+  return a + d * Math.min(1, Math.max(0, k));
+}
+
+/** Short squash-and-stretch on landing: returns [horizontal, vertical] scale for progress t of a step. */
+export function landingSquash(t: number): [number, number] {
+  if (!(t > 0.82 && t < 1)) return [1, 1];
+  const k = Math.sin(((t - 0.82) / 0.18) * Math.PI) * 0.08;
+  return [1 + k, 1 - k];
+}
+
+/** Short tile caption painted on the 3D board (mirrors the SVG labels). */
+export function tileCaption(index: number): string {
+  const space = BOARD_ROUTE[((index % BOARD_ROUTE.length) + BOARD_ROUTE.length) % BOARD_ROUTE.length]!;
+  return space.label === 'CHECKPOINT' ? 'CHECK' : space.label;
 }

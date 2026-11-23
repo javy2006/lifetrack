@@ -134,4 +134,6 @@ html,body,#root{min-height:100%;}body.game-session{overflow:hidden;overscroll-be
 .board-3d{position:relative;width:100%;height:100%;min-height:0;aspect-ratio:1000/760;max-height:100%}
 .game-scene-content .board-3d{height:100%;width:auto;max-width:100%}
 .board-3d-canvas{position:absolute!important;inset:0;border-radius:14px;touch-action:none}
+/* Phones: the 3D board fits the viewport (no horizontal panning like the wide SVG board). */
+.game-scene-content .board-viewport:has(>.board-3d){grid-template-columns:minmax(0,1fr)}
 @media(max-width:480px){.renderer-toggle{font-size:0!important;gap:0}.renderer-toggle svg{width:19px;height:19px}}

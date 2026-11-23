@@ -64,12 +64,14 @@ Status: ✅ done · 🔄 in progress · ⏳ planned · ⛔ blocked
 | 5.3 `prefers-reduced-motion`: snap instead of tween | ✅ | Unit test for snapping; browser run with `reducedMotion: 'reduce'` completes with 0 errors |
 | QA | ✅ | 72/72 unit; tsc clean; journey `?renderer=3d` 57/57; main 326.94 kB (+0.06 kB); engine diff empty |
 
-### M6: Phase 5.4, miniature city art
+### M6: Phase 5.4, miniature city art ✅
 | Task | Status | Evidence |
 | --- | --- | --- |
-| 6.1 Character pawns (procedural low-poly figures in each character's palette) | ⏳ | |
-| 6.2 Landing and event-category highlight, active-space pulse | ⏳ | |
-| 6.3 Isometric buildings (clinic, café, towers, park) from procedural geometry | ⏳ | |
+| 6.1 Character pawns (procedural low-poly figures in each character's palette) | ✅ | `Pawn3D.tsx` uses `CHARACTER_LOOKS` (now exported from `CharacterArt`): Alex glasses, Mei Ling long hair, Daniel hard hat, Aisyah red headband + badge; player-colour base, red rim for the human. Pawns face their direction of travel, squash on landing, turn back to the camera at rest; floating marker on the active AI. Pure helpers `headingTowards`/`lerpAngle`/`landingSquash` tested |
+| 6.2 Landing and event-category highlight, active-space pulse | ✅ | Tiles: plinth, category-colour frame, cream inset with painted caption (`tileCaption`). Active space glows and its ring pulses for 2.4 s then rests (GPU idle); event-category spaces glow with a static ring. Tiles no longer lift (pawns used to sink into lifted tiles) |
+| 6.3 Isometric buildings (clinic, café, towers, park) from procedural geometry | ✅ | `City3D.tsx` + shared `kit3d.ts` (one unit geometry per shape, cached materials/textures, disposed on unmount): towers with window facades, savings bank, clinic, café, cover office, homes, park, roads, lamps, die plaza. Layout follows an occlusion rule (tall buildings front-right only) so no building hides a tile or pawn |
+| 6.4 Lighting, shadows, framing | ✅ | Key light from screen upper-left with a 1024² PCF shadow map, fill light, wooden board rim. Fixed: corner tiles intersected (SVG corners are ~0.4 units apart) → `SPACE_WORLD` nudges end tiles inward; new all-pairs footprint test. Fixed: board clipped on phones → `FitCamera` projects the table corners; 3D viewport no longer overflows at 390 px |
+| QA | ✅ | 77/77 unit; tsc clean; journey `?renderer=3d` 57/57, 0 console errors, no overflow; main 327.00 kB (+0.06 kB), 3D chunk 942 kB (251 kB gzip); engine diff empty |
 
 ### M7: Phase 5.5, performance and quality
 | Task | Status | Evidence |
