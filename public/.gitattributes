@@ -1,2 +1,9 @@
 # AgentPlat packages this default favicon directly from source without LFS hydration.
 favicon.png -filter -diff -merge -text
+
+# Files the browser loads directly must be real blobs, not LFS pointers: Vercel and the Figma Make
+# packager do not hydrate LFS, so a pointer would be served instead of the image or sound.
+assets/characters/portraits/** -filter -diff -merge -text
+assets/characters/busts/** -filter -diff -merge -text
+assets/characters/faces/** -filter -diff -merge -text
+audio/** -filter -diff -merge -text
