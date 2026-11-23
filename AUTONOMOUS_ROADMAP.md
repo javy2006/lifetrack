@@ -35,10 +35,10 @@ Status: ✅ done · 🔄 in progress · ⏳ planned · ⛔ blocked
 | 1.1 Tablet/desktop: Money drawer covers the board "Current stop" key | ✅ | Heading reserves drawer width ≥481px; browser check "drawer does not cover heading" passes at all 4 viewports |
 | 1.2 Landscape phone (844×390) QA pass | ✅ | Board was 0px tall; now 181px with the dock floating right and the modal below the header. New check "board visible ≥120px, ≤10% under dock" passes at all 4 viewports; browser 53/53. Minor: footer disclaimer touches the die panel |
 
-### M2: Phase 5.0, 3D dependencies
+### M2: Phase 5.0, 3D dependencies ✅
 | Task | Status | Evidence |
 | --- | --- | --- |
-| 2.1 Pin `three@0.187.0`, `@react-three/fiber@9.8.2`, `@types/three@0.187.0` (React 19-compatible); main bundle must not grow | ⏳ | |
+| 2.1 Pin `three@0.187.0`, `@react-three/fiber@9.8.2`, `@types/three@0.187.0` (React 19-compatible; fiber peer react `>=19 <19.4`) | ✅ | Lockfile has additions only; tsc clean; 63/63; main bundle hash unchanged (`index-BB1qZMbi.js`, 322.85 kB) |
 
 ### M3: Phase 5.1, renderer-independent board model
 | Task | Status | Evidence |
