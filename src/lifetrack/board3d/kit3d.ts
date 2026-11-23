@@ -99,7 +99,7 @@ export function captionTexture(text: string, ink: string, category = ''): Textur
     if (icon) { g.save(); g.translate(w / 2 - 46, 22); g.scale(0.92, 0.92); icon(g); g.restore(); }
     g.textAlign = 'center'; g.textBaseline = 'middle';
     let size = 50;
-    const font = () => `800 ${size}px system-ui, -apple-system, 'Segoe UI', sans-serif`;
+    const font = () => `800 ${size}px system-ui, -apple-system, 'Segoe UI', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans Tamil', 'Nirmala UI', 'Latha', sans-serif`;
     g.font = font();
     while (g.measureText(text).width > w - 20 && size > 22) { size -= 2; g.font = font(); }
     g.fillText(text, w / 2, 178);

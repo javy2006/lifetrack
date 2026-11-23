@@ -5,6 +5,8 @@
  */
 import { Component, lazy, Suspense, useState, type ReactNode } from 'react';
 import { isWebGLAvailable } from './Board3DSlot.tsx';
+import { useI18n } from '../i18n/I18nProvider.tsx';
+import { BOARD_ROUTE, tileKey } from '../board/boardTypes.ts';
 
 const HeroScene = lazy(() => import('./Board3DScene.tsx').then((m) => ({ default: m.HeroScene })));
 
@@ -22,7 +24,9 @@ class HeroBoundary extends Component<{ children: ReactNode }, { failed: boolean 
 
 export function HeroBoard() {
   const [webgl] = useState(isWebGLAvailable);
-  return <div className="hero-board" role="img" aria-label="A miniature 3D city board: four profession tokens on the LifeTrack board">
-    {webgl ? <HeroBoundary><Suspense fallback={<Poster/>}><HeroScene/></Suspense></HeroBoundary> : <Poster/>}
+  const { t, lang } = useI18n();
+  const captions = lang === 'en' ? undefined : BOARD_ROUTE.map((_, i) => t(`tiles.${tileKey(i)}`));
+  return <div className="hero-board" role="img" aria-label={t('menu.heroAria')}>
+    {webgl ? <HeroBoundary><Suspense fallback={<Poster/>}><HeroScene captions={captions}/></Suspense></HeroBoundary> : <Poster/>}
   </div>;
 }

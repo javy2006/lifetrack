@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 import { ArrowRight, ShieldCheck } from 'lucide-react';
-import { DISCLAIMER } from '../game/constants.ts';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 
 export function Button({ children, className = '', variant = 'primary', ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'quiet' }) {
   return <button className={`button button-${variant} ${className}`} {...props}>{children}</button>;
@@ -15,12 +15,14 @@ export function Brand({ light = false }: { light?: boolean }) {
 }
 
 export function Disclaimer({ compact = false }: { compact?: boolean }) {
-  return <p className={`disclaimer ${compact ? 'disclaimer-compact' : ''}`}>{compact ? 'Fictional educational examples. Not financial advice.' : DISCLAIMER}</p>;
+  const { t } = useI18n();
+  return <p className={`disclaimer ${compact ? 'disclaimer-compact' : ''}`}>{t(compact ? 'common.disclaimerShort' : 'common.disclaimer')}</p>;
 }
 
 /** Optional detail, closed by default: keeps screens short while the full explanation stays one tap away. */
-export function LearnMore({ children, label = 'Learn more', className = '' }: { children: ReactNode; label?: string; className?: string }) {
-  return <details className={`learn-more ${className}`}><summary>{label}</summary><div className="learn-more-body">{children}</div></details>;
+export function LearnMore({ children, label, className = '' }: { children: ReactNode; label?: string; className?: string }) {
+  const { t } = useI18n();
+  return <details className={`learn-more ${className}`}><summary>{label ?? t('common.learnMore')}</summary><div className="learn-more-body">{children}</div></details>;
 }
 
 export function Eyebrow({ children }: { children: ReactNode }) { return <p className="eyebrow">{children}</p>; }

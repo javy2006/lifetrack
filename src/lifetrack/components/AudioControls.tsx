@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18nProvider.tsx';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import { SlidersHorizontal, Volume2, VolumeX } from 'lucide-react';
 import { playSample, playSynth, type SynthId } from './synthSounds.ts';
@@ -63,10 +64,11 @@ export function AudioProvider({children}:{children:ReactNode}) {
 export function useAudio(){const value=useContext(AudioContext);if(!value)throw new Error('useAudio must be used inside AudioProvider');return value;}
 
 export function AudioControls(){
+  const { t } = useI18n();
   const {enabled,musicVolume,effectsVolume,setEnabled,setMusicVolume,setEffectsVolume}=useAudio();
   const onRange=(setter:(n:number)=>void)=>(event:ChangeEvent<HTMLInputElement>)=>setter(Number(event.target.value)/100);
   return <div className="audio-controls">
-    <button type="button" className="audio-toggle" aria-pressed={enabled} onClick={()=>setEnabled(!enabled)} title={enabled?'Mute sound':'Turn sound on'}>{enabled?<Volume2 size={16}/>:<VolumeX size={16}/>}<span>{enabled?'Sound on':'Muted'}</span></button>
-    <details className="audio-settings"><summary aria-label="Sound settings" title="Sound settings"><SlidersHorizontal size={14}/></summary><div className="audio-panel"><div className="audio-heading"><b>Sound settings</b></div><label className="audio-range">Music <span>{Math.round(musicVolume*100)}%</span><input aria-label="Music volume" type="range" min="0" max="100" value={Math.round(musicVolume*100)} onChange={onRange(setMusicVolume)} disabled={!enabled}/></label><label className="audio-range">Sound effects <span>{Math.round(effectsVolume*100)}%</span><input aria-label="Sound effects volume" type="range" min="0" max="100" value={Math.round(effectsVolume*100)} onChange={onRange(setEffectsVolume)} disabled={!enabled}/></label><small>Subtle effects on, music off by default</small></div></details>
+    <button type="button" className="audio-toggle" aria-pressed={enabled} onClick={()=>setEnabled(!enabled)} title={enabled?t('audio.mute'):t('audio.turnOn')}>{enabled?<Volume2 size={16}/>:<VolumeX size={16}/>}<span>{enabled?t('audio.on'):t('audio.muted')}</span></button>
+    <details className="audio-settings"><summary aria-label={t('audio.settings')} title={t('audio.settings')}><SlidersHorizontal size={14}/></summary><div className="audio-panel"><div className="audio-heading"><b>{t('audio.settings')}</b></div><label className="audio-range">{t('audio.music')} <span>{Math.round(musicVolume*100)}%</span><input aria-label={t('audio.music')} type="range" min="0" max="100" value={Math.round(musicVolume*100)} onChange={onRange(setMusicVolume)} disabled={!enabled}/></label><label className="audio-range">{t('audio.effects')} <span>{Math.round(effectsVolume*100)}%</span><input aria-label={t('audio.effects')} type="range" min="0" max="100" value={Math.round(effectsVolume*100)} onChange={onRange(setEffectsVolume)} disabled={!enabled}/></label><small>{t('audio.note')}</small></div></details>
   </div>;
 }

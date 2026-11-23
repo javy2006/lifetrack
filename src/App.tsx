@@ -9,10 +9,13 @@ import { HowToPlay } from './lifetrack/components/HowToPlay.tsx';
 import { Disclaimer } from './lifetrack/components/ui.tsx';
 import { AudioProvider } from './lifetrack/components/AudioControls.tsx';
 import { preloadBoard3D } from './lifetrack/board3d/Board3DSlot.tsx';
+import { I18nProvider, useI18n } from './lifetrack/i18n/I18nProvider.tsx';
+import { DemoGame } from './lifetrack/demo/DemoGame.tsx';
 
-type SetupScreen = 'home' | 'characters' | 'introduction';
+type SetupScreen = 'home' | 'characters' | 'introduction' | 'demo';
 function Application() {
   const { state, dispatch } = useGame();
+  const { t } = useI18n();
   const [screen, setScreen] = useState<SetupScreen>('home');
   const [selected, setSelected] = useState<CharacterId>('aisyah');
   // Always land on the menu first; a validated save is resumed only on request.
@@ -22,19 +25,20 @@ function Application() {
   useEffect(()=>{const w=window as Window&{requestIdleCallback?:(cb:()=>void)=>number};const id=w.requestIdleCallback?w.requestIdleCallback(preloadBoard3D):window.setTimeout(preloadBoard3D,800);return()=>{if(!w.requestIdleCallback)window.clearTimeout(id);};},[]);
 
   const startNew = () => {
-    if (state && state.status !== 'complete' && !window.confirm('Starting a new game will replace your saved progress. Continue?')) return;
+    if (state && state.status !== 'complete' && !window.confirm(t('menu.confirmNew'))) return;
     if (state) dispatch({type:'game/clear'});
     setPaused(true);
     setScreen('characters');
   };
   const beginGame = () => { dispatch({type:'game/new',humanId:selected,seed:createSeed()}); setPaused(false); setScreen('home'); };
   let content: ReactNode;
-  if (state && !paused) content = <GameScreen key={`${state.seed}-${state.status}`} state={state} dispatch={dispatch} onExit={()=>{setScreen('home');setPaused(true)}}/>;
+  if (screen === 'demo') content = <DemoGame onExit={()=>setScreen('home')}/>;
+  else if (state && !paused) content = <GameScreen key={`${state.seed}-${state.status}`} state={state} dispatch={dispatch} onExit={()=>{setScreen('home');setPaused(true)}}/>;
   else if (screen === 'characters') content = <CharacterSelection onBack={()=>setScreen('home')} onContinue={(id)=>{setSelected(id);setScreen('introduction')}}/>;
   else if (screen === 'introduction') content = <GameIntroduction characterId={selected} onBack={()=>setScreen('characters')} onBegin={beginGame}/>;
-  else content = <MainMenu canResume={Boolean(state)} onPlay={()=>setPaused(false)} onNew={startNew} onHowToPlay={()=>setModal('how')} onLearning={()=>setModal('learning')}/>;
+  else content = <MainMenu canResume={Boolean(state)} onPlay={()=>setPaused(false)} onNew={startNew} onHowToPlay={()=>setModal('how')} onLearning={()=>setModal('learning')} onDemo={()=>{setPaused(true);setScreen('demo');}}/>;
 
-  return <>{content}{modal&&<InfoModal title={modal==='how'?'How to play':'Insurance, in plain language'} onClose={()=>setModal(null)}>{modal==='how'?<HowToPlay/>:<><p>LifeTrack uses simplified fictional examples to show how different types of insurance benefits work.</p><div className="learning-guide"><div><b>Reimbursement</b><span>Pays eligible bills after a deductible, up to a limit.</span></div><div><b>Fixed benefit</b><span>Pays a set amount when the defined event occurs.</span></div><div><b>Lump sum</b><span>Pays one defined amount that can be used flexibly.</span></div></div><p>Policies only respond to what they define. Emergency savings remain useful for costs that are excluded or unrelated.</p></>}<Disclaimer/></InfoModal>}</>;
+  return <>{content}{modal&&<InfoModal title={modal==='how'?t('howto.title'):t('menu.learningTitle')} onClose={()=>setModal(null)}>{modal==='how'?<HowToPlay/>:<><p>{t('menu.learningIntro')}</p><div className="learning-guide"><div><b>{t('menu.reimbursement')}</b><span>{t('menu.reimbursementText')}</span></div><div><b>{t('menu.fixedBenefit')}</b><span>{t('menu.fixedBenefitText')}</span></div><div><b>{t('menu.lumpSum')}</b><span>{t('menu.lumpSumText')}</span></div></div><p>{t('menu.learningOutro')}</p></>}<Disclaimer/></InfoModal>}</>;
 }
 
-export default function App() { return <AudioProvider><GameProvider><Application/></GameProvider></AudioProvider>; }
+export default function App() { return <I18nProvider><AudioProvider><GameProvider><Application/></GameProvider></AudioProvider></I18nProvider>; }

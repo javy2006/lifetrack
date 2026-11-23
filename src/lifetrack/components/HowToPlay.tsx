@@ -4,6 +4,7 @@
  * and animate gently unless the player prefers reduced motion.
  */
 import { GAME_CONFIG } from '../game/constants.ts';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 
 function DieArt() {
   return <svg viewBox="0 0 120 90" className="htp-art htp-die" aria-hidden="true">
@@ -55,19 +56,22 @@ function FinishArt() {
 }
 
 const STEPS = [
-  { label: 'Roll', text: 'Tap Roll to throw the dice.', Art: DieArt },
-  { label: 'Move', text: 'Your token travels round the city board.', Art: MoveArt },
-  { label: 'Decide', text: `Pick ${GAME_CONFIG.actionPointsPerRound} money moves when you land.`, Art: DecideArt },
-  { label: 'Finish', text: `After ${GAME_CONFIG.totalRounds} months, compare results.`, Art: FinishArt },
+  { key: 'roll', Art: DieArt },
+  { key: 'move', Art: MoveArt },
+  { key: 'decide', Art: DecideArt },
+  { key: 'finish', Art: FinishArt },
 ] as const;
 
 export function HowToPlay() {
+  const { t } = useI18n();
+  const vars = { n: GAME_CONFIG.actionPointsPerRound };
+  const text = (key: string) => key === 'finish' ? t('howto.finishText', { n: GAME_CONFIG.totalRounds }) : t(`howto.${key}Text`, vars);
   return <ol className="how-to-play">
-    {STEPS.map(({ label, text, Art }, i) => <li className="htp-step" key={label}>
+    {STEPS.map(({ key, Art }, i) => <li className="htp-step" key={key}>
       <span className="htp-number" aria-hidden="true">{i + 1}</span>
       <Art/>
-      <b>{label}</b>
-      <span>{text}</span>
+      <b>{t(`howto.${key}`)}</b>
+      <span>{text(key)}</span>
     </li>)}
   </ol>;
 }

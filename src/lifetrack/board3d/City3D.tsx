@@ -19,7 +19,7 @@ function P({ g = 'box', c, p, s, r, shadow = true }: { g?: Shape; c: string; p: 
 const INK: Record<string, string> = { salary: '#8a6418', medical: '#a50d26', accident: '#b5521f', family: '#5c4987', savings: '#1b6a48', protection: '#2f5d7a', lucky: '#9c6512', rest: '#4f6466' };
 
 /** Static part of a tile (batched): plinth, category frame, cream inset, painted caption. */
-export function TileBase({ index }: { index: number }) {
+export function TileBase({ index, caption }: { index: number; caption?: string }) {
   const p = SPACE_WORLD[index]!;
   const category = spaceCategory(index);
   const { width: w, depth: d, height: h } = TILE_SIZE;
@@ -28,7 +28,7 @@ export function TileBase({ index }: { index: number }) {
     <mesh geometry={geo().box} material={mat('#d8d0bf')} position={[0, h / 2 - 0.01, 0]} scale={[w + 0.04, h, d + 0.04]} receiveShadow castShadow/>
     <mesh geometry={geo().box} material={mat(CATEGORY_COLOR[category])} position={[0, h + 0.01, 0]} scale={[w, 0.02, d]} receiveShadow/>
     <mesh geometry={geo().box} material={mat('#f7f3e8')} position={[0, h + 0.022, 0]} scale={[w - 0.1, 0.008, d - 0.1]} receiveShadow/>
-    <mesh geometry={geo().plane} material={decal(captionTexture(tileCaption(index), INK[category]!, category))} position={[0, h + 0.0275, 0]} scale={[captionWidth, 1, captionWidth]}/>
+    <mesh geometry={geo().plane} material={decal(captionTexture(caption ?? tileCaption(index), INK[category]!, category))} position={[0, h + 0.0275, 0]} scale={[captionWidth, 1, captionWidth]}/>
     {/* Start flag on the first space */}
     {index === 0 && <group position={[-w / 2 + 0.12, h + 0.03, -d / 2 + 0.12]}>
       <P g="cylLow" c="#4b5a63" p={[0, 0.2, 0]} s={[0.025, 0.4, 0.025]}/>

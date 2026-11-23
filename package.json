@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "format": "oxfmt",
-    "test": "node --experimental-strip-types --test src/lifetrack/game/__tests__/*.test.ts src/lifetrack/board/*.test.ts src/lifetrack/board3d/*.test.ts src/lifetrack/components/*.test.ts"
+    "test": "node --experimental-strip-types --test src/lifetrack/game/__tests__/*.test.ts src/lifetrack/board/*.test.ts src/lifetrack/board3d/*.test.ts src/lifetrack/components/*.test.ts src/lifetrack/i18n/*.test.ts src/lifetrack/demo/*.test.ts"
   },
   "dependencies": {
     "@react-three/fiber": "9.8.2",

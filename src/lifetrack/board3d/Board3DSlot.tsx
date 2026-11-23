@@ -8,6 +8,7 @@
  */
 import { Component, lazy, Suspense, useState, type ReactNode } from 'react';
 import type { Board3DView } from './Board3DScene.tsx';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 
 const loadScene = () => import('./Board3DScene.tsx');
 const Board3DScene = lazy(loadScene);
@@ -38,9 +39,10 @@ class Board3DBoundary extends Component<{ fallback: ReactNode; children: ReactNo
 
 /** Board-shaped placeholder shown for the moment the 3D chunk is still loading. */
 function BoardLoading() {
+  const { t } = useI18n();
   return <div className="board-3d board-3d-loading" data-renderer="3d-loading" role="status">
     <span className="board-loading-table" aria-hidden="true"/>
-    <span className="board-loading-label">Setting up the city board…</span>
+    <span className="board-loading-label">{t('board.loading')}</span>
   </div>;
 }
 

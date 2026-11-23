@@ -11,11 +11,24 @@ export function readBoardSave(raw:string|null,seed:number,round:number,ids:reado
   return createBoardProgress(seed,round,ids);
 }
 
-export function useBoardController(state:GameState|null) {
+/**
+ * Options: `persist: false` keeps board progress in memory only (presentation demo, so a demo can
+ * never touch the player's saved board); `speed` divides every animation delay (presentation
+ * speed). Neither affects the seeded rolls, positions or anything financial.
+ */
+export interface BoardControllerOptions { persist?:boolean; speed?:number }
+
+export function useBoardController(state:GameState|null, options:BoardControllerOptions={}) {
+  const persist=options.persist!==false;
+  const speedRef=useRef(options.speed??1);speedRef.current=Math.max(0.25,options.speed??1);
+  // While true, the remaining delays of the current turn are skipped (demo "skip animation").
+  const skipRef=useRef(false);
+  const pace=useCallback((ms:number)=>skipRef.current?0:Math.round(ms/speedRef.current),[]);
   const seed=state?.seed??0,round=state?.round??1;
   const ids=useMemo(()=>state?.players.map(p=>p.id)??[],[state?.players]);
   const [progress,setProgress]=useState<BoardProgress|null>(()=>{
     if(!state)return null;
+    if(!persist)return createBoardProgress(state.seed,state.round,state.players.map(p=>p.id));
     try{return readBoardSave(localStorage.getItem(BOARD_SAVE_KEY),state.seed,state.round,state.players.map(p=>p.id));}catch{return createBoardProgress(state.seed,state.round,state.players.map(p=>p.id));}
   });
   const [rolling,setRolling]=useState(false);
@@ -35,24 +48,27 @@ export function useBoardController(state:GameState|null) {
     });
   },[seed,round,state,ids]);
   useEffect(()=>{
-    if(!progress)return;
+    if(!progress||!persist)return;
     try{localStorage.setItem(BOARD_SAVE_KEY,JSON.stringify(progress));}catch{/* Game remains playable without board progress storage. */}
-  },[progress]);
+  },[progress,persist]);
   /**
    * Shows one already-decided roll: tumble, reveal, one hop per space, then a rest on the
    * landing space. Progress is committed by the caller only after this resolves, so a reload
    * mid-animation simply replays the same seeded roll instead of moving twice.
    */
   const animateTurn=useCallback(async(id:CharacterId,from:number,roll:number,timing:TurnTiming)=>{
-    setStepMs(timing.stepMs);setLanding(null);setDieValue(null);
-    if(timing.tumbleMs>0){setDieTumbling(true);await wait(timing.tumbleMs);}
+    setStepMs(pace(timing.stepMs));setLanding(null);setDieValue(null);
+    if(timing.tumbleMs>0&&pace(timing.tumbleMs)>0){setDieTumbling(true);await wait(pace(timing.tumbleMs));}
     setDieTumbling(false);setDieValue(roll);
-    await wait(timing.revealMs);
+    await wait(pace(timing.revealMs));
     let position=from;
-    for(let step=0;step<roll;step++){position=movePosition(position,1);setMovementStep({playerId:id,position});await wait(timing.stepMs);}
+    for(let step=0;step<roll;step++){position=movePosition(position,1);setMovementStep({playerId:id,position});await wait(pace(timing.stepMs));}
     setLanding({playerId:id,space:position});
-    await wait(timing.landMs);
-  },[]);
+    await wait(pace(timing.landMs));
+    skipRef.current=false;
+  },[pace]);
+  /** Finishes the turn currently animating immediately (positions are still applied step by step). */
+  const skipAnimation=useCallback(()=>{skipRef.current=true;},[]);
   const rollHuman=useCallback(async()=>{
     if(!state||state.status!=='playing'||state.phase!=='decisions'||!progress||progress.stage!=='human-roll'||rollLock.current)return;
     rollLock.current=true;setRolling(true);
@@ -78,5 +94,5 @@ export function useBoardController(state:GameState|null) {
     setProgress(p=>p?{...p,stage:'complete',aiQueue:[],activePlayer:null}:p);
     aiLock.current=false;
   },[state,progress,animateTurn]);
-  return {progress,rolling,movementStep,dieTumbling,dieValue,landing,stepMs,rollHuman,runAiTurns};
+  return {progress,rolling,movementStep,dieTumbling,dieValue,landing,stepMs,rollHuman,runAiTurns,skipAnimation};
 }

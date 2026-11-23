@@ -14,17 +14,19 @@ import { GAME_CONFIG } from '../game/constants.ts';
 import { POLICIES, POLICY_ORDER } from '../game/policies.ts';
 import { formatRM } from '../game/format.ts';
 import { useAudio } from './AudioControls.tsx';
+import { useI18n } from '../i18n/I18nProvider.tsx';
+import { policyText } from '../i18n/content.ts';
 import { canAdd, confirmActions, previewDraft, sameMove, toAction, type DraftMove } from './decisionDraft.ts';
 import { Button, Disclaimer, LearnMore } from './ui.tsx';
 
 const POLICY_ICON: Record<PolicyId, typeof HeartPulse> = { medical: HeartPulse, accident: Shield, critical: Sparkles };
 
-function moveLabel(m: DraftMove): string {
-  return m.kind === 'save' ? `Save ${formatRM(GAME_CONFIG.saveAmount)}` : m.kind === 'pass' ? 'Pass' : POLICIES[m.policyId].shortName;
-}
+
 
 export function DecisionCard({ state, dispatch, landed }: { state: GameState; dispatch: (a: GameAction) => void; landed?: { roll: number; label: string } | null }) {
   const { playEffect } = useAudio();
+  const { t, content } = useI18n();
+  const moveLabel = (m: DraftMove) => m.kind === 'save' ? t('decision.save', { amount: formatRM(GAME_CONFIG.saveAmount) }) : m.kind === 'pass' ? t('decision.pass') : policyText(m.policyId, content).shortName;
   const human = getHumanPlayer(state);
   const slots = human.actionPoints;
   const applied = getRoundRecord(human, state.round)?.actions ?? [];
@@ -62,29 +64,29 @@ export function DecisionCard({ state, dispatch, landed }: { state: GameState; di
   };
 
   const options: { move: DraftMove; className: string; icon: typeof Landmark; title: string; detail: string; cost: number; extra?: React.ReactNode }[] = [
-    { move: { kind: 'save' }, className: 'save-action', icon: Landmark, title: `Save ${formatRM(GAME_CONFIG.saveAmount)}`, detail: 'Into emergency savings', cost: GAME_CONFIG.saveAmount },
+    { move: { kind: 'save' }, className: 'save-action', icon: Landmark, title: t('decision.save', { amount: formatRM(GAME_CONFIG.saveAmount) }), detail: t('decision.saveDetail'), cost: GAME_CONFIG.saveAmount },
     ...POLICY_ORDER.map((id) => {
-      const p = POLICIES[id];
-      const benefit = p.benefit.kind === 'reimbursement' ? `Up to ${formatRM(p.benefit.coverageLimit)} reimbursement` : `${formatRM(p.benefit.amount)} ${p.benefit.kind === 'fixed' ? 'fixed benefit' : 'lump sum'}`;
-      return { move: { kind: 'buy', policyId: id } as DraftMove, className: `buy-action policy-${id}`, icon: POLICY_ICON[id], title: p.name, detail: `${benefit} · ${formatRM(p.monthlyPremium)}/month`, cost: p.monthlyPremium,
-        extra: <LearnMore><p className="policy-type">{p.protectionType}</p>{p.benefit.kind === 'reimbursement' && <p>You pay the first {formatRM(p.benefit.deductible)} · pays up to {formatRM(p.benefit.coverageLimit)}</p>}<div className="policy-explain"><b>Responds to</b><span>{p.coveredEvent}</span><b>Exclusions</b><span>{p.exclusions.join(' · ')}</span></div><p>{p.explanation}</p></LearnMore> };
+      const p = POLICIES[id], tx = policyText(id, content);
+      const benefit = p.benefit.kind === 'reimbursement' ? t('decision.benefitReimbursement', { amount: formatRM(p.benefit.coverageLimit) }) : t(p.benefit.kind === 'fixed' ? 'decision.benefitFixed' : 'decision.benefitLump', { amount: formatRM(p.benefit.amount) });
+      return { move: { kind: 'buy', policyId: id } as DraftMove, className: `buy-action policy-${id}`, icon: POLICY_ICON[id], title: tx.name, detail: t('decision.perMonth', { benefit, premium: formatRM(p.monthlyPremium) }), cost: p.monthlyPremium,
+        extra: <LearnMore><p className="policy-type">{tx.type}</p>{p.benefit.kind === 'reimbursement' && <p>{t('decision.payFirst', { deductible: formatRM(p.benefit.deductible), limit: formatRM(p.benefit.coverageLimit) })}</p>}<div className="policy-explain"><b>{t('decision.respondsTo')}</b><span>{tx.covered}</span><b>{t('decision.exclusions')}</b><span>{tx.exclusions.join(' · ')}</span></div><p>{tx.explanation}</p></LearnMore> };
     }),
-    { move: { kind: 'pass' }, className: 'pass-action', icon: ArrowRight, title: 'Pass', detail: 'Keep the cash', cost: 0 },
+    { move: { kind: 'pass' }, className: 'pass-action', icon: ArrowRight, title: t('decision.pass'), detail: t('decision.passDetail'), cost: 0 },
   ];
 
   return <section className={`game-card decision-card-v2 ${confirmed ? 'is-confirmed' : ''}`} aria-labelledby="decision-title">
     <header className="game-card-band band-decide">
       <span className="game-card-icon"><Landmark size={22}/></span>
-      <div><p className="eyebrow">{landed ? `ROLLED ${landed.roll} · LANDED ON ${landed.label}` : 'YOUR MOVES'}</p><h2 id="decision-title">{confirmed ? 'Moves locked in' : slots === 0 ? 'All set' : `Choose ${slots} move${slots === 1 ? '' : 's'}`}</h2></div>
+      <div><p className="eyebrow">{landed ? t('decision.rolledLanded', { roll: landed.roll, space: landed.label }) : t('decision.yourMoves')}</p><h2 id="decision-title">{confirmed ? t('decision.locked') : slots === 0 ? t('decision.allSet') : t('decision.choose', { count: slots })}</h2></div>
     </header>
-    {applied.length > 0 && <p className="decision-applied"><Check size={14}/> Already made: {applied.map((a) => a.kind === 'save' ? 'Save' : a.kind === 'buy' ? POLICIES[a.policyId].shortName : 'Pass').join(', ')}{state.decisionSnapshot && slots > 0 && <button type="button" className="link-button" onClick={() => dispatch({ type: 'decision/reset' })}><RotateCcw size={12}/> Undo</button>}</p>}
-    <div className="decision-options" role="group" aria-label="Choose your moves">
+    {applied.length > 0 && <p className="decision-applied"><Check size={14}/> {t('decision.alreadyMade', { list: applied.map((a) => a.kind === 'save' ? t('decision.saveShort') : a.kind === 'buy' ? policyText(a.policyId, content).shortName : t('decision.pass')).join(', ') })}{state.decisionSnapshot && slots > 0 && <button type="button" className="link-button" onClick={() => dispatch({ type: 'decision/reset' })}><RotateCcw size={12}/> {t('decision.undo')}</button>}</p>}
+    <div className="decision-options" role="group" aria-label={t('decision.group')}>
       {options.map(({ move, className, icon: Icon, title, detail, cost, extra }) => {
         const n = count(move);
         const owned = move.kind === 'buy' && human.policies.some((p) => p.policyId === move.policyId);
         // Selectable if already picked (tap to change), or if the engine accepts it now (or as a swap for the latest pick when all moves are used).
         const available = !confirmed && !owned && (n > 0 || canAdd(state, draft.length < slots ? draft : draft.slice(0, -1), move));
-        const reason = owned ? 'Already covered' : !available && cost > after.cash ? 'Not enough cash' : null;
+        const reason = owned ? t('decision.alreadyCovered') : !available && cost > after.cash ? t('decision.notEnoughCash') : null;
         return <div key={title} className={`decision-option ${n > 0 ? 'is-selected' : ''} ${owned ? 'is-owned' : ''}`}>
           <button type="button" className={`decision-pick ${className}`} aria-pressed={n > 0} disabled={!available && n === 0} onClick={() => toggle(move)}>
             <span className="decision-option-icon"><Icon size={18}/></span>
@@ -98,11 +100,11 @@ export function DecisionCard({ state, dispatch, landed }: { state: GameState; di
     <footer className="decision-summary">
       <div className="decision-slots" aria-live="polite">
         {Array.from({ length: slots }, (_, i) => draft[i]
-          ? <button type="button" key={i} className="decision-slot is-filled" onClick={() => !confirmed && setDraft(draft.filter((_, j) => j !== i))} aria-label={`Remove ${moveLabel(draft[i]!)}`}>{moveLabel(draft[i]!)}{!confirmed && <X size={12}/>}</button>
-          : <span key={i} className="decision-slot">Move {i + 1}{i >= draft.length && draft.length > 0 ? ' · pass' : ''}</span>)}
+          ? <button type="button" key={i} className="decision-slot is-filled" onClick={() => !confirmed && setDraft(draft.filter((_, j) => j !== i))} aria-label={t('decision.remove', { move: moveLabel(draft[i]!) })}>{moveLabel(draft[i]!)}{!confirmed && <X size={12}/>}</button>
+          : <span key={i} className="decision-slot">{i >= draft.length && draft.length > 0 ? t('decision.slotPass', { n: i + 1 }) : t('decision.slot', { n: i + 1 })}</span>)}
       </div>
-      <div className="decision-cash"><small>Cash after moves</small><b>{formatRM(after.cash)}</b>{after.savings !== human.savings && <small>Savings {formatRM(after.savings)}</small>}</div>
-      <Button className="decision-confirm" onClick={confirm} disabled={confirmed}>{confirmed ? <><Check size={16}/> Locked in</> : <>Confirm my moves <ArrowRight size={16}/></>}</Button>
+      <div className="decision-cash"><small>{t('decision.cashAfter')}</small><b>{formatRM(after.cash)}</b>{after.savings !== human.savings && <small>{t('decision.savingsAfter', { amount: formatRM(after.savings) })}</small>}</div>
+      <Button className="decision-confirm" onClick={confirm} disabled={confirmed}>{confirmed ? <><Check size={16}/> {t('decision.lockedIn')}</> : <>{t('decision.confirm')} <ArrowRight size={16}/></>}</Button>
     </footer>
     <Disclaimer compact/>
   </section>;

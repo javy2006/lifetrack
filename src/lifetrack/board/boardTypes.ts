@@ -14,6 +14,9 @@ export const BOARD_ROUTE: readonly BoardSpace[] = [
   ['COVER','protection'],['FAMILY','family'],['REST','rest'],['SALARY','salary'],['ACCIDENT','accident'],['CHECKPOINT','salary'],
 ].map(([label,category],index)=>({index,label,category:category as BoardCategory}));
 
+/** Translation key of a space's short label (`tiles.<key>`): its category, or the final checkpoint. */
+export function tileKey(index:number):string{const s=BOARD_ROUTE[((index%BOARD_ROUTE.length)+BOARD_ROUTE.length)%BOARD_ROUTE.length]!;return s.label==='CHECKPOINT'?'checkpoint':s.category;}
+
 export const BOARD_POINTS: readonly Point[] = BOARD_ROUTE.map((_,i)=>{
   const side=Math.floor(i/6), step=i%6;
   const t=step/5;

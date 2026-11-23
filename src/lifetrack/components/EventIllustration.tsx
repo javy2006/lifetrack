@@ -17,7 +17,7 @@ export function EventIllustration({ event, className = '' }: { event: EventCard;
   const road=event.category==='accident';
   const work=event.category==='income';
   const repair=event.category==='repair';
-  return <svg className={`event-illustration ${className}`} viewBox="0 0 520 360" role="img" aria-label={`${event.title}: ${c.label}`} xmlns="http://www.w3.org/2000/svg">
+  return <svg className={`event-illustration ${className}`} viewBox="0 0 520 360" aria-hidden="true" focusable="false" data-scene={c.label} xmlns="http://www.w3.org/2000/svg">
     <defs><linearGradient id={`eventSky-${event.id}`} x2="0" y2="1"><stop stopColor={c.sky}/><stop offset="1" stopColor="#F8F3E9"/></linearGradient><filter id={`eventShadow-${event.id}`} x="-30%" y="-30%" width="170%" height="180%"><feDropShadow dx="0" dy="5" stdDeviation="5" floodColor="#29485A" floodOpacity=".13"/></filter></defs>
     <rect width="520" height="360" rx="22" fill={`url(#eventSky-${event.id})`}/><circle cx="423" cy="66" r="27" fill="#F2D8AA" opacity=".75"/>
     <path d="M0 229 250 168l270 73v119H0Z" fill={c.ground}/><path d="m0 267 250-64 270 76v81H0Z" fill="#C7D9CD"/>

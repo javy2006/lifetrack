@@ -29,6 +29,8 @@ export interface Board3DView {
   /** Space a pawn has just landed on (during the landing pause), for the landing effect. */
   landingSpace: number | null;
   routeOwner: CharacterId | null;
+  /** Translated short tile labels (24), painted on the tiles; defaults to the English captions. */
+  captions?: readonly string[];
   /** Face decided by the seeded board die (never by this scene); null when no roll is shown. */
   dieValue: number | null;
   /** True only while the decided value is still hidden (the tumble phase). */
@@ -252,11 +254,11 @@ export default function Board3DScene({ view, onContextLost }: { view: Board3DVie
       shadow-camera-far={25}
     />
     <directionalLight position={[6, 4, 6]} intensity={0.35} color="#dfeaf2"/>
-    <StaticBatch>
+    <StaticBatch key={view.captions?.join('|') ?? 'en'}>
       <OuterCity/>
       <BoardBase/>
       <CityBlock/>
-      {tiles.map((i) => <TileBase key={i} index={i}/>)}
+      {tiles.map((i) => <TileBase key={i} index={i} caption={view.captions?.[i]}/>)}
     </StaticBatch>
     {tiles.filter((i) => i === view.currentSpace || (view.highlightCategory !== null && spaceCategory(i) === view.highlightCategory)).map((i) => <TileGlow key={i} index={i} active={i === view.currentSpace} reducedMotion={reducedMotion}/>)}
     <RouteDots route={view.route} owner={view.routeOwner}/>
@@ -292,7 +294,7 @@ function HeroCamera({ reducedMotion }: { reducedMotion: boolean }) {
 const HERO_POSITIONS: Record<CharacterId, number> = { alex: 2, meiling: 8, daniel: 14, aisyah: 20 };
 
 /** Homepage illustration: the real 3D city board with the four profession tokens (decorative). */
-export function HeroScene() {
+export function HeroScene({ captions }: { captions?: readonly string[] }) {
   const reducedMotion = useMemo(prefersReducedMotion, []);
   const tiles = useMemo(() => SPACE_WORLD.map((_, i) => i), []);
   return <Canvas className="hero-3d-canvas" frameloop="demand" dpr={[1, 2]} shadows="percentage" gl={{ antialias: true, powerPreference: 'low-power' }} camera={{ position: [0, 12, 12], fov: FOV_DEG, near: 0.5, far: 80 }} aria-hidden="true">
@@ -303,11 +305,11 @@ export function HeroScene() {
     <hemisphereLight args={['#fffaf0', '#b7cfa6', 1.0]}/>
     <directionalLight position={[-5, 9, 2.5]} intensity={1.7} color="#fff6e8" castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-0.0004} shadow-normalBias={0.02} shadow-camera-left={-10} shadow-camera-right={10} shadow-camera-top={10} shadow-camera-bottom={-10} shadow-camera-near={1} shadow-camera-far={25}/>
     <directionalLight position={[6, 4, 6]} intensity={0.35} color="#dfeaf2"/>
-    <StaticBatch>
+    <StaticBatch key={captions?.join('|') ?? 'en'}>
       <OuterCity/>
       <BoardBase/>
       <CityBlock/>
-      {tiles.map((i) => <TileBase key={i} index={i}/>)}
+      {tiles.map((i) => <TileBase key={i} index={i} caption={captions?.[i]}/>)}
     </StaticBatch>
     {(Object.keys(HERO_POSITIONS) as CharacterId[]).map((id) => <Pawn3D key={id} id={id} index={HERO_POSITIONS[id]} positions={HERO_POSITIONS} human={false} active={false} stepSeconds={0.3} reducedMotion={reducedMotion}/>)}
     <AmbientCars enabled={!reducedMotion}/>
