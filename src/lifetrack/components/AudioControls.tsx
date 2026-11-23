@@ -1,20 +1,29 @@
 import { useI18n } from '../i18n/I18nProvider.tsx';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import { SlidersHorizontal, Volume2, VolumeX } from 'lucide-react';
-import { playSample, playSynth, type SynthId } from './synthSounds.ts';
+import { playSample, playSynth, preloadSamples, type SynthId } from './synthSounds.ts';
 
-export type SoundId = 'click'|'select'|'purchase'|'coins'|'event'|'claim'|'quiz-correct'|'quiz-wrong'|'month'|'winner'|SynthId;
+/**
+ * Sound set: CC0 clips from Kenney (Casino Audio, Interface Sounds) plus LifeTrack's own generated
+ * results cue and ambience, all stored locally in public/audio as small mono MP3s (see
+ * docs/AUDIO_CREDITS.md). Each id maps to one file, or several variations picked at random.
+ * dice/step/land fall back to Web Audio synthesis if their file cannot be loaded.
+ */
+export type SoundId = 'click'|'select'|'purchase'|'save'|'confirm'|'card'|'coins'|'pay'|'event'|'claim'|'warning'|'quiz-correct'|'quiz-wrong'|'month'|'winner'|'dice-land'|SynthId;
+const FILES:Record<SoundId,readonly string[]>={click:['click'],select:['select'],purchase:['purchase'],save:['save'],confirm:['confirm'],card:['card'],coins:['coins'],pay:['pay'],event:['event'],claim:['claim'],warning:['warning'],'quiz-correct':['quiz-correct'],'quiz-wrong':['quiz-wrong'],month:['month'],winner:['winner'],'dice-land':['dice-land'],dice:['dice-shake'],step:['step-1','step-2','step-3'],land:['land']};
 const SYNTH:ReadonlySet<SoundId>=new Set<SoundId>(['dice','step','land']);
+/** Decoded right after the first user gesture so the dice and board sounds play without delay. */
+const ESSENTIAL:SoundId[]=['click','select','dice','dice-land','step','land','coins','card','confirm'];
 type AudioPrefs = { enabled: boolean; musicVolume: number; effectsVolume: number };
 type AudioApi = AudioPrefs & { setEnabled: (enabled:boolean)=>void; setMusicVolume:(value:number)=>void; setEffectsVolume:(value:number)=>void; playEffect:(id:SoundId)=>void };
 // v2: subtle effects are on by default and background music is off. v1 had saved "off" for every visitor.
 const PREFS_KEY='lifetrack.audio.v2';
 const defaults:AudioPrefs={enabled:true,musicVolume:0,effectsVolume:.35};
-const audioUrl=(name:string)=>`${import.meta.env.BASE_URL}audio/${name}.wav`;
+const audioUrl=(name:string)=>`${import.meta.env.BASE_URL}audio/${name}.mp3`;
 /** True once the page has had a real user gesture (browsers block audio before that). */
 function userHasInteracted(){try{const ua=(navigator as Navigator&{userActivation?:{hasBeenActive:boolean}}).userActivation;return ua?ua.hasBeenActive:true;}catch{return true;}}
 /** Throttle per sound and cap simultaneous sounds so effects never pile up. */
-const MIN_GAP_MS:Partial<Record<SoundId,number>>={click:90,step:60};
+const MIN_GAP_MS:Partial<Record<SoundId,number>>={click:90,step:70,select:60};
 const MAX_ACTIVE=4;
 const AudioContext=createContext<AudioApi|null>(null);
 
@@ -52,13 +61,16 @@ export function AudioProvider({children}:{children:ReactNode}) {
     const now=performance.now(),gap=MIN_GAP_MS[id]??120;
     if(now-(lastPlayed.current[id]??-Infinity)<gap||active.current>=MAX_ACTIVE)return;
     lastPlayed.current[id]=now;
-    if(SYNTH.has(id)){playSynth(id as SynthId,prefs.effectsVolume);return;}
-    active.current++;window.setTimeout(()=>{active.current=Math.max(0,active.current-1);},700);
-    playSample(audioUrl(id),prefs.effectsVolume);
+    const files=FILES[id],file=files[Math.floor(Math.random()*files.length)]!;
+    active.current++;window.setTimeout(()=>{active.current=Math.max(0,active.current-1);},id==='step'?250:600);
+    void playSample(audioUrl(file),prefs.effectsVolume).then((played)=>{if(!played&&SYNTH.has(id))playSynth(id as SynthId,prefs.effectsVolume);});
   },[prefs.enabled,prefs.effectsVolume]);
-  const handleClick=useCallback((event:React.MouseEvent<HTMLDivElement>)=>{const target=event.target;if(target instanceof Element&&target.closest('button,[role="button"],summary'))playEffect('click');},[playEffect]);
+  // Generic click for buttons; controls with their own sound (picks, dice, answers) skip it so sounds never double up.
+  const handleClick=useCallback((event:React.MouseEvent<HTMLDivElement>)=>{const target=event.target;if(target instanceof Element&&target.closest('button,[role="button"],summary')&&!target.closest('[data-sound]'))playEffect('click');},[playEffect]);
+  const preloaded=useRef(false);
+  const warm=useCallback(()=>{if(preloaded.current||!prefs.enabled)return;preloaded.current=true;preloadSamples(ESSENTIAL.flatMap(id=>FILES[id]).map(audioUrl));},[prefs.enabled]);
   const value=useMemo(()=>({...prefs,setEnabled,setMusicVolume,setEffectsVolume,playEffect}),[prefs,setEnabled,setMusicVolume,setEffectsVolume,playEffect]);
-  return <AudioContext.Provider value={value}><div className="audio-root" onClickCapture={handleClick}>{children}</div></AudioContext.Provider>;
+  return <AudioContext.Provider value={value}><div className="audio-root" onClickCapture={handleClick} onPointerDownCapture={warm} onKeyDownCapture={warm}>{children}</div></AudioContext.Provider>;
 }
 
 export function useAudio(){const value=useContext(AudioContext);if(!value)throw new Error('useAudio must be used inside AudioProvider');return value;}

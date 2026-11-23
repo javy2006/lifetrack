@@ -57,9 +57,7 @@ export function playSynth(id: SynthId, volume: number): void {
 /** Decoded sound files, fetched once on first use (after a user gesture) and replayed from memory. */
 const samples = new Map<string, Promise<AudioBuffer | null>>();
 let warned = false;
-export function playSample(url: string, volume: number): void {
-  const a = audio();
-  if (!a || volume <= 0) return;
+function load(a: AudioContext, url: string): Promise<AudioBuffer | null> {
   let buffer = samples.get(url);
   if (!buffer) {
     buffer = fetch(url).then((r) => { if (!r.ok) throw new Error(`${r.status} ${url}`); return r.arrayBuffer(); }).then((data) => a.decodeAudioData(data)).catch((error: unknown) => {
@@ -68,11 +66,23 @@ export function playSample(url: string, volume: number): void {
     });
     samples.set(url, buffer);
   }
-  void buffer.then((b) => {
-    if (!b) return;
+  return buffer;
+}
+/** Fetches and decodes sounds ahead of use (call after a user gesture). Missing files are skipped. */
+export function preloadSamples(urls: readonly string[]): void {
+  const a = audio();
+  if (a) for (const url of urls) void load(a, url);
+}
+/** Plays a decoded sound file; resolves false if it could not be loaded (the caller may fall back). */
+export function playSample(url: string, volume: number): Promise<boolean> {
+  const a = audio();
+  if (!a || volume <= 0) return Promise.resolve(true);
+  return load(a, url).then((b) => {
+    if (!b) return false;
     const src = a.createBufferSource(), g = a.createGain();
     src.buffer = b; g.gain.value = Math.min(1, volume);
     src.connect(g).connect(a.destination);
     src.start();
+    return true;
   });
 }

@@ -59,7 +59,7 @@ export function DecisionCard({ state, dispatch, landed }: { state: GameState; di
     // Each chosen move is applied once; any unused move is a pass. The month is confirmed after a short "locked in" beat.
     for (const action of actions.slice(0, -1)) dispatch(action);
     setConfirmed(true);
-    playEffect(moves.some((m) => m.kind === 'buy') ? 'purchase' : moves.some((m) => m.kind === 'save') ? 'coins' : 'select');
+    playEffect(moves.some((m) => m.kind === 'buy') ? 'purchase' : moves.some((m) => m.kind === 'save') ? 'save' : 'confirm');
     window.setTimeout(() => dispatch(actions[actions.length - 1]!), 650);
   };
 
@@ -88,7 +88,7 @@ export function DecisionCard({ state, dispatch, landed }: { state: GameState; di
         const available = !confirmed && !owned && (n > 0 || canAdd(state, draft.length < slots ? draft : draft.slice(0, -1), move));
         const reason = owned ? t('decision.alreadyCovered') : !available && cost > after.cash ? t('decision.notEnoughCash') : null;
         return <div key={title} className={`decision-option ${n > 0 ? 'is-selected' : ''} ${owned ? 'is-owned' : ''}`}>
-          <button type="button" className={`decision-pick ${className}`} aria-pressed={n > 0} disabled={!available && n === 0} onClick={() => toggle(move)}>
+          <button type="button" data-sound="own" className={`decision-pick ${className}`} aria-pressed={n > 0} disabled={!available && n === 0} onClick={() => toggle(move)}>
             <span className="decision-option-icon"><Icon size={18}/></span>
             <span className="decision-option-text"><b>{title}</b><small>{reason ?? detail}</small></span>
             <span className="decision-option-mark" aria-hidden="true">{n > 1 ? `×${n}` : n === 1 ? <Check size={14}/> : owned ? <Check size={14}/> : null}</span>

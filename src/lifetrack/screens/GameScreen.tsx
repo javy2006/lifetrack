@@ -110,7 +110,7 @@ function QuizView({ state, dispatch }: { state: GameState; dispatch: Dispatch })
   const q = quizText(question.id, content);
   return <Card className="quiz-card"><div className="quiz-top"><div><Eyebrow>{t('quiz.eyebrow', { n: progress.answered.length + 1, total: progress.total })}</Eyebrow><h2>{q.prompt}</h2></div><span className="quiz-progress">{t('quiz.progress', { answered: progress.answered.length, total: progress.total })}</span></div>
     {progress.answered.length > 0 && <details className="answered-review" open><summary>{t('quiz.reviewAnswered', { count: progress.answered.length })}</summary><div className="answered-review-list">{progress.answered.map((item) => { const iq = quizText(item.question.id, content); return <article className="answered-review-item" key={item.question.id}><span className={`answer-mark ${item.isCorrect ? 'answer-right' : 'answer-wrong'}`} aria-label={item.isCorrect ? t('quiz.correct') : t('quiz.incorrect')}>{item.isCorrect ? '✓' : '!'}</span><div><b>{iq.prompt}</b><p>{t('quiz.yourAnswer', { answer: item.selectedOption ? iq.option(item.selectedOption.id) : t('quiz.unavailable') })}</p>{!item.isCorrect && <p>{t('quiz.correctAnswer', { answer: iq.option(item.correctOption.id) })}</p>}<small>{iq.explanation}</small></div></article>; })}</div></details>}
-    <div className="quiz-options">{question.options.map((o) => <button key={o.id} className="quiz-option" onClick={() => { dispatch({ type: 'quiz/answer', questionId: question.id, optionId: o.id }); playEffect(o.id === question.correctOptionId ? 'quiz-correct' : 'quiz-wrong'); }}><span className="option-letter">{o.id.toUpperCase()}</span><span>{q.option(o.id)}</span></button>)}</div>
+    <div className="quiz-options">{question.options.map((o) => <button key={o.id} className="quiz-option" data-sound="own" onClick={() => { dispatch({ type: 'quiz/answer', questionId: question.id, optionId: o.id }); playEffect(o.id === question.correctOptionId ? 'quiz-correct' : 'quiz-wrong'); }}><span className="option-letter">{o.id.toUpperCase()}</span><span>{q.option(o.id)}</span></button>)}</div>
     <div className="quiz-footer"><span>{t('quiz.concept', { label: conceptLabel(question.concept, content) })}</span></div></Card>;
 }
 
@@ -165,17 +165,26 @@ export function GameScreen({ state, dispatch, onExit, demo }: { state: GameState
   useEffect(() => {
     const previous = previousState.current;
     if (previous.phase === 'income' && state.phase === 'expenses') playEffect('coins');
+    if (previous.phase === 'expenses' && state.phase === 'decisions') playEffect('pay');
+    if (demo && previous.phase === 'decisions' && state.phase !== 'decisions') {
+      // Demo autopilot confirmed moves (a player's own confirm plays this sound on click, in DecisionCard).
+      const actions = getRoundRecord(getHumanPlayer(state), state.round)?.actions ?? [];
+      playEffect(actions.some((a) => a.kind === 'buy') ? 'purchase' : actions.some((a) => a.kind === 'save') ? 'save' : 'confirm');
+    }
     if (previous.phase === 'event-draw' && state.phase === 'event') playEffect('event');
     if (previous.phase === 'event' && state.phase === 'claims') {
       const result = getRoundRecord(getHumanPlayer(state), state.round)?.claim;
       if (result && (result.reimbursement + result.fixedBenefits) > 0) playEffect('claim');
+      else if (result && result.outOfPocket > 0) playEffect('warning');
     }
     if (previous.phase === 'claims' && state.phase === 'summary') playEffect('month');
     if (previous.status === 'review' && state.status === 'complete') playEffect(getFinalStandings(state)[0]?.playerId === state.humanId ? 'winner' : 'month');
     previousState.current = state;
-  }, [state, playEffect]);
+  }, [state, playEffect, demo]);
   // Board sounds follow the turn sequence (presentation only; they never affect the game).
   useEffect(() => { if (board.dieTumbling) playEffect('dice'); }, [board.dieTumbling, playEffect]);
+  useEffect(() => { if (board.dieValue !== null && !board.dieTumbling) playEffect('dice-land'); }, [board.dieValue, board.dieTumbling, playEffect]);
+  useEffect(() => { if (board.progress?.stage === 'human-landed' && state.phase === 'decisions') playEffect('card'); }, [board.progress?.stage, state.phase, playEffect]);
   useEffect(() => { if (board.movementStep) playEffect('step'); }, [board.movementStep?.playerId, board.movementStep?.position, playEffect]);
   useEffect(() => { if (board.landing) playEffect('land'); }, [board.landing, playEffect]);
   const month = t(`months.${state.round - 1}`);
