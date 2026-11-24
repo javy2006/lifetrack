@@ -39,7 +39,7 @@ const pack: LanguagePack = {
       toStart: '起始资金', months: '{n} 个月', payBills: '+{pay} 薪水 · −{bills} 账单', moves: '{n} 次行动', movesText: '每月：储蓄、购买保障或跳过',
       events: '生活事件', eventsText: '四位玩家同样面对', begin: '开始第一个月',
     },
-    howto: {
+    howto: { cardsTitle: "你会遇到的卡片", cards: { income: '每月薪水', expense: '要付的账单', opportunity: '增加储蓄', protection: '保险保障', emergency: '有开销的人生事件', special: '月度回顾与结果' },
       title: '玩法说明', quickGuide: '快速指南', backToGame: '返回游戏',
       roll: '掷骰', rollText: '点击“掷骰”掷出骰子。', move: '移动', moveText: '你的棋子沿着城市棋盘前进。',
       decide: '决定', decideText: '落格后选择 {n} 个理财行动。', finish: '完成', finishText: '{n} 个月后比较结果。',

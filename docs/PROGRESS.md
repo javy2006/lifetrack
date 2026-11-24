@@ -18,6 +18,32 @@ Ground rule: `src/lifetrack/game/` (reducer, calculations, AI strategies, polici
 | 4.3C-2d | Phone: "Money" drawer overlaps board heading | Open (cosmetic) |
 | 5.x | Three.js + React Three Fiber 9 board renderer | Not started (dependencies not installed) |
 
+## Tabletop visual upgrade: printed cards, 3D city board, audio fix (2026-11-24) — complete
+
+Reference: the owner's gameplay video (`docs/reference/20261123-1432-40.9480842.mp4`, 14 s portrait clip of a
+commercial 3D property board game) was reviewed frame by frame and used for direction only (camera, warmth,
+physical dice, landing feedback). No branding, artwork or layouts were copied. The video and the character
+reference photos stay untracked (owner's source files).
+
+| Area | What changed | Files |
+| --- | --- | --- |
+| Printed card system | `TableCard`/`CardMast`: paper stock with fine grain, printed inner frame, layered table shadows, masthead plate with a seal; 8 kinds with their own ink (event, opportunity, investment, protection, expense, emergency, income, special). Payday, bills, event reveal (face-down deck), life events (kind from the engine's expense list), claims, learning, recap, quiz and results all use it. Deal-in animation (none with reduced motion) | `components/TableCard.tsx`, `components/cardKinds.ts` (+test), `screens/GameScreen.tsx`, `src/index.css` |
+| Decision hand | Options are choice cards (save = opportunity, policies = protection, pass): staggered deal, picked cards lift with a numbered stamp, unavailable cards greyed with the reason, owned stamp, inspect view (zoomed card with cover details, choose / put back, Esc closes). Ledger previews cash, savings and monthly cover after confirming, from the real reducer. Same draft + lock: nothing is charged before confirm; each move applied once | `components/DecisionCard.tsx` |
+| 3D board | Printed spaces (cream face + category stripe on the inner edge; full-colour corners); walnut table lip, thick cream board, printed border; central park (striped lawn, sand paths, plaza) with the new LifeTrack Tower landmark; warmer city palette, autumn trees, warmer light; lower three-quarter camera; rounded ivory die thrown in beside the mover, bouncing and settling on the seeded value; landing sparkles in the space colour; bobbing destination arrow; tokens 12% larger. Touch devices: DPR ≤ 1.75 and 1024 shadow map | `board3d/City3D.tsx`, `board3d/Board3DScene.tsx`, `board3d/camera.ts`, `board3d/Pawn3D.tsx` |
+| UI | Warm tabletop background and cream HUD; player dashboard as player mats (colour band per player); How to Play adds "Cards you'll meet" using the real card styles; homepage poster regenerated from the new scene; phone action modal no longer slides under the HUD; hover no longer moves cards (fixed a hover-jitter loop) | `src/index.css`, `components/HowToPlay.tsx`, `public/assets/hero/city.webp` |
+| Music start (bug) | Root cause: music retried only on `pointerdown`/`keydown`. On touch devices `pointerdown` is not a user activation (Chrome Android grants it on `pointerup`, iOS Safari on `touchend`/`click`), and "playing" was reported even if the AudioContext stayed suspended, which stopped further retries. Fix: retry on pointerdown/pointerup/touchend/click/keydown; "playing" requires a running context; no second play() while one is in flight; the Play button starts music explicitly; a "Play music" chip appears only after a refusal | `components/MusicPlayer.ts`, `components/AudioControls.tsx`, `screens/MainMenu.tsx` |
+| Languages | All new labels in EN/BM/ZH/TA (completeness test covers them) | `i18n/{en,ms,zh,ta}.ts` |
+
+QA (production build, headless Edge): unit 112/112; tsc clean; build OK; `git diff cfe8083 -- src/lifetrack/game` empty.
+journey `?renderer=3d` 99/99 and `?renderer=svg` 91/91 (0 console errors, no overflow); `i18n.mjs` 4 languages × desk/phone/landscape 0 failures;
+`audio.mjs` 0 failures (updated for the new retry behaviour and the chip); `demo.mjs` 0 failures; `intro.mjs` 0 failures; `renderer-default.mjs` 15/15;
+`board3d.mjs` all pass (~281 draws/frame vs limit 300; heap +2.5 MB over 20 remounts; idle ≈15 fps desktop, 0 draws reduced motion);
+new scratch check of the inspect flow at 390×844: choose in inspect, Esc, put back, ledger, double-click confirm → cash 3000 → 2660 (save 300 + accident premium 40), savings +300, cover owned once.
+Screens reviewed at 1920×1080, 1366×768, 390×844, 360×640, 844×390 and 320×640.
+
+Not verified: real-device audio on iPhone/Android (the activation rules were handled in code and tested in headless Edge only),
+and how anything sounds. QA script changes: `audio.mjs` (blocked-play scenario), `demo.mjs` (recap month read from the card masthead).
+
 ## Final audio and presentation polish (2026-11-24) — complete
 
 | Item | Status | Files |

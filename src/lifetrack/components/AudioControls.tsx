@@ -24,7 +24,7 @@ const JINGLES:ReadonlySet<SoundId>=new Set<SoundId>(['claim','month','winner','r
 /** Decoded right after the first user gesture so the dice and board sounds play without delay. */
 const ESSENTIAL:SoundId[]=['click','select','dice','dice-land','step','land','coins','card','confirm'];
 
-type AudioApi = AudioPrefs & { musicState: MusicState; setEnabled: (enabled:boolean)=>void; setMusicOn:(on:boolean)=>void; setEffectsOn:(on:boolean)=>void; setMusicVolume:(value:number)=>void; setEffectsVolume:(value:number)=>void; playEffect:(id:SoundId)=>void; startMusic:()=>void };
+type AudioApi = AudioPrefs & { musicState: MusicState; musicRefused: boolean; setEnabled: (enabled:boolean)=>void; setMusicOn:(on:boolean)=>void; setEffectsOn:(on:boolean)=>void; setMusicVolume:(value:number)=>void; setEffectsVolume:(value:number)=>void; playEffect:(id:SoundId)=>void; startMusic:()=>void };
 /** Music sits a little under the effects at equal slider settings. */
 const MUSIC_MIX=0.8;
 const audioUrl=(name:string)=>`${import.meta.env.BASE_URL}audio/${name}.mp3`;
@@ -40,10 +40,11 @@ function loadPrefs(){try{return readPrefs(localStorage.getItem(PREFS_KEY));}catc
 export function AudioProvider({children}:{children:ReactNode}) {
   const [prefs,setPrefs]=useState<AudioPrefs>(loadPrefs);
   const [musicState,setMusicState]=useState<MusicState>('off');
+  const [musicRefused,setMusicRefused]=useState(false);
   const music=useRef<MusicPlayer|null>(null);
   // Default track: "Cheery Monday" (loop point 65.88 s). "Sunshine" (music-sunshine.mp3, loop 163.63 s) is kept as a backup and not played.
   if(!music.current){music.current=new MusicPlayer(audioUrl('music-cheery-monday'),65.88);}
-  useEffect(()=>{music.current!.onState=setMusicState;(window as Window&{__lifetrackMusic?:MusicPlayer}).__lifetrackMusic=music.current!;},[]);
+  useEffect(()=>{music.current!.onState=setMusicState;music.current!.onRefused=setMusicRefused;(window as Window&{__lifetrackMusic?:MusicPlayer}).__lifetrackMusic=music.current!;},[]);
   // Preferences persist only once the player changes them (defaults stay defaults until then).
   const changed=useRef(false);
   useEffect(()=>{if(!changed.current)return;try{localStorage.setItem(PREFS_KEY,JSON.stringify(prefs));}catch{/* optional */}},[prefs]);
@@ -78,9 +79,9 @@ export function AudioProvider({children}:{children:ReactNode}) {
   const handleClick=useCallback((event:React.MouseEvent<HTMLDivElement>)=>{const target=event.target;if(target instanceof Element&&target.closest('button,[role="button"],summary')&&!target.closest('[data-sound]'))playEffect('click');},[playEffect]);
   const preloaded=useRef(false);
   const warm=useCallback(()=>{if(preloaded.current||effectsLevel<=0)return;preloaded.current=true;preloadSamples(ESSENTIAL.flatMap(id=>FILES[id]).map(audioUrl));},[effectsLevel]);
-  const value=useMemo<AudioApi>(()=>({...prefs,musicState,
+  const value=useMemo<AudioApi>(()=>({...prefs,musicState,musicRefused,
     setEnabled:(enabled)=>update({enabled}),setMusicOn:(musicOn)=>update({musicOn}),setEffectsOn:(effectsOn)=>update({effectsOn}),
-    setMusicVolume:(musicVolume)=>update({musicVolume}),setEffectsVolume:(effectsVolume)=>update({effectsVolume}),playEffect,startMusic}),[prefs,musicState,update,playEffect,startMusic]);
+    setMusicVolume:(musicVolume)=>update({musicVolume}),setEffectsVolume:(effectsVolume)=>update({effectsVolume}),playEffect,startMusic}),[prefs,musicState,musicRefused,update,playEffect,startMusic]);
   return <AudioContext.Provider value={value}><div className="audio-root" onClickCapture={handleClick} onPointerDownCapture={warm} onKeyDownCapture={warm}>{children}</div></AudioContext.Provider>;
 }
 
@@ -92,7 +93,7 @@ export function AudioControls(){
   const onRange=(setter:(n:number)=>void)=>(event:ChangeEvent<HTMLInputElement>)=>setter(Number(event.target.value)/100);
   const waiting=a.enabled&&a.musicOn&&a.musicState==='waiting';
   // Shown only after the page has had a gesture and the browser still refused: one tap starts the music.
-  const prompt=waiting&&userHasInteracted();
+  const prompt=waiting&&a.musicRefused;
   return <div className="audio-controls">
     {prompt&&<button type="button" className="music-prompt" data-sound="own" onClick={a.startMusic}><Music size={13} aria-hidden="true"/>{t('audio.playMusic')}</button>}
     <button type="button" className={`audio-toggle ${waiting?'is-waiting':''}`} aria-pressed={a.enabled} onClick={()=>a.setEnabled(!a.enabled)} title={a.enabled?(waiting?t('audio.blocked'):t('audio.mute')):t('audio.turnOn')}>{a.enabled?<Volume2 size={16}/>:<VolumeX size={16}/>}<span>{a.enabled?t('audio.on'):t('audio.muted')}</span>{a.enabled&&a.musicOn&&<Music size={12} className={`audio-music-dot ${a.musicState==='playing'?'is-playing':''}`} aria-hidden="true"/>}</button>

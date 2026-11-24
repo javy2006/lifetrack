@@ -744,3 +744,53 @@ img.mini-avatar { padding: 0; }
 .table-card .summary-balances b { color: var(--ink); font: 700 19px/1.2 var(--card-font); }
 .table-card .chart { border-color: #eadfc8; background: rgba(255,255,255,.6); }
 .table-card .summary-progress-track { background: #eadfc8; }
+
+/* How to play: card guide (uses the real card styles) */
+.htp-cards { margin: 14px 0 4px; }
+.htp-cards h3 { margin: 0 0 10px; color: #0f294a; font-size: 14px; font-weight: 800; letter-spacing: .01em; }
+.htp-cards ul { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.htp-card.table-card { display: grid; align-content: start; gap: 8px; min-height: 104px; padding: 7px 7px 10px; border-radius: 11px; transform: rotate(calc((var(--i) - 2.5) * 1.2deg)); }
+.htp-card.table-card::before { inset: 4px; border-radius: 8px; }
+.htp-card .cc-mast { padding: 4px 6px; }
+.htp-card .cc-icon { width: 22px; height: 22px; }
+.htp-card .cc-kind { font-size: 9px; }
+.htp-card-text { padding: 0 3px; color: #3d3a30; font-size: 12px; font-weight: 700; line-height: 1.3; }
+@media (max-width: 760px) { .htp-cards ul { grid-template-columns: repeat(3, minmax(0, 1fr)); } .htp-card.table-card { min-height: 84px; } }
+@media (max-width: 360px) { .htp-cards ul { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ---------- Tabletop atmosphere around the board ---------- */
+.game-fullscreen { background: radial-gradient(ellipse at 50% 38%, #f7f0e1 0%, #ece2cd 62%, #e2d5bb 100%); }
+.game-scene-content .board-card { background: #fbf6ea; box-shadow: 0 0 0 1px #e2d5b8, 0 2px 0 #e2d5b8, 0 18px 36px -18px rgba(52,36,8,.4); }
+.game-scene-content .board-3d canvas { border-radius: 14px; }
+/* Player dashboard as player mats: card stock with a band in the player's colour. */
+.pd-card { background: #fffcf4 linear-gradient(180deg, #fffdf7, #f8f1e1); box-shadow: 0 0 0 1px #e4d7bc, 0 2px 0 #e4d7bc, 0 8px 16px -12px rgba(52,36,8,.45); border-top: 4px solid var(--pd-color, #c9b991); }
+.pd-alex { --pd-color: #24845b; } .pd-meiling { --pd-color: #7d68a6; } .pd-daniel { --pd-color: #457a9b; } .pd-aisyah { --pd-color: #d6a44b; }
+.pd-card.pd-you { box-shadow: 0 0 0 2px #c8102e, 0 2px 0 #e4d7bc, 0 10px 20px -12px rgba(200,16,46,.45); }
+.pd-card.pd-active { transform: translateY(-2px); }
+@media (prefers-reduced-motion: reduce) { .pd-card.pd-active { transform: none; } }
+.game-fullscreen .game-topbar, .game-fullscreen .resource-strip { background: #fdf9f0; border-color: #e8dcc4; }
+.htp-card.table-card { min-height: 86px; }
+/* Inspect button sits on the price row, so the kind label keeps the full masthead. */
+.cc-inspect { top: auto; bottom: 9px; right: 9px; width: 24px; height: 24px; background: #fffaf0; box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 35%, transparent); }
+.choice-card.has-inspect .cc-mast { padding-right: 8px; }
+.choice-card.has-inspect .cc-price { padding-right: 28px; }
+@media (max-height: 500px) and (orientation: landscape) {
+  .decision-card-v2 > .tc-mast { margin: 6px 6px 0; padding: 6px 10px; }
+  .decision-card-v2 > .tc-mast .tc-seal { width: 28px; height: 28px; }
+  .decision-card-v2 > .tc-mast h2 { font-size: 16px; }
+  .choice-hand.decision-options { padding: 10px 8px 4px; }
+  .choice-card .decision-pick { min-height: 112px; padding: 6px 7px 8px; }
+  .choice-card .cc-kind { display: none; }
+  .choice-card .cc-mast { padding: 3px 5px; }
+  .choice-card .cc-icon { width: 22px; height: 22px; }
+  .choice-card .cc-body b { font-size: 13px; }
+  .cc-price { padding-top: 5px; }
+  .cc-price b { font-size: 14px; }
+  .decision-summary.tc-ledger { padding: 6px 12px 8px; gap: 6px 12px; }
+  .decision-card-v2 > .disclaimer { display: none; }
+}
+/* Phones: the action modal never slides under the two-row HUD (topbar + resource strip). */
+@media (max-width: 760px) { .game-fullscreen .game-action-modal > .primary-column { max-height: calc(100dvh - 112px); } }
+/* Hover never moves the hit target (a lift under a resting pointer at the card's edge would jitter). */
+.choice-card .decision-pick:hover:not(:disabled) { transform: none; }
+.choice-card .decision-pick[aria-pressed="true"]:hover:not(:disabled) { transform: translateY(-10px); }

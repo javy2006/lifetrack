@@ -129,9 +129,10 @@ const music = (page) => page.evaluate(() => globalThis.__lifetrackMusic?.debug()
   await ctx.close();
 }
 {
-  // Blocked autoplay: the first play() is refused, the next interaction starts the music without errors.
+  // Blocked autoplay: while the browser refuses play(), the music waits (no errors) and a "Play music" chip appears;
+  // every later gesture retries (pointerdown, pointerup, touchend, click, keydown), and the chip starts it in one tap.
   const ctx = await browser.newContext();
-  await ctx.addInitScript(() => { const orig = HTMLMediaElement.prototype.play; let refused = false; HTMLMediaElement.prototype.play = function () { if (!refused) { refused = true; return Promise.reject(new DOMException('blocked', 'NotAllowedError')); } return orig.call(this); }; });
+  await ctx.addInitScript(() => { globalThis.__blockPlay = true; const orig = HTMLMediaElement.prototype.play; HTMLMediaElement.prototype.play = function () { return globalThis.__blockPlay ? Promise.reject(new DOMException('blocked', 'NotAllowedError')) : orig.call(this); }; });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -143,10 +144,13 @@ const music = (page) => page.evaluate(() => globalThis.__lifetrackMusic?.debug()
   const first = await music(page);
   check('blocked play: waits instead of failing', first.state === 'waiting' && first.playing === 0, JSON.stringify(first));
   check('blocked play: the audio button shows it is waiting', await page.locator('.audio-toggle.is-waiting').count() === 1);
-  await page.locator('.hero-lead').click();
+  check('blocked play: a "Play music" chip is offered', await page.locator('.music-prompt').isVisible());
+  await page.evaluate(() => { globalThis.__blockPlay = false; });
+  await page.locator('.music-prompt').click();
   await page.waitForTimeout(2000);
   const second = await music(page);
-  check('blocked play: the next interaction starts the music', second.state === 'playing' && second.playing === 1, JSON.stringify(second));
+  check('blocked play: one tap on the chip starts the music', second.state === 'playing' && second.playing === 1, JSON.stringify(second));
+  check('blocked play: the chip goes away once playing', await page.locator('.music-prompt').count() === 0);
   check('blocked play: no errors logged', errors.length === 0, errors.join(' | '));
   await ctx.close();
 }

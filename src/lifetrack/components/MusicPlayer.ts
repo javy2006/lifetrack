@@ -34,6 +34,10 @@ export class MusicPlayer {
   private pending = false;
   state: MusicState = 'off';
   onState: (s: MusicState) => void = () => {};
+  /** True after the browser refused to start the music, until it plays (the UI then offers a one-tap start). */
+  refused = false;
+  onRefused: (refused: boolean) => void = () => {};
+  private setRefused(r: boolean) { if (this.refused !== r) { this.refused = r; this.onRefused(r); } }
 
   /** `loopEnd`: seconds where the track returns to its opening material (see scripts/assets/build_audio.py). */
   constructor(private url: string, private loopEnd: number) {}
@@ -91,11 +95,12 @@ export class MusicPlayer {
     const playing = el.paused ? el.play() : Promise.resolve();
     Promise.all([playing, resumed]).then(() => {
       if (!this.wanted || this.hidden) return;
-      if (ctx.state !== 'running') { this.setState('waiting'); return; }
+      if (ctx.state !== 'running') { this.setState('waiting'); this.setRefused(true); return; }
       this.ramp(this.gains[this.active]!, this.target(), FADE_IN);
+      this.setRefused(false);
       this.setState('playing');
       this.schedule();
-    }).catch(() => { this.setState('waiting'); /* blocked: the next gesture retries */ })
+    }).catch(() => { this.setState('waiting'); this.setRefused(true); /* blocked: the next gesture retries */ })
       .finally(() => { this.pending = false; });
   }
 

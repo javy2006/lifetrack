@@ -39,7 +39,7 @@ const pack: LanguagePack = {
       toStart: 'untuk bermula', months: '{n} bulan', payBills: '+{pay} gaji · −{bills} bil', moves: '{n} langkah', movesText: 'sebulan: simpan, beli perlindungan atau lepas',
       events: 'Peristiwa hidup', eventsText: 'menimpa keempat-empat pemain', begin: 'Mula bulan pertama',
     },
-    howto: {
+    howto: { cardsTitle: "Kad yang anda akan temui", cards: { income: 'Gaji bulanan', expense: 'Bil untuk dibayar', opportunity: 'Tambah simpanan', protection: 'Perlindungan insurans', emergency: 'Peristiwa hidup berkos', special: 'Rumusan dan keputusan' },
       title: 'Cara bermain', quickGuide: 'PANDUAN RINGKAS', backToGame: 'Kembali ke permainan',
       roll: 'Baling', rollText: 'Tekan Baling untuk membaling dadu.', move: 'Gerak', moveText: 'Token anda bergerak mengelilingi papan bandar.',
       decide: 'Putuskan', decideText: 'Pilih {n} langkah kewangan apabila anda mendarat.', finish: 'Tamat', finishText: 'Selepas {n} bulan, bandingkan keputusan.',

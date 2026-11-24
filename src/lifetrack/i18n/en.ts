@@ -41,7 +41,7 @@ const en = {
     toStart: 'to start', months: '{n} months', payBills: '+{pay} pay · −{bills} bills', moves: '{n} moves', movesText: 'a month: save, buy cover or pass',
     events: 'Life events', eventsText: 'hit all 4 players alike', begin: 'Begin month one',
   },
-  howto: {
+  howto: { cardsTitle: "Cards you'll meet", cards: { income: 'Monthly pay', expense: 'Bills to pay', opportunity: 'Grow your savings', protection: 'Insurance cover', emergency: 'Life events with costs', special: 'Recaps and results' },
     title: 'How to play', quickGuide: 'QUICK GUIDE', backToGame: 'Back to the game',
     roll: 'Roll', rollText: 'Tap Roll to throw the dice.', move: 'Move', moveText: 'Your token travels round the city board.',
     decide: 'Decide', decideText: 'Pick {n} money moves when you land.', finish: 'Finish', finishText: 'After {n} months, compare results.',

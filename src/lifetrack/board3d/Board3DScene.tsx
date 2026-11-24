@@ -303,8 +303,7 @@ function BoardBase() {
   const T = TABLE_HALF, line = T - 0.09;
   return <group>
     <mesh geometry={geo().box} material={mat('#8f6440', { roughness: 0.6 })} position={[0, -0.205, 0]} scale={[2 * T + 0.36, 0.21, 2 * T + 0.36]} receiveShadow castShadow/>
-    <mesh geometry={geo().box} material={mat('#a97a50', { roughness: 0.55 })} position={[0, -0.098, 0]} scale={[2 * T + 0.3, 0.006, 2 * T + 0.3]} receiveShadow/>
-    <mesh geometry={geo().box} material={mat('#efe5cd', { roughness: 0.9 })} position={[0, -0.07, 0]} scale={[2 * T + 0.04, 0.1, 2 * T + 0.04]} receiveShadow castShadow/>
+    <mesh geometry={geo().box} material={mat('#ece2cc')} position={[0, -0.07, 0]} scale={[2 * T + 0.04, 0.1, 2 * T + 0.04]} receiveShadow castShadow/>
     {[[0, -line, 2 * line, 0.035], [0, line, 2 * line, 0.035], [-line, 0, 0.035, 2 * line], [line, 0, 0.035, 2 * line]].map(([x, z, w, d], i) => <mesh key={i} geometry={geo().box} material={mat('#2c6a50')} position={[x!, -0.018, z!]} scale={[w!, 0.004, d!]}/>)}
   </group>;
 }
@@ -317,7 +316,8 @@ export default function Board3DScene({ view, onContextLost }: { view: Board3DVie
   return <Canvas
     className="board-3d-canvas"
     frameloop="demand"
-    dpr={[1, 2]}
+    // Touch devices (phones, tablets) render at most 1.75x and with a smaller shadow map to save GPU and battery.
+    dpr={ambient ? [1, 2] : [1, 1.75]}
     shadows="percentage"
     gl={{ antialias: true, powerPreference: 'low-power' }}
     camera={{ position: [0, 12, 12], fov: FOV_DEG, near: 0.5, far: 80 }}
@@ -339,7 +339,7 @@ export default function Board3DScene({ view, onContextLost }: { view: Board3DVie
       intensity={mood.intensity}
       color={mood.color}
       castShadow
-      shadow-mapSize={[2048, 2048]}
+      shadow-mapSize={ambient ? [2048, 2048] : [1024, 1024]}
       shadow-bias={-0.0004}
       shadow-normalBias={0.02}
       shadow-camera-left={-10}

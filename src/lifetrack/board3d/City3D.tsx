@@ -44,9 +44,9 @@ export function TileBase({ index, caption }: { index: number; caption?: string }
   const captionWidth = corner ? w - 0.2 : w - 0.28;
   return <group position={[p.x, 0, p.z]}>
     <mesh geometry={geo().box} material={mat('#d6c7a6')} position={[0, h / 2 - 0.01, 0]} scale={[w + 0.03, h, d + 0.03]} receiveShadow castShadow/>
-    <mesh geometry={geo().box} material={mat(corner ? color : '#fbf6e8', { roughness: 0.85 })} position={[0, h + 0.008, 0]} scale={[w - 0.01, 0.016, d - 0.01]} receiveShadow/>
+    <mesh geometry={geo().box} material={mat(corner ? color : '#fbf6e8')} position={[0, h + 0.008, 0]} scale={[w - 0.01, 0.016, d - 0.01]} receiveShadow/>
     {corner
-      ? <mesh geometry={geo().box} material={mat('#fbf6e8', { roughness: 0.85 })} position={[0, h + 0.018, 0]} scale={[w - 0.16, 0.006, d - 0.16]} receiveShadow/>
+      ? <mesh geometry={geo().box} material={mat('#fbf6e8')} position={[0, h + 0.018, 0]} scale={[w - 0.16, 0.006, d - 0.16]} receiveShadow/>
       : <mesh geometry={geo().box} material={mat(color)} position={[ix * off, h + 0.018, iz * off]} scale={[ix !== 0 ? STRIPE : w - 0.06, 0.006, iz !== 0 ? STRIPE : d - 0.06]} receiveShadow/>}
     <mesh geometry={geo().plane} material={decal(captionTexture(caption ?? tileCaption(index), INK[category]!, category))} position={[ix * shift, h + 0.0225, iz * shift]} scale={[captionWidth, 1, captionWidth]}/>
     {/* Start flag on the first space */}
@@ -102,31 +102,31 @@ function PulseRing({ color, y, animate }: { color: string; y: number; animate: b
 function Landmark() {
   return <group>
     {/* Fountain basin and water */}
-    <P g="cyl" c="#e4dac6" p={[0, 0.09, 0]} s={[1.3, 0.08, 1.3]}/>
+    <P g="cyl" c="#e7dcc7" p={[0, 0.09, 0]} s={[1.3, 0.08, 1.3]}/>
     <P g="cyl" c="#6fb4d0" p={[0, 0.132, 0]} s={[1.14, 0.012, 1.14]} shadow={false}/>
     {/* Stepped plinth */}
-    <P g="cylLow" c="#efe6d4" p={[0, 0.18, 0]} s={[0.62, 0.12, 0.62]}/>
-    <P g="cylLow" c="#e2d6bf" p={[0, 0.27, 0]} s={[0.48, 0.08, 0.48]}/>
+    <P g="cylLow" c="#e7dcc7" p={[0, 0.18, 0]} s={[0.62, 0.12, 0.62]}/>
+    <P g="cylLow" c="#e7dcc7" p={[0, 0.27, 0]} s={[0.48, 0.08, 0.48]}/>
     {/* Shaft with corner pilasters */}
-    <P c="#fbf8f1" p={[0, 0.78, 0]} s={[0.3, 0.98, 0.3]}/>
+    <P c="#fbf6e8" p={[0, 0.78, 0]} s={[0.3, 0.98, 0.3]}/>
     {[-1, 1].flatMap((sx) => [-1, 1].map((sz) => <P key={`${sx}${sz}`} c="#e7dcc7" p={[sx * 0.15, 0.78, sz * 0.15]} s={[0.05, 0.98, 0.05]}/>))}
     {/* Shield emblems facing the two camera sides */}
     {[0, Math.PI / 2].map((ry) => <group key={ry} position={[0, 0.86, 0]} rotation={[0, ry, 0]}>
       <group position={[0, 0, 0.155]}>
         <P c="#c8102e" p={[0, 0.03, 0]} s={[0.2, 0.17, 0.02]}/>
         <P g="cone" c="#c8102e" p={[0, -0.1, 0]} s={[0.2, 0.1, 0.02]} r={[Math.PI, 0, 0]}/>
-        <P c="#fbf8f2" p={[0, 0.03, 0.012]} s={[0.035, 0.12, 0.006]} shadow={false}/>
-        <P c="#fbf8f2" p={[0, 0.055, 0.012]} s={[0.1, 0.035, 0.006]} shadow={false}/>
+        <P c="#fbf6e8" p={[0, 0.03, 0.012]} s={[0.035, 0.12, 0.006]} shadow={false}/>
+        <P c="#fbf6e8" p={[0, 0.055, 0.012]} s={[0.1, 0.035, 0.006]} shadow={false}/>
       </group>
     </group>)}
     {/* Clock band */}
     <P c="#e7dcc7" p={[0, 1.3, 0]} s={[0.38, 0.06, 0.38]}/>
-    {[0, Math.PI / 2].map((ry) => <group key={ry} rotation={[0, ry, 0]}><P g="cyl" c="#fffaf0" p={[0, 1.44, 0.17]} s={[0.17, 0.012, 0.17]} r={[Math.PI / 2, 0, 0]}/><P c="#27324f" p={[0, 1.46, 0.178]} s={[0.012, 0.06, 0.004]} shadow={false}/></group>)}
-    <P c="#fbf8f1" p={[0, 1.44, 0]} s={[0.34, 0.22, 0.34]}/>
+    {[0, Math.PI / 2].map((ry) => <group key={ry} rotation={[0, ry, 0]}><P g="cyl" c="#fbf6e8" p={[0, 1.44, 0.17]} s={[0.17, 0.012, 0.17]} r={[Math.PI / 2, 0, 0]}/><P c="#27324f" p={[0, 1.46, 0.178]} s={[0.012, 0.06, 0.004]} shadow={false}/></group>)}
+    <P c="#fbf6e8" p={[0, 1.44, 0]} s={[0.34, 0.22, 0.34]}/>
     {/* Gold cupola and flag */}
     <P c="#e7dcc7" p={[0, 1.57, 0]} s={[0.4, 0.04, 0.4]}/>
     <P g="dome" c="#d9a93f" p={[0, 1.59, 0]} s={[0.32, 0.3, 0.32]}/>
-    <P g="cylLow" c="#5b4a2e" p={[0, 1.86, 0]} s={[0.018, 0.28, 0.018]}/>
+    <P g="cylLow" c="#7d5d43" p={[0, 1.86, 0]} s={[0.018, 0.28, 0.018]}/>
     <P c="#c8102e" p={[0.08, 1.94, 0]} s={[0.15, 0.09, 0.01]}/>
   </group>;
 }
@@ -141,7 +141,7 @@ function Tree({ x, z, s = 1, tone = '#5f9a4f' }: { x: number; z: number; s?: num
 
 /** Low clipped hedge (park borders). */
 function Hedge({ x, z, w, d }: { x: number; z: number; w: number; d: number }) {
-  return <P g="box" c="#4f8a45" p={[x, 0.09, z]} s={[w, 0.1, d]}/>;
+  return <P g="box" c="#5f9a4f" p={[x, 0.09, z]} s={[w, 0.1, d]}/>;
 }
 
 function House({ x, z, wall, roof, ry = 0 }: { x: number; z: number; wall: string; roof: string; ry?: number }) {
@@ -273,7 +273,7 @@ export function OuterCity() {
   const r0 = OUTER_ROAD.inner, w = OUTER_ROAD.width, rc = OUTER_ROAD_CENTER, len = 2 * (r0 + w) + 0.6;
   const side = (fn: (sx: number, sz: number, rot: boolean) => React.ReactNode) => [[0, -1, false], [0, 1, false], [-1, 0, true], [1, 0, true]].map(([sx, sz, rot], i) => <group key={i}>{fn(sx as number, sz as number, rot as boolean)}</group>);
   return <group position={[0, GROUND_Y, 0]}>
-    <P c="#a9cf8a" p={[0, -0.02, 0]} s={[44, 0.04, 44]} shadow={false}/>
+    <P c="#9cce7b" p={[0, -0.02, 0]} s={[44, 0.04, 44]} shadow={false}/>
     {side((sx, sz, rot) => <>
       {/* Inner pavement, road and outer pavement on each side */}
       <P c="#ece2cc" p={[sx * (r0 - 0.15), 0.005, sz * (r0 - 0.15)]} s={rot ? [0.3, 0.01, len - 1.6] : [len - 1.6, 0.01, 0.3]} shadow={false}/>
@@ -285,9 +285,9 @@ export function OuterCity() {
     <Tower x={-4.6} z={-7.0} w={1.1} h={2.2} d={1.0} c="#e2b08a"/>
     <Tower x={-1.6} z={-7.2} w={1.0} h={1.6} d={1.0} c="#f0d39b"/>
     <Tower x={1.6} z={-7.0} w={1.2} h={2.6} d={1.0} c="#a9c9c0"/>
-    <Tower x={4.6} z={-7.1} w={1.0} h={1.8} d={1.0} c="#e9c2a4"/>
-    <Tower x={-7.0} z={-3.4} w={1.0} h={1.9} d={1.1} c="#d9a27e"/>
-    <Tower x={-7.1} z={0.2} w={1.0} h={1.4} d={1.0} c="#e9c2a4"/>
+    <Tower x={4.6} z={-7.1} w={1.0} h={1.8} d={1.0} c="#e2b08a"/>
+    <Tower x={-7.0} z={-3.4} w={1.0} h={1.9} d={1.1} c="#f0d39b"/>
+    <Tower x={-7.1} z={0.2} w={1.0} h={1.4} d={1.0} c="#e2b08a"/>
     <Tower x={-7.0} z={3.6} w={1.0} h={1.2} d={1.1} c="#f0d39b"/>
     {/* In front: low homes, shops and trees */}
     <House x={-3.8} z={6.6} wall="#f0d9bc" roof="#b5523b"/>

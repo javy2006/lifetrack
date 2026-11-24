@@ -5,6 +5,10 @@
  */
 import { GAME_CONFIG } from '../game/constants.ts';
 import { useI18n } from '../i18n/I18nProvider.tsx';
+import { KIND_ICON, type CardKind } from './TableCard.tsx';
+
+/** The card kinds a player handles, in the order they meet them in a month. */
+const GUIDE_KINDS: readonly CardKind[] = ['income', 'expense', 'opportunity', 'protection', 'emergency', 'special'];
 
 function DieArt() {
   return <svg viewBox="0 0 120 90" className="htp-art htp-die" aria-hidden="true">
@@ -66,12 +70,23 @@ export function HowToPlay() {
   const { t } = useI18n();
   const vars = { n: GAME_CONFIG.actionPointsPerRound };
   const text = (key: string) => key === 'finish' ? t('howto.finishText', { n: GAME_CONFIG.totalRounds }) : t(`howto.${key}Text`, vars);
-  return <ol className="how-to-play">
-    {STEPS.map(({ key, Art }, i) => <li className="htp-step" key={key}>
-      <span className="htp-number" aria-hidden="true">{i + 1}</span>
-      <Art/>
-      <b>{t(`howto.${key}`)}</b>
-      <span>{text(key)}</span>
-    </li>)}
-  </ol>;
+  return <>
+    <ol className="how-to-play">
+      {STEPS.map(({ key, Art }, i) => <li className="htp-step" key={key}>
+        <span className="htp-number" aria-hidden="true">{i + 1}</span>
+        <Art/>
+        <b>{t(`howto.${key}`)}</b>
+        <span>{text(key)}</span>
+      </li>)}
+    </ol>
+    <section className="htp-cards" aria-labelledby="htp-cards-title">
+      <h3 id="htp-cards-title">{t('howto.cardsTitle')}</h3>
+      <ul>
+        {GUIDE_KINDS.map((kind, i) => { const Icon = KIND_ICON[kind]; return <li key={kind} className={`htp-card table-card kind-${kind}`} style={{ '--i': i } as React.CSSProperties}>
+          <span className="cc-mast"><span className="cc-icon"><Icon size={15}/></span><span className="cc-kind">{t(`card.kind.${kind}`)}</span></span>
+          <span className="htp-card-text">{t(`howto.cards.${kind}`)}</span>
+        </li>; })}
+      </ul>
+    </section>
+  </>;
 }

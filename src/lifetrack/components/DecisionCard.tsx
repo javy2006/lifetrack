@@ -6,7 +6,7 @@
  * savings and monthly cover come from running the real reducer on a copy of the state, so no game
  * rule or figure is duplicated here.
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { ArrowRight, Check, HeartPulse, Info, Landmark, RotateCcw, Shield, Sparkles, X, type LucideIcon } from 'lucide-react';
 import type { GameState, PolicyId } from '../game/types.ts';
 import { getHumanPlayer, type GameAction } from '../game/gameReducer.ts';
@@ -46,11 +46,9 @@ export function DecisionCard({ state, dispatch, landed }: { state: GameState; di
   const [confirmed, setConfirmed] = useState(false);
   const [inspecting, setInspecting] = useState<number | null>(null);
   const lock = useRef(false);
-  const timer = useRef<number | undefined>(undefined);
   const preview = useMemo(() => previewDraft(state, draft), [state, draft]);
   const after = getHumanPlayer(preview.state);
   const count = (m: DraftMove) => draft.filter((d) => sameMove(d, m)).length;
-  useEffect(() => () => window.clearTimeout(timer.current), []);
 
   const toggle = (m: DraftMove) => {
     if (confirmed) return;
@@ -76,7 +74,8 @@ export function DecisionCard({ state, dispatch, landed }: { state: GameState; di
     setConfirmed(true);
     setInspecting(null);
     playEffect(moves.some((m) => m.kind === 'buy') ? 'purchase' : moves.some((m) => m.kind === 'save') ? 'save' : 'confirm');
-    timer.current = window.setTimeout(() => dispatch(actions[actions.length - 1]!), 650);
+    // Not cancelled on unmount: the moves are already applied, so the month must still be confirmed.
+    window.setTimeout(() => dispatch(actions[actions.length - 1]!), 650);
   };
 
   const options: Option[] = [
@@ -139,9 +138,9 @@ export function DecisionCard({ state, dispatch, landed }: { state: GameState; di
     </footer>
     {confirmed && <span className="tc-locked-stamp" aria-hidden="true"><Check size={18}/> {t('decision.lockedIn')}</span>}
     <Disclaimer compact/>
-    {insp && inspState && <div className="cc-inspect-layer" role="dialog" aria-modal="true" aria-label={t('card.details')} onMouseDown={(e) => { if (e.target === e.currentTarget) setInspecting(null); }}>
+    {insp && inspState && <div className="cc-inspect-layer" role="dialog" aria-modal="true" aria-label={t('card.details')} onMouseDown={(e) => { if (e.target === e.currentTarget) setInspecting(null); }} onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setInspecting(null); } }}>
       <div className={`choice-card cc-zoom ck-${insp.kind}`}>
-        <button type="button" className="modal-close" onClick={() => setInspecting(null)} aria-label={t('card.close')}>×</button>
+        <button type="button" className="modal-close" autoFocus onClick={() => setInspecting(null)} aria-label={t('card.close')}>×</button>
         <span className="cc-mast"><span className="cc-icon"><insp.icon size={20}/></span><span className="cc-kind">{insp.kind === 'neutral' ? t('decision.pass') : t(`card.kind.${insp.kind}`)}</span></span>
         <h3>{insp.title}</h3>
         <p className="cc-zoom-detail">{insp.detail}</p>

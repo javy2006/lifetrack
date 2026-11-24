@@ -9,18 +9,13 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import { Banknote, CalendarHeart, Coins, Gem, Receipt, ShieldCheck, Siren, Sprout, type LucideIcon } from 'lucide-react';
 import { useI18n } from '../i18n/I18nProvider.tsx';
-import type { EventCard } from '../game/types.ts';
+import type { CardKind } from './cardKinds.ts';
 
-export type CardKind = 'event' | 'opportunity' | 'investment' | 'protection' | 'expense' | 'emergency' | 'income' | 'special';
+export { eventKind, type CardKind } from './cardKinds.ts';
 
 export const KIND_ICON: Record<CardKind, LucideIcon> = {
   event: CalendarHeart, opportunity: Sprout, investment: Coins, protection: ShieldCheck, expense: Receipt, emergency: Siren, income: Banknote, special: Gem,
 };
-
-/** Life events with costs are emergencies; quiet months are plain life events (from the engine's own expense list). */
-export function eventKind(event: EventCard): CardKind {
-  return event.expenses.some((e) => e.amount > 0) ? 'emergency' : 'event';
-}
 
 /** The printed masthead: seal with the kind's icon, the kind label and an optional line, then the title. */
 export function CardMast({ kind, label, eyebrow, title, titleId, icon, corner }: { kind: CardKind; label?: ReactNode; eyebrow?: ReactNode; title: ReactNode; titleId?: string; icon?: LucideIcon; corner?: ReactNode }) {
