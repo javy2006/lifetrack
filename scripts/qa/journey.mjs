@@ -127,19 +127,24 @@ async function playMonth(page, month, tag, { loseBoardAtEventDraw = false } = {}
     await page.evaluate(() => localStorage.removeItem('lifetrack.board.v1'));
     await page.reload();
     await page.evaluate(() => localStorage.removeItem('lifetrack.board.v1')); // in case an unload write raced
+    // With the seeded turn order the human may move last: then no rival is left to move at event-draw and the
+    // event can be drawn in the moment between the check above and the reload. Only a save still in
+    // event-draw exercises the recovery; otherwise the board-stage check does not apply.
+    const atReload = (await game(page))?.phase;
     await click(page, /Continue saved game/, 30000);
     const t0 = Date.now();
-    const recovered = await btn(page, /Resolve this month/).waitFor({ timeout: 20000 }).then(() => true, () => false);
+    const recovered = await page.locator('button.event-continue').waitFor({ timeout: 20000 }).then(() => true, () => false);
     check('event-draw recovers after board save loss + reload', recovered, `${Date.now() - t0}ms`);
     if (!recovered) { await shot(page, `${tag}-STUCK`); throw new Error('soft-lock reproduced in browser'); }
     const b = await board(page);
-    check('recovered board reached complete stage', b?.stage === 'complete', `stage=${b?.stage}`);
+    if (atReload === 'event-draw') check('recovered board reached complete stage', b?.stage === 'complete', `stage=${b?.stage}`);
+    else check('recovered board reached complete stage (n/a: event already drawn before reload)', atReload === 'event', `phase at reload=${atReload}`);
   }
-  await btn(page, /Resolve this month/).waitFor({ timeout: 20000 });
+  await page.locator('button.event-continue').waitFor({ timeout: 20000 });
   if (month === 1) { await shot(page, `${tag}-04-event`); await overflow(page, `${tag} event`); }
   const g = await game(page);
   check(`month ${month} event is the seeded deck card`, g.currentEventId === g.deck[month - 1], g.currentEventId);
-  await click(page, /Resolve this month/);
+  await page.locator('button.event-continue').click();
   await click(page, /Continue to month recap/);
   if (month === 1) await shot(page, `${tag}-05-summary`);
   await click(page, month === 6 ? /Go to learning review/ : /Continue to next month/);

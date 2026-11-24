@@ -58,6 +58,20 @@ function RivalPanel({ state }: { state: GameState }) {
   })}</div></Card>;
 }
 
+/**
+ * The life event's bottom action. Sticky at the bottom of the scrolling modal column, so it is always
+ * reachable on small phones (and above the home indicator via the safe-area inset). One tap resolves the
+ * event: the button disables itself at once, and the reducer ignores a second `event/resolve` anyway.
+ */
+function EventContinue({ onContinue }: { onContinue: () => void }) {
+  const { t } = useI18n();
+  const [busy, setBusy] = useState(false);
+  return <div className="event-actions">
+    <Button className="event-continue" disabled={busy} aria-describedby="event-continue-hint" onClick={() => { if (busy) return; setBusy(true); onContinue(); }}>{t('common.continue')} <ArrowRight size={18}/></Button>
+    <span id="event-continue-hint" className="visually-hidden">{t('event.resolve')}</span>
+  </div>;
+}
+
 function EventView({ state, dispatch }: { state: GameState; dispatch: Dispatch }) {
   const { t, content } = useI18n();
   const event = getCurrentEvent(state);
@@ -71,7 +85,7 @@ function EventView({ state, dispatch }: { state: GameState; dispatch: Dispatch }
     {event.expenses.length > 0 && <div className="event-expenses">{event.expenses.map((e, i) => <div key={e.label}><span>{tx.expense(i)}</span><b>{formatRM(e.amount)}</b></div>)}<div className="event-total"><b>{t('event.totalCosts')}</b><b>{formatRM(total)}</b></div></div>}
     <details className="event-coverage"><summary>{t('event.coverHelp')}</summary>{POLICY_ORDER.map((id) => <div key={id}><b>{policyText(id, content).shortName} · {player.policies.some((p) => p.policyId === id) ? t('event.owned') : t('event.notOwned')}</b><span>{tx.note(id)}</span></div>)}</details>
     <LearnMore label={t('event.whyMatters')}><div className="lesson-snippet"><Sparkles size={17}/><div><b>{tx.lessonTitle}</b><p>{tx.lessonText}</p></div></div></LearnMore>
-    <PhaseButton label={t('event.resolve')} onClick={() => dispatch({ type: 'event/resolve' })}/></div></TableCard>;
+    <EventContinue onContinue={() => dispatch({ type: 'event/resolve' })}/></div></TableCard>;
 }
 
 function ClaimView({ state, dispatch }: { state: GameState; dispatch: Dispatch }) {
@@ -221,6 +235,15 @@ export function GameScreen({ state, dispatch, onExit, demo }: { state: GameState
   const month = t(`months.${state.round - 1}`);
   const title = useMemo(() => state.status === 'review' ? t('game.review') : state.status === 'complete' ? t('game.results') : state.phase === 'event' || state.phase === 'event-draw' ? t('game.lifeHappens') : state.phase === 'claims' ? t('game.numbers') : state.phase === 'summary' ? t('game.navigated') : t('game.plan', { month }), [state, t, month]);
   const lastMove = board.progress?.lastMovement;
+  // Tap-through guard: a new card ignores pointer input while it deals in (~450 ms), so a quick double
+  // tap on one screen's button can't also press the next screen's button in the same spot.
+  const stepKey = `${state.status}-${state.round}-${state.phase}`;
+  // Decided during the render that shows the new card (not in an effect), so even an immediate second tap is ignored.
+  const [arrivedKey, setArrivedKey] = useState(stepKey);
+  const [settled, setSettled] = useState(true);
+  if (arrivedKey !== stepKey) { setArrivedKey(stepKey); setSettled(false); }
+  useEffect(() => { if (settled) return; const id = window.setTimeout(() => setSettled(true), 450); return () => window.clearTimeout(id); }, [settled, arrivedKey]);
+  const arriving = !settled || arrivedKey !== stepKey;
   let content: ReactNode = null;
   if (state.status === 'review') content = <QuizView state={state} dispatch={dispatch}/>;
   else if (state.status === 'complete') content = <ResultsView state={state} dispatch={demo ? () => demo.restart() : dispatch}/>;
@@ -240,7 +263,7 @@ export function GameScreen({ state, dispatch, onExit, demo }: { state: GameState
         <button className="how-link" onClick={() => setShowIntro(true)}><CircleHelp size={17}/> {t('game.howToPlay')}</button></div>}</div>
       {state.status === 'playing' && <BoardScene state={state} progress={board.progress} rolling={board.rolling} movementStep={board.movementStep} dieTumbling={board.dieTumbling} dieValue={board.dieValue} landing={board.landing} stepMs={board.stepMs} onRoll={() => void board.rollHuman()} waitingFor={board.pendingBefore} rollControl={!demo} renderBoard={renderer === '3d' ? (svgBoard, view, label) => <Board3DSlot view={view} fallback={svgBoard} label={label}/> : undefined}/>}
       {state.status === 'playing' && <details className="financial-drawer"><summary>{t('drawer.money')}<span className="drawer-figures"> · {t('drawer.summary', { cash: formatRM(player.cash), savings: formatRM(player.savings) })}</span></summary><PlayerDashboard state={state} positions={positions} activeId={board.movementStep?.playerId ?? board.progress?.activePlayer ?? (state.phase === 'decisions' ? state.humanId : null)}/><FinancialOverview state={state}/><RivalPanel state={state}/></details>}
-      {content && <div className={`game-action-layer ${isOverlay ? 'game-action-modal' : 'game-action-dock'}`}><div className="primary-column">{content}</div></div>}
+      {content && <div className={`game-action-layer ${isOverlay ? 'game-action-modal' : 'game-action-dock'} ${arriving ? 'is-arriving' : ''}`}><div className="primary-column">{content}</div></div>}
       <footer className="game-footer"><Disclaimer compact/><span>{state.status === 'playing' && record ? t('game.footerStage', { n: state.round, stage: t(`stage.${record.stage}`) }) : t('game.footerPace')}</span></footer>
     </div>
     {demo && <><DemoTip state={state} stage={board.progress?.stage ?? null} speed={demo.speed}/><DemoPanel session={demo} onSkip={board.skipAnimation}/></>}

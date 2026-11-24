@@ -18,6 +18,37 @@ Ground rule: `src/lifetrack/game/` (reducer, calculations, AI strategies, polici
 | 4.3C-2d | Phone: "Money" drawer overlaps board heading | Open (cosmetic) |
 | 5.x | Three.js + React Three Fiber 9 board renderer | Not started (dependencies not installed) |
 
+## P0 fix: life event screen unresponsive on phones (2026-11-24)
+
+**Reproduced** with month 2 "Temporary Job Loss" (`scripts/qa/make-event-save.ts`, seed 37) using touch and wheel only. Playwright's `click()` scrolls elements into view even inside `overflow: hidden`, which is why earlier journeys passed while real players were stuck. At 360×640 and 320×640 the action button sat at y≈800 on a 640 px screen: no swipe or wheel could reach it. At 390×844 it was half off-screen.
+
+**Root causes (two, both CSS; no game logic involved):**
+1. `.table-card.event-card { overflow: hidden }` (printed-card styles, `src/index.css`) overrode the modal rule `.game-action-modal .event-card { max-height: …; overflow: auto }`, which has equal specificity and comes earlier.
+   - The card was capped at the column height and clipped its own content.
+   - The scrolling column then had nothing to scroll.
+   - The job-loss card is tall, and the shared-event note added in the turn-order milestone made it taller.
+2. The overhaul's screen fade-in animated `transform` on `.game-content`. A transformed element becomes the containing block of `position: fixed` descendants, so the fixed action layer started under the header instead of at the top of the screen. The modal column (sized against the viewport) then hung below the screen by the header height. This hit every modal on phones and landscape.
+
+**Fix (presentation only; engine untouched, `git diff -- src/lifetrack/game` empty):**
+- In modals the event card grows with its content; the modal column is the single scroll container.
+- New sticky **Continue** bar at the bottom of the column, with the safe-area inset, full-width on phones and a 52 px tap target.
+  - It disables itself on first tap; the reducer also ignores a second `event/resolve`.
+  - The old label "Resolve this month" is kept as its accessible description.
+- Event illustration capped at 110–160 px on phones and hidden on short landscape.
+- The game-content fade is opacity-only (setup screens keep their slide, since they have no fixed children).
+- **Tap-through guard:** the touch test showed a double tap could also press the next screen's button in the same spot (skipping the claim breakdown; no money duplicated). A freshly dealt card now ignores pointer input for 450 ms. The guard is decided in the same render, so even an instant second tap is ignored.
+
+**QA (executed):**
+- New `scripts/qa/event-mobile.mjs` (touch/wheel only, no auto-scroll): **ALL PASS, 200 checks**, for EN/BM/ZH/TA × 390×844, 360×640, 320×640, 844×390 and 1366×768. Checks:
+  - Continue is visible and uncovered;
+  - "Will my cover help?" and "Why it matters" open with a tap;
+  - Continue is still reachable after expanding them;
+  - a double tap resolves once, and every player is charged from their own claim;
+  - the claim and recap buttons are reachable;
+  - month 3 begins; no console errors.
+- unit 126/126; tsc clean; build OK; journey 3D 99/99, SVG 91/91; cards (360, 390, 1366) ALL PASS; turnorder ALL PASS; demo, audio, intro 0 failures; board3d pass (~225 draw calls); character-images pass; i18n 4 languages 0 failures.
+- journey's board-recovery check is now race-aware: with the seeded order the human can move last, so the event may already be drawn before the test's reload.
+
 ## Event ownership investigation + seeded turn order with draw ceremony (2026-11-24)
 
 **Report:** "the last AI landed on ACCIDENT and my money was deducted; when I landed on ACCIDENT nothing happened".

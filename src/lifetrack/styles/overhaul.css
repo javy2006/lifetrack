@@ -463,8 +463,12 @@ body:has(.setup-page) { background: var(--lt-sky); background-color: var(--lt-sk
 .home-v2 .home-play { animation: play-breathe 2.6s ease-in-out infinite; }
 @keyframes play-breathe { 0%, 100% { box-shadow: inset 0 1px 0 rgba(255,255,255,.38), inset 0 -2px 0 rgba(0,0,0,.12), 0 3px 0 var(--lt-red-edge), 0 10px 18px -8px rgba(181, 21, 43, .65), 0 0 0 0 rgba(246, 185, 40, 0); } 50% { box-shadow: inset 0 1px 0 rgba(255,255,255,.38), inset 0 -2px 0 rgba(0,0,0,.12), 0 3px 0 var(--lt-red-edge), 0 10px 18px -8px rgba(181, 21, 43, .65), 0 0 0 6px rgba(246, 185, 40, .28); } }
 /* Screens arrive instead of snapping in: setup, draw and game. */
-.setup-page, .game-fullscreen > .game-content { animation: screen-in .45s cubic-bezier(.2, .9, .3, 1) both; }
+/* Setup screens may slide (no fixed-position children). The game content only fades: a transform there
+   would make it the containing block of the fixed action layer, pushing modals below the screen (P0 bug). */
+.setup-page { animation: screen-in .45s cubic-bezier(.2, .9, .3, 1) backwards; }
+.game-fullscreen > .game-content { animation: screen-fade .35s ease-out backwards; }
 @keyframes screen-in { from { opacity: 0; transform: translateY(14px) scale(.99); } }
+@keyframes screen-fade { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
   .home-backdrop, .home-v2 .home-play, .setup-page, .game-fullscreen > .game-content { animation: none; }
 }
@@ -477,3 +481,25 @@ body:has(.setup-page) { background: var(--lt-sky); background-color: var(--lt-sk
 /* The pick stamp: a gold seal with a dark check (wins over the original .decision-option-mark colours). */
 .choice-card .decision-pick .cc-stamp.decision-option-mark { background: linear-gradient(180deg, #ffd969, var(--lt-gold-2)); color: #3b2a00; box-shadow: 0 0 0 2.5px #fff, 0 4px 8px rgba(0,0,0,.25); }
 .choice-card.is-owned .decision-pick .cc-stamp.decision-option-mark { background: var(--lt-green); color: #fff; }
+
+/* ==========================================================================
+   P0 fix (2026-11-24): life event card unreachable on phones.
+   `.table-card.event-card { overflow: hidden }` (printed-card styles) overrode the modal rule
+   `.game-action-modal .event-card { max-height: …; overflow: auto }`: the card was capped at the
+   column height and clipped its own content, so the column had nothing to scroll and the action
+   button sat below the screen. Now the card grows with its content, the modal column is the single
+   scroll container, and the action bar is sticky at its bottom.
+   ========================================================================== */
+.game-action-modal .table-card.event-card { max-height: none; overflow: visible; }
+.table-card.event-card > .event-art { border-radius: 20px 0 0 20px; }
+.event-actions { position: sticky; bottom: 0; z-index: 4; display: flex; justify-content: flex-start; margin: 14px -4px 0; padding: 10px 4px calc(6px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgba(251, 246, 234, 0), #fbf6ea 26%); }
+.event-actions .event-continue { min-height: 52px; min-width: 200px; padding: 0 26px; font-size: 16px; }
+.visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+@media (max-width: 760px) {
+  .table-card.event-card > .event-art { min-height: 0; height: clamp(110px, 20vh, 160px); border-radius: 20px 20px 0 0; }
+  .event-actions { margin: 14px -14px 0; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); }
+  .event-actions .event-continue { width: 100%; }
+}
+@media (max-height: 500px) and (orientation: landscape) { .table-card.event-card > .event-art { display: none; } }
+/* Tap-through guard (GameScreen): a freshly dealt card ignores pointer input for ~450 ms. */
+.game-action-layer.is-arriving .primary-column { pointer-events: none; }
