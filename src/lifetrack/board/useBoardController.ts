@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CharacterId, GameState } from '../game/types.ts';
 import { getBoardTiming, prefersReducedMotion, type TurnTiming } from './boardTiming.ts';
-import { createBoardProgress, getAiTurnOrder, isValidBoardProgress, moveBoardPlayer, movePosition, reconcileBoardProgress, rollBoardDie, type BoardProgress } from './boardTypes.ts';
+import { createBoardProgress, isValidBoardProgress, moveBoardPlayer, movePosition, reconcileBoardProgress, rollBoardDie, type BoardProgress } from './boardTypes.ts';
+
+import { getTurnOrder, remainingRivalTurns, turnsBeforeHuman } from './turnOrder.ts';
 
 export const BOARD_SAVE_KEY='lifetrack.board.v1';
 const wait=(ms:number)=>new Promise<void>(resolve=>window.setTimeout(resolve,ms));
@@ -26,6 +28,8 @@ export function useBoardController(state:GameState|null, options:BoardController
   const pace=useCallback((ms:number)=>skipRef.current?0:Math.round(ms/speedRef.current),[]);
   const seed=state?.seed??0,round=state?.round??1;
   const ids=useMemo(()=>state?.players.map(p=>p.id)??[],[state?.players]);
+  /** Fixed for the whole game: derived from the seed, so a reload gets the same order (no redraw). */
+  const order=useMemo(()=>getTurnOrder(seed,ids),[seed,ids]);
   const [progress,setProgress]=useState<BoardProgress|null>(()=>{
     if(!state)return null;
     if(!persist)return createBoardProgress(state.seed,state.round,state.players.map(p=>p.id));
@@ -69,19 +73,42 @@ export function useBoardController(state:GameState|null, options:BoardController
   },[pace]);
   /** Finishes the turn currently animating immediately (positions are still applied step by step). */
   const skipAnimation=useCallback(()=>{skipRef.current=true;},[]);
+  /** Rivals who still have to move before the human may roll this month. */
+  const pendingBefore=state&&progress?turnsBeforeHuman(order,state.humanId,progress.moved??[]):[];
   const rollHuman=useCallback(async()=>{
     if(!state||state.status!=='playing'||state.phase!=='decisions'||!progress||progress.stage!=='human-roll'||rollLock.current)return;
+    if(turnsBeforeHuman(order,state.humanId,progress.moved??[]).length>0)return; // not the human's turn yet
     rollLock.current=true;setRolling(true);
     const id=state.humanId,roll=rollBoardDie(state.seed,state.round,id);
     await animateTurn(id,progress.positions[id],roll,getBoardTiming(prefersReducedMotion()).human);
     setProgress(p=>p?{...moveBoardPlayer(p,id,roll),stage:'human-landed',activePlayer:null}:p);
     setMovementStep(null);setRolling(false);rollLock.current=false;
-  },[state,progress,animateTurn]);
-  const runAiTurns=useCallback(async()=>{
-    if(!state||!progress||!['human-roll','human-landed','ai-turns'].includes(progress.stage)||aiLock.current)return;
+  },[state,progress,animateTurn,order]);
+  /** Moves the rivals who come before the human in the turn order (decisions phase, before the human's roll). */
+  const runPreTurns=useCallback(async()=>{
+    if(!state||state.status!=='playing'||state.phase!=='decisions'||!progress||!['human-roll','pre-turns'].includes(progress.stage)||aiLock.current)return;
+    let queue=turnsBeforeHuman(order,state.humanId,progress.moved??[]);
+    if(!queue.length){if(progress.stage==='pre-turns')setProgress(p=>p?{...p,stage:'human-roll',activePlayer:null}:p);return;}
     aiLock.current=true;
     const timing=getBoardTiming(prefersReducedMotion()).ai;
-    let queue=progress.stage==='ai-turns'?progress.aiQueue:getAiTurnOrder(state.players.map(p=>p.id),state.humanId);
+    setProgress(p=>p?{...p,stage:'pre-turns',aiQueue:queue}:p);
+    while(queue.length){
+      const id=queue[0]!;setProgress(p=>p?{...p,activePlayer:id}:p);
+      const roll=rollBoardDie(state.seed,state.round,id);
+      await animateTurn(id,progress.positions[id],roll,timing);
+      setProgress(p=>p?{...moveBoardPlayer(p,id,roll),stage:'pre-turns',aiQueue:queue.slice(1),activePlayer:null}:p);
+      setMovementStep(null);
+      queue=queue.slice(1);
+    }
+    setProgress(p=>p?{...p,stage:'human-roll',aiQueue:[],activePlayer:null}:p);
+    aiLock.current=false;
+  },[state,progress,animateTurn,order]);
+  const runAiTurns=useCallback(async()=>{
+    if(!state||!progress||!['pre-turns','human-roll','human-landed','ai-turns'].includes(progress.stage)||aiLock.current)return;
+    aiLock.current=true;
+    const timing=getBoardTiming(prefersReducedMotion()).ai;
+    // Every rival who has not moved this month, in turn order (after the human; or all of them if the board save was lost).
+    let queue=progress.stage==='ai-turns'&&progress.aiQueue.length?progress.aiQueue:remainingRivalTurns(order,state.humanId,progress.moved??[]);
     setProgress(p=>p?{...p,stage:'ai-turns',aiQueue:queue}:p);
     while(queue.length){
       const id=queue[0]!;setProgress(p=>p?{...p,activePlayer:id}:p);
@@ -93,6 +120,6 @@ export function useBoardController(state:GameState|null, options:BoardController
     }
     setProgress(p=>p?{...p,stage:'complete',aiQueue:[],activePlayer:null}:p);
     aiLock.current=false;
-  },[state,progress,animateTurn]);
-  return {progress,rolling,movementStep,dieTumbling,dieValue,landing,stepMs,rollHuman,runAiTurns,skipAnimation};
+  },[state,progress,animateTurn,order]);
+  return {progress,rolling,movementStep,dieTumbling,dieValue,landing,stepMs,rollHuman,runAiTurns,runPreTurns,pendingBefore:pendingBefore.length,order,skipAnimation};
 }

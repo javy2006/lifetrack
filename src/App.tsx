@@ -5,6 +5,7 @@ import type { CharacterId } from './lifetrack/game/types.ts';
 import { MainMenu, InfoModal } from './lifetrack/screens/MainMenu.tsx';
 import { CharacterSelection, GameIntroduction } from './lifetrack/screens/CharacterSelection.tsx';
 import { GameScreen } from './lifetrack/screens/GameScreen.tsx';
+import { TurnOrderDraw } from './lifetrack/screens/TurnOrderDraw.tsx';
 import { HowToPlay } from './lifetrack/components/HowToPlay.tsx';
 import { Disclaimer } from './lifetrack/components/ui.tsx';
 import { AudioProvider } from './lifetrack/components/AudioControls.tsx';
@@ -21,6 +22,8 @@ function Application() {
   // Always land on the menu first; a validated save is resumed only on request.
   const [paused, setPaused] = useState(true);
   const [modal, setModal] = useState<'how'|'learning'|null>(null);
+  // Seed of a game created this session whose turn-order draw has not been shown yet (never set for a resumed save).
+  const [drawSeed, setDrawSeed] = useState<number|null>(null);
   // Fetch the 3D board while the player is on the menu, so the game opens straight onto it.
   useEffect(()=>{const w=window as Window&{requestIdleCallback?:(cb:()=>void)=>number};const id=w.requestIdleCallback?w.requestIdleCallback(preloadBoard3D):window.setTimeout(preloadBoard3D,800);return()=>{if(!w.requestIdleCallback)window.clearTimeout(id);};},[]);
 
@@ -30,9 +33,10 @@ function Application() {
     setPaused(true);
     setScreen('characters');
   };
-  const beginGame = () => { dispatch({type:'game/new',humanId:selected,seed:createSeed()}); setPaused(false); setScreen('home'); };
+  const beginGame = () => { const seed = createSeed(); dispatch({type:'game/new',humanId:selected,seed}); setDrawSeed(seed); setPaused(false); setScreen('home'); };
   let content: ReactNode;
   if (screen === 'demo') content = <DemoGame onExit={()=>setScreen('home')}/>;
+  else if (state && !paused && drawSeed === state.seed && state.round === 1 && state.phase === 'income') content = <TurnOrderDraw seed={state.seed} humanId={state.humanId} playerIds={state.players.map((p) => p.id)} onDone={() => setDrawSeed(null)}/>;
   else if (state && !paused) content = <GameScreen key={`${state.seed}-${state.status}`} state={state} dispatch={dispatch} onExit={()=>{setScreen('home');setPaused(true)}}/>;
   else if (screen === 'characters') content = <CharacterSelection onBack={()=>setScreen('home')} onContinue={(id)=>{setSelected(id);setScreen('introduction')}}/>;
   else if (screen === 'introduction') content = <GameIntroduction characterId={selected} onBack={()=>setScreen('characters')} onBegin={beginGame}/>;

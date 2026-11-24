@@ -18,7 +18,7 @@ const icons={salary:Banknote,medical:Heart,accident:Activity,family:Users,saving
 const pipMap:Record<number,string[]>={1:['center'],2:['top-left','bottom-right'],3:['top-left','center','bottom-right'],4:['top-left','top-right','bottom-left','bottom-right'],5:['top-left','top-right','center','bottom-left','bottom-right'],6:['top-left','top-right','mid-left','mid-right','bottom-left','bottom-right']};
 function DiceFace({value,rolling=false}:{value:number|null;rolling?:boolean}){const {t}=useI18n();return <div className={`dice-cube ${rolling?'dice-result-rolling':''}`} role="img" aria-label={value?t('board.diceShowing',{n:value}):t('board.diceRolling')}>{value?(pipMap[value]??[]).map(pip=><i key={pip} className={pip}/>):<i className="center"/>}</div>}
 
-export function BoardScene({state,progress,rolling,movementStep,dieTumbling,dieValue,landing,stepMs,onRoll,rollControl=true,renderBoard}:{rollControl?:boolean;renderBoard?:(svgBoard:ReactNode,view:Board3DView,label:string)=>ReactNode;state:GameState;progress:BoardProgress|null;rolling:boolean;movementStep:{playerId:import('../game/types.ts').CharacterId;position:number}|null;dieTumbling:boolean;dieValue:number|null;landing:{playerId:import('../game/types.ts').CharacterId;space:number}|null;stepMs:number;onRoll:()=>void}) {
+export function BoardScene({state,progress,rolling,movementStep,dieTumbling,dieValue,landing,stepMs,onRoll,rollControl=true,renderBoard,waitingFor=0}:{waitingFor?:number;rollControl?:boolean;renderBoard?:(svgBoard:ReactNode,view:Board3DView,label:string)=>ReactNode;state:GameState;progress:BoardProgress|null;rolling:boolean;movementStep:{playerId:import('../game/types.ts').CharacterId;position:number}|null;dieTumbling:boolean;dieValue:number|null;landing:{playerId:import('../game/types.ts').CharacterId;space:number}|null;stepMs:number;onRoll:()=>void}) {
   const {t,content}=useI18n();
   const tile=(i:number)=>t(`tiles.${tileKey(i)}`);
   const captions=useMemo(()=>BOARD_ROUTE.map((_,i)=>tile(i)),[t]);
@@ -31,7 +31,8 @@ export function BoardScene({state,progress,rolling,movementStep,dieTumbling,dieV
   const activeAiTurn=progress?.activePlayer?getAiTurnsForRound(state,state.round).find(turn=>turn.playerId===progress.activePlayer):undefined;
   const highlight=state.phase==='event'&&event?getEventBoardCategory(event.category):BOARD_ROUTE[current].category;
   const players=useMemo(()=>state.players.map(p=>({player:p,character:CHARACTERS.find(c=>c.id===p.id)!,index:movementStep?.playerId===p.id?movementStep.position:progress?.positions[p.id]??0})),[state.players,progress,movementStep]);
-  const humanCanRoll=state.phase==='decisions'&&progress?.stage==='human-roll';
+  // The human rolls only when it is their turn: rivals earlier in the turn order move first.
+  const humanCanRoll=state.phase==='decisions'&&progress?.stage==='human-roll'&&waitingFor===0;
   return <section className="board-card" aria-label={t('board.title')}>
     <div className="board-heading"><div><span className="eyebrow">{t('board.title')}</span><h2>{t('common.month',{n:state.round})}{state.status==='playing'?` · ${t(`phase.${state.phase}`)}`:''}</h2></div><span className="board-key"><i/> {t('board.currentStop',{space:tile(current)})}</span></div>
     <div className="board-viewport">{(()=>{const boardLabel=t('board.aria',{space:tile(current)});const svgBoard=<svg className="life-board" style={{"--step-ms":`${Math.round(stepMs*STEP_HOP_SHARE)}ms`} as CSSProperties} viewBox="0 0 1000 760" role="img" aria-label={boardLabel}>
@@ -63,7 +64,7 @@ export function BoardScene({state,progress,rolling,movementStep,dieTumbling,dieV
         :movementStep||dieValue!==null&&mover?(isYou(mover)?t('board.youRolled',{n:dieValue??''}):t('board.nameRolled',{name:name(mover),n:dieValue??''}))
         :humanCanRoll?t('board.yourTurnRoll'):progress?.stage==='complete'?t('board.allMoved'):state.phase==='event-draw'?t('board.rivalsMoving'):move?landed(move.playerId,move.to):t('board.rollToMove');
       const aiText=activeAiTurn?aiTurnText(activeAiTurn,content,t):null;
-      const detail=aiText&&!movementStep&&!dieTumbling?(aiText.rationale||aiText.message):t('board.oneRoll');
+      const detail=aiText&&!movementStep&&!dieTumbling?(aiText.rationale||aiText.message):landing&&!movementStep&&!dieTumbling?t('shared.landing'):t('board.oneRoll');
       return <div className="board-controls"><div className={`board-die ${landing&&!movementStep?'board-die-landed':''}`}><DiceFace value={dieTumbling?null:shownRoll} rolling={dieTumbling}/><div aria-live="polite"><b>{status}</b><small>{detail}</small></div></div></div>})()}
     {/* Four-player dashboard: whose turn it is, positions and key money figures for everyone. */}
     <PlayerDashboard state={state} positions={Object.fromEntries(players.map(({player,index})=>[player.id,index])) as Record<import('../game/types.ts').CharacterId,number>} activeId={mover??(state.status==='playing'&&state.phase==='decisions'?state.humanId:null)}/>

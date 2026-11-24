@@ -54,6 +54,7 @@ const music = (page) => page.evaluate(() => globalThis.__lifetrackMusic?.debug()
   await page.locator('button.character-option').first().click();
   await page.locator('.selection-footer .button').click();
   await page.locator('.selection-footer .button').click();
+  await page.locator('.td-start, .td-skip').first().waitFor({ timeout: 30000 }); if (await page.locator('.td-skip').count()) await page.locator('.td-skip').click(); await page.locator('.td-start').click();
   await page.locator('.game-action-layer .button').last().waitFor();
   await page.waitForTimeout(800);
   m = await music(page);
@@ -167,6 +168,7 @@ const music = (page) => page.evaluate(() => globalThis.__lifetrackMusic?.debug()
   await page.locator('button.character-option').first().click();
   await page.locator('.selection-footer .button').click();
   await page.locator('.selection-footer .button').click();
+  await page.locator('.td-start, .td-skip').first().waitFor({ timeout: 30000 }); if (await page.locator('.td-skip').count()) await page.locator('.td-skip').click(); await page.locator('.td-start').click();
   await page.locator('.game-action-layer .button').last().click();
   await page.locator('.game-action-layer .button').last().click();
   await page.locator('.roll-main').click();

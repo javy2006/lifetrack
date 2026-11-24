@@ -24,6 +24,7 @@ for (const [tag, viewport] of [['desk', { width: 1366, height: 768 }], ['phone',
   await page.locator('button.character-option').first().click();
   await page.locator('.selection-footer .button').click();
   await page.locator('.selection-footer .button').click();
+  await page.locator('.td-start, .td-skip').first().waitFor({ timeout: 30000 }); if (await page.locator('.td-skip').count()) await page.locator('.td-skip').click(); await page.locator('.td-start').click();
   await page.locator('.game-action-layer .button').last().click();
   await page.waitForTimeout(400);
   await page.locator('.exit-button').click();

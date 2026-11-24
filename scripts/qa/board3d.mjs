@@ -16,7 +16,7 @@ async function setup(query, viewport = { width: 1280, height: 800 }) {
   await click(/Play the game/); await page.locator('button.character-option').first().click();
   await click(/^Continue/);
   const t0 = Date.now();
-  await click(/Begin month one/);
+  await click(/Begin month one/); await page.locator('.td-start, .td-skip').first().waitFor({ timeout: 30000 }); if (await page.locator('.td-skip').count()) await page.locator('.td-skip').click(); await page.locator('.td-start').click();
   return { page, logs, click, t0 };
 }
 // 1) Time to 3D canvas and first-board render.
@@ -74,7 +74,7 @@ async function drawCounter(options) {
   const click = async (re) => { const b = page.locator('button', { hasText: re }).first(); await b.waitFor({ timeout: 30000 }); await b.click(); };
   await page.goto(base + '?renderer=3d');
   await click(/Play the game/); await page.locator('button.character-option').first().click();
-  await click(/^Continue/); await click(/Begin month one/);
+  await click(/^Continue/); await click(/Begin month one/); await page.locator('.td-start, .td-skip').first().waitFor({ timeout: 30000 }); if (await page.locator('.td-skip').count()) await page.locator('.td-skip').click(); await page.locator('.td-start').click();
   await page.locator('.board-3d canvas').waitFor();
   await page.waitForTimeout(3500);
   const frames = () => page.evaluate(() => globalThis.__frames);
@@ -108,7 +108,7 @@ async function drawCounter(options) {
   const click = async (re) => { const b = page.locator('button', { hasText: re }).first(); await b.waitFor({ timeout: 30000 }); await b.click(); };
   await page.goto(base + '?renderer=3d');
   await click(/Play the game/); await page.locator('button.character-option').first().click();
-  await click(/^Continue/); await click(/Begin month one/);
+  await click(/^Continue/); await click(/Begin month one/); await page.locator('.td-start, .td-skip').first().waitFor({ timeout: 30000 }); if (await page.locator('.td-skip').count()) await page.locator('.td-skip').click(); await page.locator('.td-start').click();
   await click(/Collect monthly income/); await click(/Pay monthly essentials/);
   check('no WebGL: SVG board shown', (await page.locator('.life-board').count()) === 1 && (await page.locator('.board-3d').count()) === 0);
   await page.getByRole('button', { name: 'Roll Dice' }).click();
@@ -123,7 +123,7 @@ async function drawCounter(options) {
   const click = async (re) => { const b = page.locator('button', { hasText: re }).first(); await b.waitFor({ timeout: 30000 }); await b.click(); };
   await page.goto(base + '?renderer=3d');
   await click(/Play the game/); await page.locator('button.character-option').first().click();
-  await click(/^Continue/); await click(/Begin month one/);
+  await click(/^Continue/); await click(/Begin month one/); await page.locator('.td-start, .td-skip').first().waitFor({ timeout: 30000 }); if (await page.locator('.td-skip').count()) await page.locator('.td-skip').click(); await page.locator('.td-start').click();
   await click(/Collect monthly income/); await click(/Pay monthly essentials/);
   await page.getByRole('button', { name: 'Roll Dice' }).click();
   check('reduced motion: roll completes on the 3D board', await page.locator('button.save-action, button.pass-action').first().waitFor({ timeout: 15000 }).then(() => true, () => false) && (await page.locator('.board-3d canvas').count()) === 1);

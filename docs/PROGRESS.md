@@ -18,6 +18,52 @@ Ground rule: `src/lifetrack/game/` (reducer, calculations, AI strategies, polici
 | 4.3C-2d | Phone: "Money" drawer overlaps board heading | Open (cosmetic) |
 | 5.x | Three.js + React Three Fiber 9 board renderer | Not started (dependencies not installed) |
 
+## Event ownership investigation + seeded turn order with draw ceremony (2026-11-24)
+
+**Report:** "the last AI landed on ACCIDENT and my money was deducted; when I landed on ACCIDENT nothing happened".
+
+**Root cause (traced: dice → mover → movement → landing → event → claim → balances → UI). There is no wrong-player transaction.**
+- Landing on a space never moves money. This is by design since Phase 4: `docs/phase4-board-mapping.md` says "Dice movement is presentation-only: it cannot select an event, change a balance…".
+- Once a month the engine draws ONE seeded life event (`event/draw`) and resolves it for every player (`event/resolve` maps `applyEventOutcome` over `state.players`). Each player is charged from their own cash and savings, and only their own policies pay. Nothing in that path refers to the human or to the last mover.
+- The draw is triggered right after the LAST rival pawn lands, and only the human's claim was shown. So the shared event looked like the last AI's landing being charged to the human.
+- The board's space labels (ACCIDENT, MEDICAL…) reinforce that impression.
+
+**Done (no rule, formula or balance change; `src/lifetrack/game/` source unchanged):**
+- Regression tests `game/__tests__/eventOwnership.test.ts` (6 tests):
+  - every event × every human: each player's claim equals `calculateClaim(own state)`;
+  - the last AI's state never changes the human's outcome;
+  - insurance follows the owner;
+  - results don't depend on the order players are stored in;
+  - resolving twice is a no-op;
+  - no other state leaks.
+- Clarity in the game:
+  - the event card says the event happens to all four players, each paying from their own money with their own cover;
+  - the claim card adds "How everyone fared", each player's own out-of-pocket and payout from their own record;
+  - after a landing, the board says landing never changes money.
+- **Open, needs the owner's decision:** landing-triggered personal events would be a rule change. Today the dice deliberately never decide money.
+
+**Seeded turn order** (`board/turnOrder.ts`; presentation layer, like the board):
+- `getTurnOrder(seed, ids)` is an unbiased Fisher–Yates shuffle of the canonical character order. It uses its own salted PRNG, so it is independent of the deck shuffle and of `state.players` (where the human is stored first).
+- It is drawn once per game from the game seed:
+  - reload re-derives the same order, so there is no redraw and no save-schema change;
+  - the demo uses DEMO_SEED (fixed, in-memory board).
+- Each month: rivals before the human move first (new board stage `pre-turns`, during decisions, before the Roll button appears), then the human, then the remaining rivals at `event-draw`.
+- `BoardProgress.moved` records who has moved. It is optional, so old board saves stay valid.
+- Rival financial choices are still made by the engine at confirm, as before.
+- Dashboard mats are sorted 1st–4th with a number badge.
+
+**Draw ceremony** (`screens/TurnOrderDraw.tsx`):
+- Shown only after "Begin month one" for a newly created game, never for a resumed save.
+- Deal 0.6 s, four flips at 0.8 s each, then the players line up in order with a small burst: about 4.6 s.
+- Skip jumps to the result; reduced motion shows the result at once.
+- It never dispatches an action: the save is byte-identical before and after.
+
+**QA (executed):**
+- unit 126/126 (new: 6 ownership, 8 turn-order tests, including fairness over 24,000 seeds: each player ±1.5% of 25% per position, all 24 orders); tsc clean; build OK.
+- New `scripts/qa/turnorder.mjs` ALL PASS at 1366×768 and 390×844: draw, skip, unchanged save, rivals-before-human, drawn order kept all month, last mover, each player's own claim shown, reload without a redraw.
+- journey 3D 99/99 and SVG 91/91; cards (390, 1366) ALL PASS; audio, demo, intro 0 failures; renderer-default 15 PASS; board3d all pass (~293 draw calls); character-images all pass; i18n (4 languages × 3 layouts, now including the draw screen) 0 failures.
+- QA scripts now step through the draw.
+
 ## Visual & UX overhaul, milestone 1: assets, design system, homepage, cards, landmark (2026-11-24)
 
 Resume point: committed. The next steps are listed under "Overhaul: next milestones" below.

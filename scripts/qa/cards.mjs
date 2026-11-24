@@ -9,7 +9,7 @@ const b = await chromium.launch({ channel:'msedge' }); const p = await (await b.
 const errs=[]; p.on('pageerror',e=>errs.push(e.message)); p.on('console',m=>{if(m.type()==='error')errs.push(m.text())});
 const btn=(re)=>p.locator('button',{hasText:re}).first(); const click=async(re)=>{await btn(re).waitFor({timeout:20000}); await btn(re).click();};
 const game=()=>p.evaluate(()=>JSON.parse(localStorage.getItem('lifetrack.game.v1')));
-await p.goto(url); await click(/Play the game/); await p.locator('button.character-option').nth(0).click(); await click(/^Continue/); await click(/Begin month one/);
+await p.goto(url); await click(/Play the game/); await p.locator('button.character-option').nth(0).click(); await click(/^Continue/); await click(/Begin month one/); await p.locator('.td-start, .td-skip').first().waitFor({ timeout: 30000 }); if (await p.locator('.td-skip').count()) await p.locator('.td-skip').click(); await p.locator('.td-start').click();
 await click(/Collect monthly income/); await click(/Pay monthly essentials/);
 await p.getByRole('button',{name:'Roll Dice'}).click(); await p.locator('button.save-action').waitFor({timeout:20000}); await p.waitForTimeout(700);
 const before=(await game()).players.find(x=>x.controller==='human');

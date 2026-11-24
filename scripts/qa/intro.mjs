@@ -65,6 +65,7 @@ for (const lang of ['en', 'ms', 'zh', 'ta']) for (const [name, viewport] of [['d
   await page.locator('button.character-option').first().click();
   await page.locator('.selection-footer .button').click();
   await page.locator('.selection-footer .button').click();
+  await page.locator('.td-start, .td-skip').first().waitFor({ timeout: 30000 }); if (await page.locator('.td-skip').count()) await page.locator('.td-skip').click(); await page.locator('.td-start').click();
   await page.locator('.game-action-layer .button').last().waitFor();
   check('normal game: no intro', await page.locator('.demo-intro').count() === 0);
   await page.context().close();

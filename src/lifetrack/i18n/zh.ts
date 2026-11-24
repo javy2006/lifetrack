@@ -68,6 +68,8 @@ const pack: LanguagePack = {
       tokenAria: '{name}{who}在第 {n} 格', youParen: '（你）', aiParen: '（AI）',
     },
     tiles: { salary: '薪水', savings: '储蓄', medical: '医疗', rest: '休息', protection: '保障', family: '家庭', accident: '意外', lucky: '幸运', checkpoint: '检查' },
+    turnOrder: { eyebrow: '开始之前', title: '谁先出发？', subtitle: '随机发牌决定顺序，六个月内保持不变。', position: '第 {n} 位', place: { 1: '第一', 2: '第二', 3: '第三', 4: '第四' }, skip: '跳过', start: '开始游戏', note: '每个月棋子都按此顺序移动。每月的人生事件仍会发生在所有玩家身上。' },
+    shared: { note: '本月的人生事件从牌堆中抽出，四位玩家都会遇到。每位玩家用自己的现金和储蓄支付，只有自己的保障会理赔。', everyone: '每位玩家的结果', paid: '支付 {amount}', coverPaid: '保障赔付 {amount}', landing: '落在格子上不会改变金钱，只显示你的棋子位置。' },
     dashboard: { aria: '所有玩家', yourTurn: '轮到你', moving: '移动中', youSpace: '你 · 第 {n} 格', aiSpace: 'AI · 第 {n} 格', coverCount: '已拥有 3 份保单中的 {n} 份' },
     card: {
       kind: { event: '人生事件', opportunity: '机会', investment: '投资', protection: '保障', expense: '开支', emergency: '突发状况', income: '收入', special: '里程碑' },

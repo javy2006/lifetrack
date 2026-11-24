@@ -67,6 +67,7 @@ async function run(lang, viewport, tag) {
   await page.locator('.selection-footer .button').click();
   await scan(page, lang, 'intro');
   await page.locator('.selection-footer .button').click();
+  await page.locator('.td-start, .td-skip').first().waitFor({ timeout: 30000 }); if (await page.locator('.td-skip').count()) await page.locator('.td-skip').click(); await scan(page, lang, 'turn-order'); await page.screenshot({ path: path.join(out, `${tag}-2b-turn-order.png`) }); await page.locator('.td-start').click();
   await primary(page).waitFor({ timeout: 20000 });
   await scan(page, lang, 'income'); await page.screenshot({ path: path.join(out, `${tag}-3-income.png`) });
   await primary(page).click();

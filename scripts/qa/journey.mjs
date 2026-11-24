@@ -44,6 +44,8 @@ async function startGame(page, tag, character = 0) {
   await page.locator('button.character-option').nth(character).click();
   await click(page, /^Continue/);
   await click(page, /Begin month one/);
+  // Turn-order draw (shown once for a new game): skip to the result, then start.
+  await page.locator('.td-start, .td-skip').first().waitFor({ timeout: 30000 }); if (await page.locator('.td-skip').count()) await page.locator('.td-skip').click(); await page.locator('.td-start').click();
   await btn(page, /Collect monthly income/).waitFor();
   await shot(page, `${tag}-01-income`);
 }

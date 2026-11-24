@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { ArrowRight, Check, CircleHelp, Coins, HeartPulse, Maximize2, Minimize2, Shield, Sparkles, Wallet } from 'lucide-react';
+import { ArrowRight, Check, CircleHelp, Coins, HeartPulse, Maximize2, Minimize2, Shield, Sparkles, Users, Wallet } from 'lucide-react';
+import { getTurnOrder } from '../board/turnOrder.ts';
 import { getCharacter } from '../game/characters.ts';
 import { GAME_CONFIG } from '../game/constants.ts';
 import { getMonthlyPremiumTotal, getRoundRecord, getRoundSummary } from '../game/calculations.ts';
@@ -66,7 +67,7 @@ function EventView({ state, dispatch }: { state: GameState; dispatch: Dispatch }
   const tx = eventText(event, content);
   const total = event.expenses.reduce((n, e) => n + e.amount, 0);
   const kind = eventKind(event);
-  return <TableCard kind={kind} className="event-card"><div className={`event-art category-${event.category}`}><CardArt slug={eventArt(event)} className="event-art-img"/><span className="event-risk">{tx.risk}</span></div><div className="event-copy"><CardMast kind={kind} eyebrow={t(`months.${state.round - 1}`)} title={<span className="event-title-enter">{tx.title}</span>}/><p className="event-story">{tx.story}</p>
+  return <TableCard kind={kind} className="event-card"><div className={`event-art category-${event.category}`}><CardArt slug={eventArt(event)} className="event-art-img"/><span className="event-risk">{tx.risk}</span></div><div className="event-copy"><CardMast kind={kind} eyebrow={t(`months.${state.round - 1}`)} title={<span className="event-title-enter">{tx.title}</span>}/><p className="event-story">{tx.story}</p><p className="event-shared"><Users size={15}/> {t('shared.note')}</p>
     {event.expenses.length > 0 && <div className="event-expenses">{event.expenses.map((e, i) => <div key={e.label}><span>{tx.expense(i)}</span><b>{formatRM(e.amount)}</b></div>)}<div className="event-total"><b>{t('event.totalCosts')}</b><b>{formatRM(total)}</b></div></div>}
     <details className="event-coverage"><summary>{t('event.coverHelp')}</summary>{POLICY_ORDER.map((id) => <div key={id}><b>{policyText(id, content).shortName} · {player.policies.some((p) => p.policyId === id) ? t('event.owned') : t('event.notOwned')}</b><span>{tx.note(id)}</span></div>)}</details>
     <LearnMore label={t('event.whyMatters')}><div className="lesson-snippet"><Sparkles size={17}/><div><b>{tx.lessonTitle}</b><p>{tx.lessonText}</p></div></div></LearnMore>
@@ -83,8 +84,21 @@ function ClaimView({ state, dispatch }: { state: GameState; dispatch: Dispatch }
   const owned = claim.outcomes.filter((o) => o.status !== 'not-owned'), others = claim.outcomes.filter((o) => o.status === 'not-owned');
   return <div className="claim-layout"><TableCard kind="protection" className="claim-card"><CardMast kind="protection" eyebrow={t('claim.eyebrow', { n: state.round })} title={eventText(event, content).title}/><CardArt slug={eventArt(event)} className="claim-art"/>
     <div className="claim-lines">{lines.filter(([key, value]) => value !== 0 || key === 'total' || key === 'outOfPocket').map(([key, value]) => <div className={key === 'reimbursement' || key === 'benefits' ? 'claim-positive' : key === 'outOfPocket' || key === 'shortfall' ? 'claim-negative' : ''} key={key}><span>{t(`claim.${key}`)}</span><b>{formatRM(value)}</b></div>)}</div>
-    <div className="policy-outcomes"><h3>{t('claim.yourCover')}</h3>{owned.length ? owned.map(outcomeRow) : <p className="outcome-none">{t('claim.noCover')}</p>}{others.length > 0 && <LearnMore label={t('claim.otherCover')}>{others.map(outcomeRow)}</LearnMore>}</div></TableCard>
+    <div className="policy-outcomes"><h3>{t('claim.yourCover')}</h3>{owned.length ? owned.map(outcomeRow) : <p className="outcome-none">{t('claim.noCover')}</p>}{others.length > 0 && <LearnMore label={t('claim.otherCover')}>{others.map(outcomeRow)}</LearnMore>}</div>
+    <EveryoneOutcome state={state}/></TableCard>
     <TableCard kind="special" className="claim-learning"><CardMast kind="special" icon={Sparkles} eyebrow={t('claim.teaches')} title={insight.title}/><div className="takeaway"><b>{t('claim.takeaway')}</b><span>{insight.takeaway}</span></div><LearnMore><p>{insight.explanation}</p>{insight.example && <p className="learning-example">{insight.example}</p>}</LearnMore><PhaseButton label={t('claim.continue')} onClick={() => dispatch({ type: 'claims/continue' })}/></TableCard></div>;
+}
+
+/** Each player's own result for this month's shared event, read from that player's own round record. */
+function EveryoneOutcome({ state }: { state: GameState }) {
+  const { t, content } = useI18n();
+  const order = getTurnOrder(state.seed, state.players.map((p) => p.id));
+  const rows = [...state.players].sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id)).map((p) => ({ p, claim: getRoundRecord(p, state.round)?.claim }));
+  return <div className="everyone-outcome"><h3>{t('shared.everyone')}</h3><ul>{rows.map(({ p, claim }) => { const paid = (claim?.reimbursement ?? 0) + (claim?.fixedBenefits ?? 0); const c = characterText(p.id, content); return <li key={p.id} className={`eo-row eo-${p.id} ${p.id === state.humanId ? 'eo-you' : ''}`} data-player={p.id}>
+    <CharacterPortrait id={p.id} name={c.name} size={26}/><b>{c.name}{p.id === state.humanId && <em>{t('common.you')}</em>}</b>
+    <span className="eo-paid">{t('shared.paid', { amount: formatRM(claim?.outOfPocket ?? 0) })}</span>
+    {paid > 0 && <span className="eo-cover">{t('shared.coverPaid', { amount: formatRM(paid) })}</span>}
+  </li>; })}</ul></div>;
 }
 
 function MonthSummary({ state, dispatch }: { state: GameState; dispatch: Dispatch }) {
@@ -163,6 +177,11 @@ export function GameScreen({ state, dispatch, onExit, demo }: { state: GameState
   useEffect(() => { document.body.classList.add('game-session'); return () => document.body.classList.remove('game-session'); }, []);
   const { playEffect } = useAudio();
   const previousState = useRef(state);
+  // Turn order: rivals drawn before the human move their pawns first, as soon as the month's decisions open.
+  useEffect(() => {
+    if (state.status !== 'playing' || state.phase !== 'decisions' || !board.progress) return;
+    if ((board.progress.stage === 'human-roll' && board.pendingBefore > 0) || board.progress.stage === 'pre-turns') void board.runPreTurns();
+  }, [state.status, state.phase, board.progress?.stage, board.pendingBefore, board.runPreTurns]);
   useEffect(() => {
     if (state.status !== 'playing' || state.phase !== 'event-draw' || !board.progress) return;
     const step = getEventDrawBoardStep(board.progress.stage);
@@ -219,7 +238,7 @@ export function GameScreen({ state, dispatch, onExit, demo }: { state: GameState
       <div className="content-heading"><div><Eyebrow>{state.status === 'playing' ? t('game.eyebrow', { n: state.round, phase: t(`phase.${state.phase}`) }) : t('game.journey')}</Eyebrow><h1>{title}</h1></div>{state.status === 'playing' && <div className="content-heading-actions">
         <button className="how-link focus-toggle" onClick={toggleFocus} aria-pressed={focus}>{focus ? <Minimize2 size={17}/> : <Maximize2 size={17}/>} {focus ? t('game.exitFullscreen') : t('game.fullscreen')}</button>
         <button className="how-link" onClick={() => setShowIntro(true)}><CircleHelp size={17}/> {t('game.howToPlay')}</button></div>}</div>
-      {state.status === 'playing' && <BoardScene state={state} progress={board.progress} rolling={board.rolling} movementStep={board.movementStep} dieTumbling={board.dieTumbling} dieValue={board.dieValue} landing={board.landing} stepMs={board.stepMs} onRoll={() => void board.rollHuman()} rollControl={!demo} renderBoard={renderer === '3d' ? (svgBoard, view, label) => <Board3DSlot view={view} fallback={svgBoard} label={label}/> : undefined}/>}
+      {state.status === 'playing' && <BoardScene state={state} progress={board.progress} rolling={board.rolling} movementStep={board.movementStep} dieTumbling={board.dieTumbling} dieValue={board.dieValue} landing={board.landing} stepMs={board.stepMs} onRoll={() => void board.rollHuman()} waitingFor={board.pendingBefore} rollControl={!demo} renderBoard={renderer === '3d' ? (svgBoard, view, label) => <Board3DSlot view={view} fallback={svgBoard} label={label}/> : undefined}/>}
       {state.status === 'playing' && <details className="financial-drawer"><summary>{t('drawer.money')}<span className="drawer-figures"> · {t('drawer.summary', { cash: formatRM(player.cash), savings: formatRM(player.savings) })}</span></summary><PlayerDashboard state={state} positions={positions} activeId={board.movementStep?.playerId ?? board.progress?.activePlayer ?? (state.phase === 'decisions' ? state.humanId : null)}/><FinancialOverview state={state}/><RivalPanel state={state}/></details>}
       {content && <div className={`game-action-layer ${isOverlay ? 'game-action-modal' : 'game-action-dock'}`}><div className="primary-column">{content}</div></div>}
       <footer className="game-footer"><Disclaimer compact/><span>{state.status === 'playing' && record ? t('game.footerStage', { n: state.round, stage: t(`stage.${record.stage}`) }) : t('game.footerPace')}</span></footer>

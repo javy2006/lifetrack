@@ -14,7 +14,7 @@ for (const [tag, vp] of [['desktop', { width: 1440, height: 900 }], ['laptop', {
   const click = async (re) => { const b = page.locator('button', { hasText: re }).first(); await b.waitFor({ timeout: 30000 }); await b.click(); };
   await page.goto(base);
   await click(/Play the game/); await page.locator('button.character-option').first().click();
-  await click(/^Continue/); await click(/Begin month one/);
+  await click(/^Continue/); await click(/Begin month one/); await page.locator('.td-start, .td-skip').first().waitFor({ timeout: 30000 }); if (await page.locator('.td-skip').count()) await page.locator('.td-skip').click(); await page.locator('.td-start').click();
   await page.waitForTimeout(2000);
   check(`${tag}: 3D board is shown (old stored 2D choice ignored)`, (await which(page)) === '3d', await which(page));
   check(`${tag}: no 2D/3D toggle in the game UI`, (await page.locator('button.renderer-toggle').count()) === 0);

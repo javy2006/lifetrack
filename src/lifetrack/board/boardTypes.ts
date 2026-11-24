@@ -3,9 +3,12 @@ import type { EventCategory, GameState } from '../game/types.ts';
 export type BoardCategory = 'salary' | 'medical' | 'accident' | 'family' | 'savings' | 'protection' | 'lucky' | 'rest';
 export interface BoardSpace { index: number; label: string; category: BoardCategory }
 export interface Point { x: number; y: number }
-export type BoardTurnStage='human-roll'|'human-landed'|'ai-turns'|'complete';
+/** 'pre-turns': rivals who come before the human in the turn order are moving (decisions phase, before the human's roll). */
+export type BoardTurnStage='pre-turns'|'human-roll'|'human-landed'|'ai-turns'|'complete';
 export interface BoardMovement { playerId:import('../game/types.ts').CharacterId; from:number; to:number; roll:number }
-export interface BoardProgress { version:1; seed:number; round:number; positions:Record<import('../game/types.ts').CharacterId,number>; lastDiceRoll:Record<import('../game/types.ts').CharacterId,number|null>; stage:BoardTurnStage; aiQueue:import('../game/types.ts').CharacterId[]; activePlayer:import('../game/types.ts').CharacterId|null; lastMovement:BoardMovement|null }
+export interface BoardProgress { version:1; seed:number; round:number; positions:Record<import('../game/types.ts').CharacterId,number>; lastDiceRoll:Record<import('../game/types.ts').CharacterId,number|null>; stage:BoardTurnStage; aiQueue:import('../game/types.ts').CharacterId[]; activePlayer:import('../game/types.ts').CharacterId|null; lastMovement:BoardMovement|null;
+  /** Players whose pawn has already moved this month (optional: older board saves omit it, read as []). */
+  moved?:import('../game/types.ts').CharacterId[] }
 
 export const BOARD_ROUTE: readonly BoardSpace[] = [
   ['SALARY','salary'],['SAVE','savings'],['MEDICAL','medical'],['REST','rest'],['COVER','protection'],['FAMILY','family'],
@@ -36,7 +39,7 @@ export function movePosition(position:number,steps:number,spaceCount=BOARD_ROUTE
 export function createBoardProgress(seed:number,round:number,playerIds:readonly import('../game/types.ts').CharacterId[]):BoardProgress {
   const positions=Object.fromEntries(playerIds.map(id=>[id,0])) as Record<import('../game/types.ts').CharacterId,number>;
   const lastDiceRoll=Object.fromEntries(playerIds.map(id=>[id,null])) as Record<import('../game/types.ts').CharacterId,number|null>;
-  return {version:1,seed,round,positions,lastDiceRoll,stage:'human-roll',aiQueue:[],activePlayer:null,lastMovement:null};
+  return {version:1,seed,round,positions,lastDiceRoll,stage:'human-roll',aiQueue:[],activePlayer:null,lastMovement:null,moved:[]};
 }
 
 /** Seeded board-only d6. It never feeds event selection or financial logic. */
@@ -50,14 +53,15 @@ export function rollBoardDie(seed:number,round:number,playerId:string):number {
 export function moveBoardPlayer(progress:BoardProgress,playerId:import('../game/types.ts').CharacterId,roll:number):BoardProgress {
   if(!Number.isInteger(roll)||roll<1||roll>6||!(playerId in progress.positions))return progress;
   const from=progress.positions[playerId],to=movePosition(from,roll);
-  return {...progress,positions:{...progress.positions,[playerId]:to},lastDiceRoll:{...progress.lastDiceRoll,[playerId]:roll},lastMovement:{playerId,from,to,roll}};
+  const moved=progress.moved??[];
+  return {...progress,positions:{...progress.positions,[playerId]:to},lastDiceRoll:{...progress.lastDiceRoll,[playerId]:roll},lastMovement:{playerId,from,to,roll},moved:moved.includes(playerId)?moved:[...moved,playerId]};
 }
 
 export function isValidBoardProgress(value:unknown,seed:number,playerIds:readonly import('../game/types.ts').CharacterId[]):value is BoardProgress {
   if(!value||typeof value!=='object')return false;
   const p=value as Partial<BoardProgress>;
   const positions=p.positions;
-  return p.version===1&&p.seed===seed&&Number.isInteger(p.round)&&typeof positions==='object'&&positions!==null&&playerIds.every(id=>Number.isInteger(positions[id])&&positions[id]>=0&&positions[id]<BOARD_ROUTE.length)&&Array.isArray(p.aiQueue)&&typeof p.lastDiceRoll==='object'&&p.lastDiceRoll!==null&&playerIds.every(id=>p.lastDiceRoll?.[id]===null||Number.isInteger(p.lastDiceRoll?.[id]))&&['human-roll','human-landed','ai-turns','complete'].includes(p.stage??'');
+  return p.version===1&&p.seed===seed&&Number.isInteger(p.round)&&typeof positions==='object'&&positions!==null&&playerIds.every(id=>Number.isInteger(positions[id])&&positions[id]>=0&&positions[id]<BOARD_ROUTE.length)&&Array.isArray(p.aiQueue)&&typeof p.lastDiceRoll==='object'&&p.lastDiceRoll!==null&&playerIds.every(id=>p.lastDiceRoll?.[id]===null||Number.isInteger(p.lastDiceRoll?.[id]))&&(p.moved===undefined||(Array.isArray(p.moved)&&p.moved.every(id=>playerIds.includes(id))))&&['pre-turns','human-roll','human-landed','ai-turns','complete'].includes(p.stage??'');
 }
 
 export function tokenOffset(position:number,playerId:import('../game/types.ts').CharacterId,all:Record<import('../game/types.ts').CharacterId,number>):Point {
@@ -69,7 +73,7 @@ export function tokenOffset(position:number,playerId:import('../game/types.ts').
 
 /** Aligns restored board progress with the authoritative reducer round/phase. Returns the same object when nothing changes. */
 export function reconcileBoardProgress(progress:BoardProgress,round:number,phase:GameState['phase']):BoardProgress {
-  if(progress.round!==round)return {...progress,round,stage:'human-roll',aiQueue:[],activePlayer:null,lastMovement:null};
+  if(progress.round!==round)return {...progress,round,stage:'human-roll',aiQueue:[],activePlayer:null,lastMovement:null,moved:[]};
   // Rival turns only start after decision/confirm. If the board is ahead of a pre-confirm game save, the human
   // has already moved this month: show the decisions again instead of hiding every control (no second roll).
   const beforeConfirm=phase==='income'||phase==='expenses'||phase==='decisions';
@@ -96,6 +100,7 @@ export function getEventDrawBoardStep(stage:BoardTurnStage):EventDrawBoardStep {
   return stage==='complete'?'draw-event':'run-ai-turns';
 }
 
+/** @deprecated Rival order used before the seeded turn order (see turnOrder.ts); kept for older callers and tests. */
 export function getAiTurnOrder(playerIds:readonly import('../game/types.ts').CharacterId[],humanId:import('../game/types.ts').CharacterId) {
   return playerIds.filter(id=>id!==humanId);
 }
