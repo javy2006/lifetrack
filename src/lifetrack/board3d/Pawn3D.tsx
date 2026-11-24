@@ -14,7 +14,8 @@ import { FIGURE_TOP, Figure } from './Figure3D.tsx';
 
 
 /** Height of the turn marker above the base (just over the tallest figure). */
-const MARKER_Y = FIGURE_TOP + 0.16;
+const TOKEN_SCALE = 1.12;
+const MARKER_Y = FIGURE_TOP * TOKEN_SCALE + 0.16;
 
 export function Pawn3D({ id, index, positions, human, active, stepSeconds, reducedMotion }: { id: CharacterId; index: number; positions: Record<CharacterId, number>; human: boolean; active: boolean; stepSeconds: number; reducedMotion: boolean }) {
   const group = useRef<Group>(null);
@@ -66,7 +67,7 @@ export function Pawn3D({ id, index, positions, human, active, stepSeconds, reduc
     if (busy) invalidate();
   });
   return <group ref={group} position={[target.x, target.y, target.z]}>
-    <group ref={body} rotation={[0, restYaw, 0]}><StaticBatch key={`${id}|${human}`}><Figure id={id} human={human}/></StaticBatch></group>
+    <group ref={body} rotation={[0, restYaw, 0]}><group scale={TOKEN_SCALE}><StaticBatch key={`${id}|${human}`}><Figure id={id} human={human}/></StaticBatch></group></group>
     <group ref={marker} position={[0, MARKER_Y, 0]} visible={active}>
       <mesh geometry={geo().gem} material={mat(PLAYER_COLOR[id], { emissive: PLAYER_COLOR[id], emissiveIntensity: 0.35 })} scale={[0.09, 0.12, 0.09]}/>
     </group>

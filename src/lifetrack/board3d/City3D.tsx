@@ -18,21 +18,41 @@ function P({ g = 'box', c, p, s, r, shadow = true }: { g?: Shape; c: string; p: 
 /** Ink colour for captions: the category colour, darkened for contrast on cream. */
 const INK: Record<string, string> = { salary: '#8a6418', medical: '#a50d26', accident: '#b5521f', family: '#5c4987', savings: '#1b6a48', protection: '#2f5d7a', lucky: '#9c6512', rest: '#4f6466' };
 
-/** Static part of a tile (batched): plinth, category frame, cream inset, painted caption. */
+/** Inner edge of each side (toward the park), as an x/z unit direction. */
+function innerDir(index: number): [number, number] {
+  const side = Math.floor(index / 6) % 4;
+  return side === 0 ? [0, 1] : side === 1 ? [-1, 0] : side === 2 ? [0, -1] : [1, 0];
+}
+/** Width of the printed category stripe on the inner edge of a tile. */
+const STRIPE = 0.22;
+
+/**
+ * Static part of a tile (batched), printed like a board-game space: a card-stock plinth, a cream
+ * face with the category colour as a stripe along the inner edge, and the painted icon + caption.
+ * Corner spaces are fully printed in their colour with a cream inset, so the four corners read
+ * as landmarks of the loop.
+ */
 export function TileBase({ index, caption }: { index: number; caption?: string }) {
   const p = SPACE_WORLD[index]!;
   const category = spaceCategory(index);
+  const color = CATEGORY_COLOR[category];
+  const corner = index % 6 === 0;
   const { width: w, depth: d, height: h } = TILE_SIZE;
-  const captionWidth = w - 0.2;
+  const [ix, iz] = innerDir(index);
+  const off = w / 2 - 0.03 - STRIPE / 2;
+  const shift = corner ? 0 : -0.1;
+  const captionWidth = corner ? w - 0.2 : w - 0.28;
   return <group position={[p.x, 0, p.z]}>
-    <mesh geometry={geo().box} material={mat('#d8d0bf')} position={[0, h / 2 - 0.01, 0]} scale={[w + 0.04, h, d + 0.04]} receiveShadow castShadow/>
-    <mesh geometry={geo().box} material={mat(CATEGORY_COLOR[category])} position={[0, h + 0.01, 0]} scale={[w, 0.02, d]} receiveShadow/>
-    <mesh geometry={geo().box} material={mat('#f7f3e8')} position={[0, h + 0.022, 0]} scale={[w - 0.1, 0.008, d - 0.1]} receiveShadow/>
-    <mesh geometry={geo().plane} material={decal(captionTexture(caption ?? tileCaption(index), INK[category]!, category))} position={[0, h + 0.0275, 0]} scale={[captionWidth, 1, captionWidth]}/>
+    <mesh geometry={geo().box} material={mat('#d6c7a6')} position={[0, h / 2 - 0.01, 0]} scale={[w + 0.03, h, d + 0.03]} receiveShadow castShadow/>
+    <mesh geometry={geo().box} material={mat(corner ? color : '#fbf6e8', { roughness: 0.85 })} position={[0, h + 0.008, 0]} scale={[w - 0.01, 0.016, d - 0.01]} receiveShadow/>
+    {corner
+      ? <mesh geometry={geo().box} material={mat('#fbf6e8', { roughness: 0.85 })} position={[0, h + 0.018, 0]} scale={[w - 0.16, 0.006, d - 0.16]} receiveShadow/>
+      : <mesh geometry={geo().box} material={mat(color)} position={[ix * off, h + 0.018, iz * off]} scale={[ix !== 0 ? STRIPE : w - 0.06, 0.006, iz !== 0 ? STRIPE : d - 0.06]} receiveShadow/>}
+    <mesh geometry={geo().plane} material={decal(captionTexture(caption ?? tileCaption(index), INK[category]!, category))} position={[ix * shift, h + 0.0225, iz * shift]} scale={[captionWidth, 1, captionWidth]}/>
     {/* Start flag on the first space */}
-    {index === 0 && <group position={[-w / 2 + 0.12, h + 0.03, -d / 2 + 0.12]}>
-      <P g="cylLow" c="#4b5a63" p={[0, 0.2, 0]} s={[0.025, 0.4, 0.025]}/>
-      <P c="#c8102e" p={[0.09, 0.33, 0]} s={[0.17, 0.11, 0.012]}/>
+    {index === 0 && <group position={[-w / 2 + 0.14, h + 0.03, -d / 2 + 0.14]}>
+      <P g="cylLow" c="#4b5a63" p={[0, 0.22, 0]} s={[0.025, 0.44, 0.025]}/>
+      <P c="#c8102e" p={[0.1, 0.37, 0]} s={[0.19, 0.12, 0.012]}/>
     </group>}
   </group>;
 }
@@ -46,7 +66,7 @@ export function TileGlow({ index, active, reducedMotion }: { index: number; acti
   const color = CATEGORY_COLOR[spaceCategory(index)];
   const { width: w, depth: d, height: h } = TILE_SIZE;
   return <group position={[p.x, 0, p.z]}>
-    <mesh geometry={geo().box} material={mat(color, { emissive: color, emissiveIntensity: active ? 0.45 : 0.25 })} position={[0, h + 0.0105, 0]} scale={[w + 0.006, 0.0215, d + 0.006]}/>
+    <mesh geometry={geo().box} material={mat(color, { emissive: color, emissiveIntensity: active ? 0.5 : 0.3 })} position={[0, h + 0.0085, 0]} scale={[w + 0.02, 0.019, d + 0.02]}/>
     <PulseRing color={color} y={0.012} animate={active && !reducedMotion}/>
   </group>;
 }
@@ -74,32 +94,54 @@ function PulseRing({ color, y, animate }: { color: string; y: number; animate: b
   </mesh>;
 }
 
-/** LifeTrack landmark: a slim white tower with the red shield emblem, rising from a fountain basin. */
+/**
+ * LifeTrack Tower: the city's landmark at the centre of the park. A stepped stone plinth in a
+ * fountain basin, a white clock-tower shaft with the red shield emblem on two faces, a gold
+ * cupola and a flag. Tall enough to anchor the board, slim enough never to hide a space.
+ */
 function Landmark() {
   return <group>
-    <P g="cyl" c="#e6dfd0" p={[0, 0.085, 0]} s={[0.95, 0.07, 0.95]}/>
-    <P g="cyl" c="#8cc0d6" p={[0, 0.122, 0]} s={[0.82, 0.01, 0.82]} shadow={false}/>
-    <P c="#efe8da" p={[0, 0.17, 0]} s={[0.36, 0.1, 0.36]}/>
-    <P c="#fbf8f2" p={[0, 0.6, 0]} s={[0.22, 0.8, 0.22]}/>
-    <P c="#c8102e" p={[0, 0.6, 0.112]} s={[0.05, 0.78, 0.006]} shadow={false}/>
-    <P c="#efe8da" p={[0, 1.02, 0]} s={[0.3, 0.06, 0.3]}/>
-    {/* Shield emblem facing the camera side */}
-    <group position={[0, 1.24, 0]} rotation={[0, Math.PI / 4, 0]}>
-      <P c="#c8102e" p={[0, 0.03, 0]} s={[0.3, 0.24, 0.07]}/>
-      <P g="cone" c="#c8102e" p={[0, -0.15, 0]} s={[0.3, 0.14, 0.07]} r={[Math.PI, 0, 0]}/>
-      <P c="#fbf8f2" p={[0, 0.03, 0.04]} s={[0.05, 0.16, 0.01]} shadow={false}/>
-      <P c="#fbf8f2" p={[0, 0.06, 0.04]} s={[0.14, 0.05, 0.01]} shadow={false}/>
-    </group>
-    <P g="sphere" c="#d6a44b" p={[0, 1.46, 0]} s={[0.07, 0.07, 0.07]}/>
+    {/* Fountain basin and water */}
+    <P g="cyl" c="#e4dac6" p={[0, 0.09, 0]} s={[1.3, 0.08, 1.3]}/>
+    <P g="cyl" c="#6fb4d0" p={[0, 0.132, 0]} s={[1.14, 0.012, 1.14]} shadow={false}/>
+    {/* Stepped plinth */}
+    <P g="cylLow" c="#efe6d4" p={[0, 0.18, 0]} s={[0.62, 0.12, 0.62]}/>
+    <P g="cylLow" c="#e2d6bf" p={[0, 0.27, 0]} s={[0.48, 0.08, 0.48]}/>
+    {/* Shaft with corner pilasters */}
+    <P c="#fbf8f1" p={[0, 0.78, 0]} s={[0.3, 0.98, 0.3]}/>
+    {[-1, 1].flatMap((sx) => [-1, 1].map((sz) => <P key={`${sx}${sz}`} c="#e7dcc7" p={[sx * 0.15, 0.78, sz * 0.15]} s={[0.05, 0.98, 0.05]}/>))}
+    {/* Shield emblems facing the two camera sides */}
+    {[0, Math.PI / 2].map((ry) => <group key={ry} position={[0, 0.86, 0]} rotation={[0, ry, 0]}>
+      <group position={[0, 0, 0.155]}>
+        <P c="#c8102e" p={[0, 0.03, 0]} s={[0.2, 0.17, 0.02]}/>
+        <P g="cone" c="#c8102e" p={[0, -0.1, 0]} s={[0.2, 0.1, 0.02]} r={[Math.PI, 0, 0]}/>
+        <P c="#fbf8f2" p={[0, 0.03, 0.012]} s={[0.035, 0.12, 0.006]} shadow={false}/>
+        <P c="#fbf8f2" p={[0, 0.055, 0.012]} s={[0.1, 0.035, 0.006]} shadow={false}/>
+      </group>
+    </group>)}
+    {/* Clock band */}
+    <P c="#e7dcc7" p={[0, 1.3, 0]} s={[0.38, 0.06, 0.38]}/>
+    {[0, Math.PI / 2].map((ry) => <group key={ry} rotation={[0, ry, 0]}><P g="cyl" c="#fffaf0" p={[0, 1.44, 0.17]} s={[0.17, 0.012, 0.17]} r={[Math.PI / 2, 0, 0]}/><P c="#27324f" p={[0, 1.46, 0.178]} s={[0.012, 0.06, 0.004]} shadow={false}/></group>)}
+    <P c="#fbf8f1" p={[0, 1.44, 0]} s={[0.34, 0.22, 0.34]}/>
+    {/* Gold cupola and flag */}
+    <P c="#e7dcc7" p={[0, 1.57, 0]} s={[0.4, 0.04, 0.4]}/>
+    <P g="dome" c="#d9a93f" p={[0, 1.59, 0]} s={[0.32, 0.3, 0.32]}/>
+    <P g="cylLow" c="#5b4a2e" p={[0, 1.86, 0]} s={[0.018, 0.28, 0.018]}/>
+    <P c="#c8102e" p={[0.08, 1.94, 0]} s={[0.15, 0.09, 0.01]}/>
   </group>;
 }
 
-function Tree({ x, z, s = 1, tone = '#588b70' }: { x: number; z: number; s?: number; tone?: string }) {
+function Tree({ x, z, s = 1, tone = '#5f9a4f' }: { x: number; z: number; s?: number; tone?: string }) {
   return <group position={[x, 0.04, z]} scale={s}>
-    <P g="cylLow" c="#886d55" p={[0, 0.09, 0]} s={[0.05, 0.18, 0.05]}/>
-    <P g="sphere" c={tone} p={[0, 0.3, 0]} s={[0.3, 0.28, 0.3]}/>
-    <P g="sphere" c={tone} p={[0.05, 0.42, 0.02]} s={[0.2, 0.18, 0.2]}/>
+    <P g="cylLow" c="#7d5d43" p={[0, 0.1, 0]} s={[0.06, 0.2, 0.06]}/>
+    <P g="sphere" c={tone} p={[0, 0.34, 0]} s={[0.36, 0.32, 0.36]}/>
+    <P g="sphere" c={tone} p={[0.06, 0.48, 0.03]} s={[0.24, 0.22, 0.24]}/>
   </group>;
+}
+
+/** Low clipped hedge (park borders). */
+function Hedge({ x, z, w, d }: { x: number; z: number; w: number; d: number }) {
+  return <P g="box" c="#4f8a45" p={[x, 0.09, z]} s={[w, 0.1, d]}/>;
 }
 
 function House({ x, z, wall, roof, ry = 0 }: { x: number; z: number; wall: string; roof: string; ry?: number }) {
@@ -152,56 +194,51 @@ function Shop({ x, z }: { x: number; z: number }) {
   </group>;
 }
 
-/** Tinted ground for a district, so the four areas read at a glance. */
-function District({ x, z, color }: { x: number; z: number; color: string }) {
-  return <P c={color} p={[x, 0.044, z]} s={[1.72, 0.006, 1.72]} shadow={false}/>;
-}
-
-/** Road from the plaza edge to the lot edge, with a dashed centre line. */
-function Road({ axis, dir }: { axis: 'x' | 'z'; dir: 1 | -1 }) {
-  const from = 1.02, to = 2.5, mid = dir * (from + to) / 2, len = to - from;
-  const pos = (u: number): [number, number, number] => axis === 'x' ? [u, 0.047, 0] : [0, 0.047, u];
-  const size: [number, number, number] = axis === 'x' ? [len, 0.006, 0.34] : [0.34, 0.006, len];
+/** Sand footpath from the plaza toward one side of the park, edged in a darker sand. */
+function Path({ axis, dir }: { axis: 'x' | 'z'; dir: 1 | -1 }) {
+  const from = 1.05, to = 2.55, mid = dir * (from + to) / 2, len = to - from;
+  const at = (u: number, y: number): [number, number, number] => axis === 'x' ? [u, y, 0] : [0, y, u];
   return <group>
-    <P c="#b8bec1" p={pos(mid)} s={size} shadow={false}/>
-    {[0.25, 0.65, 1.05].map((k) => <P key={k} c="#f4f2ea" p={[...pos(dir * (from + k + 0.1))].map((v, i) => i === 1 ? 0.051 : v) as [number, number, number]} s={axis === 'x' ? [0.18, 0.004, 0.03] : [0.03, 0.004, 0.18]} shadow={false}/>)}
+    <P c="#d6bd85" p={at(mid, 0.046)} s={axis === 'x' ? [len, 0.006, 0.5] : [0.5, 0.006, len]} shadow={false}/>
+    <P c="#ead7a8" p={at(mid, 0.05)} s={axis === 'x' ? [len, 0.006, 0.4] : [0.4, 0.006, len]} shadow={false}/>
   </group>;
 }
 
 /**
- * Calm centre with a clear layout: a paved central plaza (fountain and the die's landing spot),
- * four roads, and four tinted districts, one per money theme: finance (bank), health (clinic),
- * homes (family) and shops (cover office). Buildings stay low and set back from the tile ring,
- * so decoration never hides a space or a pawn.
+ * The park in the middle of the board: striped lawn, sand paths to each side, a paved plaza
+ * around LifeTrack Tower (the die lands on the plaza), and four small districts, one per money
+ * theme: finance (bank), health (clinic), homes (family) and shops (cover office). Buildings stay
+ * low and set back from the tile ring, so decoration never hides a space or a pawn.
  */
 export function CityBlock() {
-  const lot = 5.1;
+  const lot = 5.1, stripes = 8;
   return <group>
-    <P c="#c3dfae" p={[0, 0.02, 0]} s={[lot, 0.04, lot]} shadow={false}/>
-    <District x={-1.62} z={-1.62} color="#cfe3cf"/>
-    <District x={1.62} z={-1.62} color="#d5e4ec"/>
-    <District x={-1.62} z={1.62} color="#eadfcc"/>
-    <District x={1.62} z={1.62} color="#e6dde6"/>
-    <Road axis="x" dir={1}/><Road axis="x" dir={-1}/><Road axis="z" dir={1}/><Road axis="z" dir={-1}/>
-    {/* Central plaza */}
-    <P g="cyl" c="#ece6d8" p={[0, 0.05, 0]} s={[2.1, 0.02, 2.1]} shadow={false}/>
-    <P g="ring" c="#d6a44b" p={[0, 0.062, 0]} s={[2.06, 2.06, 0.35]} r={[Math.PI / 2, 0, 0]} shadow={false}/>
+    <P c="#8fc46e" p={[0, 0.02, 0]} s={[lot, 0.04, lot]} shadow={false}/>
+    {Array.from({ length: stripes / 2 }, (_, i) => <P key={i} c="#9cce7b" p={[-lot / 2 + lot / stripes * (2 * i + 0.5), 0.0415, 0]} s={[lot / stripes, 0.003, lot]} shadow={false}/>)}
+    <Path axis="x" dir={1}/><Path axis="x" dir={-1}/><Path axis="z" dir={1}/><Path axis="z" dir={-1}/>
+    {/* Plaza: sand ring, paving and a gold inlay */}
+    <P g="cyl" c="#d6bd85" p={[0, 0.048, 0]} s={[2.36, 0.012, 2.36]} shadow={false}/>
+    <P g="cyl" c="#f1e8d4" p={[0, 0.054, 0]} s={[2.2, 0.014, 2.2]} shadow={false}/>
+    <P g="ring" c="#d9a93f" p={[0, 0.064, 0]} s={[2.0, 2.0, 0.3]} r={[Math.PI / 2, 0, 0]} shadow={false}/>
     <Landmark/>
     {/* Finance */}
-    <Bank x={-1.6} z={-1.5}/>
-    <Tree x={-2.2} z={-0.75} s={0.7}/>
+    <Bank x={-1.6} z={-1.55}/>
+    <Hedge x={-1.6} z={-0.95} w={1.1} d={0.1}/>
+    <Tree x={-2.25} z={-0.8} s={0.7}/>
     {/* Health */}
-    <Clinic x={1.6} z={-1.5}/>
-    <P c="#9b7a5b" p={[1.0, 0.08, -0.82]} s={[0.3, 0.03, 0.08]}/>
-    <Tree x={2.2} z={-0.75} s={0.7} tone="#6d9e72"/>
+    <Clinic x={1.6} z={-1.55}/>
+    <Hedge x={1.6} z={-0.95} w={1.1} d={0.1}/>
+    <Tree x={2.25} z={-0.8} s={0.7} tone="#6fa35a"/>
     {/* Homes */}
-    <House x={-1.95} z={1.25} wall="#f0d9bc" roof="#b5523b"/>
-    <House x={-1.15} z={1.95} wall="#f8f7f0" roof="#7d68a6" ry={0.2}/>
-    <Tree x={-2.2} z={2.15} s={0.65} tone="#4f7f63"/>
+    <House x={-1.95} z={1.3} wall="#f2d9b8" roof="#b5523b"/>
+    <House x={-1.15} z={2.0} wall="#fbf6ea" roof="#7d68a6" ry={0.2}/>
+    <Tree x={-2.25} z={2.2} s={0.66} tone="#e39b3f"/>
     {/* Shops */}
-    <CoverOffice x={1.75} z={1.85}/>
-    <Shop x={2.0} z={1.0}/>
-    <Tree x={1.0} z={2.2} s={0.65}/>
+    <CoverOffice x={1.8} z={1.9}/>
+    <Shop x={2.05} z={1.05}/>
+    <Tree x={1.0} z={2.25} s={0.66} tone="#e9c046"/>
+    <Tree x={-0.75} z={-2.25} s={0.55} tone="#e39b3f"/>
+    <Tree x={0.75} z={-2.25} s={0.55}/>
   </group>;
 }
 
@@ -236,22 +273,22 @@ export function OuterCity() {
   const r0 = OUTER_ROAD.inner, w = OUTER_ROAD.width, rc = OUTER_ROAD_CENTER, len = 2 * (r0 + w) + 0.6;
   const side = (fn: (sx: number, sz: number, rot: boolean) => React.ReactNode) => [[0, -1, false], [0, 1, false], [-1, 0, true], [1, 0, true]].map(([sx, sz, rot], i) => <group key={i}>{fn(sx as number, sz as number, rot as boolean)}</group>);
   return <group position={[0, GROUND_Y, 0]}>
-    <P c="#bcd6a4" p={[0, -0.02, 0]} s={[44, 0.04, 44]} shadow={false}/>
+    <P c="#a9cf8a" p={[0, -0.02, 0]} s={[44, 0.04, 44]} shadow={false}/>
     {side((sx, sz, rot) => <>
       {/* Inner pavement, road and outer pavement on each side */}
-      <P c="#efe7d6" p={[sx * (r0 - 0.15), 0.005, sz * (r0 - 0.15)]} s={rot ? [0.3, 0.01, len - 1.6] : [len - 1.6, 0.01, 0.3]} shadow={false}/>
-      <P c="#8b949a" p={[sx * rc, 0.01, sz * rc]} s={rot ? [w, 0.01, len] : [len, 0.01, w]} shadow={false}/>
-      <P c="#efe7d6" p={[sx * (r0 + w + 0.15), 0.005, sz * (r0 + w + 0.15)]} s={rot ? [0.3, 0.01, len + 0.6] : [len + 0.6, 0.01, 0.3]} shadow={false}/>
+      <P c="#ece2cc" p={[sx * (r0 - 0.15), 0.005, sz * (r0 - 0.15)]} s={rot ? [0.3, 0.01, len - 1.6] : [len - 1.6, 0.01, 0.3]} shadow={false}/>
+      <P c="#7f878d" p={[sx * rc, 0.01, sz * rc]} s={rot ? [w, 0.01, len] : [len, 0.01, w]} shadow={false}/>
+      <P c="#ece2cc" p={[sx * (r0 + w + 0.15), 0.005, sz * (r0 + w + 0.15)]} s={rot ? [0.3, 0.01, len + 0.6] : [len + 0.6, 0.01, 0.3]} shadow={false}/>
       {[-3.6, -2.4, -1.2, 0, 1.2, 2.4, 3.6].map((k) => <P key={k} c="#f2efe4" p={rot ? [sx * rc, 0.017, k] : [k, 0.017, sz * rc]} s={rot ? [0.04, 0.004, 0.34] : [0.34, 0.004, 0.04]} shadow={false}/>)}
     </>)}
     {/* Behind the board: a short skyline of offices */}
-    <Tower x={-4.6} z={-7.0} w={1.1} h={2.2} d={1.0} c="#87a9b1"/>
-    <Tower x={-1.6} z={-7.2} w={1.0} h={1.6} d={1.0} c="#b8d0d4"/>
-    <Tower x={1.6} z={-7.0} w={1.2} h={2.6} d={1.0} c="#9fb7c4"/>
-    <Tower x={4.6} z={-7.1} w={1.0} h={1.8} d={1.0} c="#c6d7d0"/>
-    <Tower x={-7.0} z={-3.4} w={1.0} h={1.9} d={1.1} c="#a9c2c8"/>
-    <Tower x={-7.1} z={0.2} w={1.0} h={1.4} d={1.0} c="#c6d7d0"/>
-    <Tower x={-7.0} z={3.6} w={1.0} h={1.2} d={1.1} c="#b8d0d4"/>
+    <Tower x={-4.6} z={-7.0} w={1.1} h={2.2} d={1.0} c="#e2b08a"/>
+    <Tower x={-1.6} z={-7.2} w={1.0} h={1.6} d={1.0} c="#f0d39b"/>
+    <Tower x={1.6} z={-7.0} w={1.2} h={2.6} d={1.0} c="#a9c9c0"/>
+    <Tower x={4.6} z={-7.1} w={1.0} h={1.8} d={1.0} c="#e9c2a4"/>
+    <Tower x={-7.0} z={-3.4} w={1.0} h={1.9} d={1.1} c="#d9a27e"/>
+    <Tower x={-7.1} z={0.2} w={1.0} h={1.4} d={1.0} c="#e9c2a4"/>
+    <Tower x={-7.0} z={3.6} w={1.0} h={1.2} d={1.1} c="#f0d39b"/>
     {/* In front: low homes, shops and trees */}
     <House x={-3.8} z={6.6} wall="#f0d9bc" roof="#b5523b"/>
     <House x={-1.2} z={6.8} wall="#f8f7f0" roof="#457a9b" ry={0.15}/>
@@ -260,7 +297,7 @@ export function OuterCity() {
     <Shop x={6.6} z={3.2}/>
     <House x={6.7} z={0.2} wall="#f0d9bc" roof="#24845b" ry={Math.PI / 2}/>
     <House x={6.6} z={-3.4} wall="#f8f7f0" roof="#b5523b" ry={Math.PI / 2}/>
-    {[[-5.9, 5.9], [0.2, 6.3], [3.0, 6.2], [6.0, 6.0], [6.2, -1.6], [6.2, 1.8], [-6.2, 5.8], [6.0, -6.0], [-6.0, -6.1]].map(([x, z], i) => <Tree key={i} x={x!} z={z!} s={0.95} tone={i % 2 ? '#6d9e72' : '#588b70'}/>)}
+    {[[-5.9, 5.9], [0.2, 6.3], [3.0, 6.2], [6.0, 6.0], [6.2, -1.6], [6.2, 1.8], [-6.2, 5.8], [6.0, -6.0], [-6.0, -6.1]].map(([x, z], i) => <Tree key={i} x={x!} z={z!} s={0.95} tone={['#5f9a4f', '#e39b3f', '#6fa35a', '#e9c046'][i % 4]}/>)}
     {[-3, 0, 3].flatMap((k) => [[k, -(r0 + w + 0.4)], [k, r0 + w + 0.4], [-(r0 + w + 0.4), k], [r0 + w + 0.4, k]]).map(([x, z], i) => <Lamp key={i} x={x!} z={z!}/>)}
   </group>;
 }

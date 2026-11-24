@@ -5,9 +5,10 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { CanvasTexture, Euler, Quaternion, SRGBColorSpace, type Fog, type Group, type Mesh, type MeshBasicMaterial } from 'three';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import type { CharacterId } from '../game/types.ts';
 import type { BoardCategory } from '../board/boardTypes.ts';
-import { DIE_FACE_ORDER, PLAYER_COLOR, RING_HALF, SPACE_WORLD, TILE_SIZE, dieRestRotation, pawnWorld, spaceCategory, type WorldPoint } from './boardWorld.ts';
+import { CATEGORY_COLOR, DIE_FACE_ORDER, PLAYER_COLOR, RING_HALF, SPACE_WORLD, TILE_SIZE, dieRestRotation, pawnWorld, spaceCategory, type WorldPoint } from './boardWorld.ts';
 import { CityBlock, GROUND_Y, OUTER_ROAD_CENTER, OuterCity, TileBase, TileGlow } from './City3D.tsx';
 import { cameraDirection, damp, fitDistance, viewAngles, type Vec3 } from './camera.ts';
 import { StaticBatch } from './StaticBatch.tsx';
@@ -121,51 +122,93 @@ const PIPS: Record<number, [number, number][]> = { 1: [[0.5, 0.5]], 2: [[0.27, 0
 function faceTexture(value: number): CanvasTexture {
   const c = document.createElement('canvas'); c.width = c.height = 128;
   const g = c.getContext('2d')!;
-  g.fillStyle = '#fbf8f2'; g.fillRect(0, 0, 128, 128);
-  g.fillStyle = '#b51f35';
-  for (const [x, y] of PIPS[value] ?? []) { g.beginPath(); g.arc(x * 128, y * 128, 12, 0, Math.PI * 2); g.fill(); }
+  g.fillStyle = '#fbf6ea'; g.fillRect(0, 0, 128, 128);
+  for (const [x, y] of PIPS[value] ?? []) {
+    g.fillStyle = '#8f1426'; g.beginPath(); g.arc(x * 128, y * 128 + 1.5, 12.5, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#c21d36'; g.beginPath(); g.arc(x * 128, y * 128, 11.5, 0, Math.PI * 2); g.fill();
+  }
   const t = new CanvasTexture(c);
   t.colorSpace = SRGBColorSpace;
   return t;
 }
 
-/** Visual die: tumbles while the value is hidden, then settles on the value it is given. */
-function Die({ value, rolling, reducedMotion }: { value: number | null; rolling: boolean; reducedMotion: boolean }) {
+/** Edge length of the board die (world units). */
+const DIE_SIZE = 0.56;
+/** Height of the park lawn the die rests on. */
+const LAWN_TOP = 0.05;
+
+/**
+ * Where the die lands: on the lawn just inside the mover's side of the board, so it stays in view
+ * while the camera follows that token (the plaza when nobody is moving).
+ */
+function dieSpot(space: number | null): { x: number; z: number } {
+  if (space === null) return DIE_SPOT;
+  const p = SPACE_WORLD[space]!;
+  const ix = Math.abs(p.x) > RING_HALF - 0.01 ? -Math.sign(p.x) : 0, iz = Math.abs(p.z) > RING_HALF - 0.01 ? -Math.sign(p.z) : 0;
+  const inward = ix !== 0 && iz !== 0 ? 0.95 : 1.0;
+  return { x: p.x + ix * inward, z: p.z + iz * inward };
+}
+
+/**
+ * Visual die: thrown in from the near side of the plaza, it bounces and tumbles while the value is
+ * hidden, then settles with a short damped bounce onto the face it is given. Rounded ivory body,
+ * red pips. Presentation only: the value always comes from the seeded board roll.
+ */
+function Die({ value, rolling, reducedMotion, spot }: { value: number | null; rolling: boolean; reducedMotion: boolean; spot: { x: number; z: number } }) {
   const mesh = useRef<Mesh>(null);
   const textures = useMemo(() => DIE_FACE_ORDER.map(faceTexture), []);
-  useEffect(() => () => textures.forEach((t) => t.dispose()), [textures]);
+  const geometry = useMemo(() => new RoundedBoxGeometry(DIE_SIZE, DIE_SIZE, DIE_SIZE, 3, 0.085), []);
+  useEffect(() => () => { textures.forEach((t) => t.dispose()); geometry.dispose(); }, [textures, geometry]);
   const rest = useMemo(() => new Quaternion().setFromEuler(new Euler(...dieRestRotation(value ?? 2))), [value]);
   const invalidate = useThree((state) => state.invalidate);
-  useEffect(() => { invalidate(); }, [value, rolling, invalidate]);
+  const tossStart = useRef<number | null>(null);
+  // The landing spot is fixed when a throw starts (the token then moves away from it).
+  const at = useRef(spot);
+  const settleStart = useRef<number | null>(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- the spot is read once, when a throw starts
+  useEffect(() => { if (rolling) { tossStart.current = null; at.current = spot; } else settleStart.current = null; invalidate(); }, [value, rolling, invalidate]);
+  const restY = LAWN_TOP + DIE_SIZE / 2;
   useFrame((state, delta) => {
     const m = mesh.current;
     if (!m) return;
+    const now = state.clock.elapsedTime;
     if (rolling && !reducedMotion) {
-      const t = state.clock.elapsedTime;
-      m.rotation.set(t * 9.1, t * 7.3, t * 5.2);
-      m.position.y = 0.55 + Math.abs(Math.sin(t * 9)) * 0.25;
+      tossStart.current ??= now;
+      const t = now - tossStart.current, k = Math.min(1, t / 0.85);
+      // Travels in from the near side while bouncing lower each time.
+      m.position.set(at.current.x + (1 - k) * 1.25, restY + Math.abs(Math.sin(t * 8.6)) * (0.62 - 0.4 * k), at.current.z + (1 - k) * 1.05);
+      m.rotation.set(t * 11.3, t * 8.1, t * 6.4);
       invalidate();
       return;
     }
-    const k = reducedMotion ? 1 : Math.min(1, delta * 10);
+    settleStart.current ??= now;
+    const u = reducedMotion ? 1 : Math.min(1, (now - settleStart.current) / 0.55);
+    const k = reducedMotion ? 1 : Math.min(1, delta * 11);
     m.quaternion.slerp(rest, k);
-    m.position.y += (0.42 - m.position.y) * k;
-    if (m.quaternion.angleTo(rest) > 0.002 || Math.abs(m.position.y - 0.42) > 0.002) invalidate();
+    m.position.x += (at.current.x - m.position.x) * k;
+    m.position.z += (at.current.z - m.position.z) * k;
+    m.position.y = restY + (reducedMotion ? 0 : Math.abs(Math.sin(u * Math.PI * 2)) * 0.24 * (1 - u) * (1 - u));
+    if (u < 1 || m.quaternion.angleTo(rest) > 0.002 || Math.hypot(at.current.x - m.position.x, at.current.z - m.position.z) > 0.002) invalidate();
   });
   if (value === null && !rolling) return null;
-  return <mesh ref={mesh} position={[DIE_SPOT.x, 0.42, DIE_SPOT.z]} castShadow>
-    <boxGeometry args={[0.5, 0.5, 0.5]}/>
-    {textures.map((t, i) => <meshStandardMaterial key={i} attach={`material-${i}`} map={t}/>)}
+  return <mesh ref={mesh} geometry={geometry} position={[at.current.x, restY, at.current.z]} castShadow>
+    {textures.map((t, i) => <meshStandardMaterial key={i} attach={`material-${i}`} map={t} roughness={0.32} metalness={0.02}/>)}
   </mesh>;
 }
 
-
 /** Spot on the central plaza where the die lands (matches City3D). */
-const DIE_SPOT = { x: 0.85, z: 0.75 } as const;
+const DIE_SPOT = { x: 0.8, z: 0.78 } as const;
 
-/** Landing effect: a ring in the mover's colour that expands and fades on the landing space. */
+/** Directions for the landing sparkles (fixed, so the effect is identical every time). */
+const SPARKS = Array.from({ length: 10 }, (_, i) => ({ a: (i / 10) * Math.PI * 2 + (i % 2) * 0.2, r: 0.5 + (i % 3) * 0.12, h: 0.45 + (i % 4) * 0.08 }));
+
+/**
+ * Landing effect: a ring in the mover's colour that expands and fades on the landing space, and a
+ * small burst of sparkles in the space's own colour (the space type, never a money amount).
+ */
 function LandingBurst({ space, owner, reducedMotion }: { space: number | null; owner: CharacterId | null; reducedMotion: boolean }) {
   const ring = useRef<Mesh>(null);
+  const sparks = useRef<Group>(null);
   const started = useRef<number | null>(null);
   const invalidate = useThree((s) => s.invalidate);
   useEffect(() => { started.current = null; invalidate(); }, [space, invalidate]);
@@ -175,18 +218,52 @@ function LandingBurst({ space, owner, reducedMotion }: { space: number | null; o
     const material = r.material as MeshBasicMaterial;
     if (reducedMotion) { r.scale.setScalar(1); material.opacity = 0.55; return; }
     started.current ??= state.clock.elapsedTime;
-    const t = Math.min(1, (state.clock.elapsedTime - started.current) / 0.7);
+    const t = Math.min(1, (state.clock.elapsedTime - started.current) / 0.75);
     const ease = 1 - (1 - t) * (1 - t);
     r.scale.setScalar(0.55 + ease * 0.75);
     material.opacity = 0.85 * (1 - t);
+    sparks.current?.children.forEach((c, i) => {
+      const sp = SPARKS[i]!;
+      c.position.set(Math.cos(sp.a) * sp.r * ease, 0.08 + Math.sin(t * Math.PI) * sp.h, Math.sin(sp.a) * sp.r * ease);
+      c.scale.setScalar(0.07 * (1 - t * t));
+      c.rotation.set(t * 6 + i, t * 4, 0);
+    });
     if (t < 1) invalidate();
   });
   if (space === null || !owner) return null;
   const p = SPACE_WORLD[space]!;
-  return <mesh ref={ring} position={[p.x, TILE_SIZE.height + 0.04, p.z]} rotation={[-Math.PI / 2, 0, 0]}>
-    <ringGeometry args={[0.42, 0.5, 48]}/>
-    <meshBasicMaterial color={PLAYER_COLOR[owner]} transparent opacity={0.85} depthWrite={false} toneMapped={false}/>
-  </mesh>;
+  const spark = mat(CATEGORY_COLOR[spaceCategory(space)], { emissive: CATEGORY_COLOR[spaceCategory(space)], emissiveIntensity: 0.55 });
+  return <group position={[p.x, TILE_SIZE.height + 0.04, p.z]}>
+    <mesh ref={ring} rotation={[-Math.PI / 2, 0, 0]}>
+      <ringGeometry args={[0.42, 0.5, 48]}/>
+      <meshBasicMaterial color={PLAYER_COLOR[owner]} transparent opacity={0.85} depthWrite={false} toneMapped={false}/>
+    </mesh>
+    {!reducedMotion && <group ref={sparks}>{SPARKS.map((_, i) => <mesh key={i} geometry={geo().gem} material={spark} scale={0}/>)}</group>}
+  </group>;
+}
+
+/** Destination marker: a bobbing arrow in the mover's colour above the space the roll leads to. */
+function DestinationMarker({ space, owner, reducedMotion }: { space: number | null; owner: CharacterId | null; reducedMotion: boolean }) {
+  const arrow = useRef<Group>(null);
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => { invalidate(); }, [space, invalidate]);
+  useFrame((state) => {
+    const g = arrow.current;
+    if (!g || space === null) return;
+    const t = state.clock.elapsedTime;
+    g.position.y = 1.05 + (reducedMotion ? 0 : Math.sin(t * 5) * 0.06);
+    g.rotation.y = reducedMotion ? 0 : t * 1.4;
+    if (!reducedMotion) invalidate();
+  });
+  if (space === null || !owner) return null;
+  const p = SPACE_WORLD[space]!;
+  const color = PLAYER_COLOR[owner];
+  return <group position={[p.x, 0, p.z]}>
+    <group ref={arrow} position={[0, 1.05, 0]}>
+      <mesh geometry={geo().cone} material={mat(color, { emissive: color, emissiveIntensity: 0.35 })} scale={[0.22, 0.26, 0.22]} rotation={[Math.PI, 0, 0]}/>
+      <mesh geometry={geo().cylLow} material={mat(color, { emissive: color, emissiveIntensity: 0.35 })} position={[0, 0.2, 0]} scale={[0.09, 0.18, 0.09]}/>
+    </group>
+  </group>;
 }
 
 /**
@@ -194,12 +271,12 @@ function LandingBurst({ space, owner, reducedMotion }: { space: number | null; o
  * Static per month (no per-frame cost) and subtle, so tiles and tokens always read clearly.
  */
 const MONTH_MOOD: readonly { sun: [number, number, number]; color: string; sky: string; intensity: number }[] = [
-  { sun: [-5.5, 9.5, 1.5], color: '#fff8ee', sky: '#fbfbf4', intensity: 1.7 },
-  { sun: [-5.2, 9.3, 2.0], color: '#fff6e8', sky: '#fffaf0', intensity: 1.72 },
-  { sun: [-5.0, 9.0, 2.5], color: '#fff4e2', sky: '#fff9ec', intensity: 1.74 },
-  { sun: [-4.6, 8.6, 3.0], color: '#fff0d8', sky: '#fff7e6', intensity: 1.75 },
-  { sun: [-4.2, 8.1, 3.4], color: '#ffead0', sky: '#fff4e0', intensity: 1.76 },
-  { sun: [-3.8, 7.6, 3.8], color: '#ffe4c4', sky: '#fff1da', intensity: 1.78 },
+  { sun: [-5.5, 9.5, 2.5], color: '#fff6e6', sky: '#fff9ec', intensity: 1.85 },
+  { sun: [-5.2, 9.3, 2.8], color: '#fff3df', sky: '#fff8e8', intensity: 1.87 },
+  { sun: [-5.0, 9.0, 3.1], color: '#ffefd6', sky: '#fff6e3', intensity: 1.89 },
+  { sun: [-4.6, 8.6, 3.4], color: '#ffebcd', sky: '#fff3dd', intensity: 1.9 },
+  { sun: [-4.2, 8.1, 3.7], color: '#ffe5c2', sky: '#fff0d6', intensity: 1.92 },
+  { sun: [-3.8, 7.6, 4.0], color: '#ffdfb6', sky: '#ffedd0', intensity: 1.94 },
 ];
 
 /** Route preview: a dot in the mover's colour on each space the pawn is about to cross. */
@@ -221,11 +298,14 @@ function KitLifetime() {
   return null;
 }
 
-/** Board table: a wooden rim under the cream play surface. */
+/** Board: a walnut table lip under a thick cream game board with a printed green border line. */
 function BoardBase() {
+  const T = TABLE_HALF, line = T - 0.09;
   return <group>
-    <mesh geometry={geo().box} material={mat('#b99a72')} position={[0, -0.2, 0]} scale={[2 * TABLE_HALF + 0.3, 0.22, 2 * TABLE_HALF + 0.3]} receiveShadow/>
-    <mesh geometry={geo().box} material={mat('#f3efe4')} position={[0, -0.07, 0]} scale={[2 * TABLE_HALF, 0.1, 2 * TABLE_HALF]} receiveShadow/>
+    <mesh geometry={geo().box} material={mat('#8f6440', { roughness: 0.6 })} position={[0, -0.205, 0]} scale={[2 * T + 0.36, 0.21, 2 * T + 0.36]} receiveShadow castShadow/>
+    <mesh geometry={geo().box} material={mat('#a97a50', { roughness: 0.55 })} position={[0, -0.098, 0]} scale={[2 * T + 0.3, 0.006, 2 * T + 0.3]} receiveShadow/>
+    <mesh geometry={geo().box} material={mat('#efe5cd', { roughness: 0.9 })} position={[0, -0.07, 0]} scale={[2 * T + 0.04, 0.1, 2 * T + 0.04]} receiveShadow castShadow/>
+    {[[0, -line, 2 * line, 0.035], [0, line, 2 * line, 0.035], [-line, 0, 0.035, 2 * line], [line, 0, 0.035, 2 * line]].map(([x, z, w, d], i) => <mesh key={i} geometry={geo().box} material={mat('#2c6a50')} position={[x!, -0.018, z!]} scale={[w!, 0.004, d!]}/>)}
   </group>;
 }
 
@@ -250,9 +330,9 @@ export default function Board3DScene({ view, onContextLost }: { view: Board3DVie
   >
     <KitLifetime/>
     <CameraRig focus={view.focus ? pawnWorld(view.positions[view.focus] ?? 0, view.focus, view.positions) : null} reducedMotion={reducedMotion}/>
-    <color attach="background" args={['#dcead0']}/>
-    <fog attach="fog" args={['#dcead0', 22, 44]}/>
-    <hemisphereLight args={[mood.sky, '#b7cfa6', 1.0]}/>
+    <color attach="background" args={['#dbe8c8']}/>
+    <fog attach="fog" args={['#dbe8c8', 22, 44]}/>
+    <hemisphereLight args={[mood.sky, '#a9c48f', 1.05]}/>
     {/* Key light from the upper left of the screen so shadows fall toward the viewer's lower right. */}
     <directionalLight
       position={mood.sun}
@@ -269,7 +349,7 @@ export default function Board3DScene({ view, onContextLost }: { view: Board3DVie
       shadow-camera-near={1}
       shadow-camera-far={25}
     />
-    <directionalLight position={[6, 4, 6]} intensity={0.35} color="#dfeaf2"/>
+    <directionalLight position={[6, 4, 6]} intensity={0.4} color="#e4eef5"/>
     <StaticBatch key={view.captions?.join('|') ?? 'en'}>
       <OuterCity/>
       <BoardBase/>
@@ -279,8 +359,9 @@ export default function Board3DScene({ view, onContextLost }: { view: Board3DVie
     {tiles.filter((i) => i === view.currentSpace || (view.highlightCategory !== null && spaceCategory(i) === view.highlightCategory)).map((i) => <TileGlow key={i} index={i} active={i === view.currentSpace} reducedMotion={reducedMotion}/>)}
     <RouteDots route={view.route} owner={view.routeOwner}/>
     <LandingBurst key={view.landingSpace ?? 'none'} space={view.landingSpace} owner={view.routeOwner} reducedMotion={reducedMotion}/>
+    <DestinationMarker space={view.landingSpace === null && view.route.length > 0 ? view.route[view.route.length - 1]! : null} owner={view.routeOwner} reducedMotion={reducedMotion}/>
     {view.playerIds.map((id) => <Pawn3D key={id} id={id} index={view.positions[id] ?? 0} positions={view.positions} human={id === view.humanId} active={view.activePlayer === id} stepSeconds={view.stepSeconds} reducedMotion={reducedMotion}/>)}
-    <Die value={view.dieValue} rolling={view.dieRolling} reducedMotion={reducedMotion}/>
+    <Die value={view.dieValue} rolling={view.dieRolling} reducedMotion={reducedMotion} spot={dieSpot(view.focus ? view.positions[view.focus] ?? null : null)}/>
     <AmbientCars enabled={ambient}/>
   </Canvas>;
 }
@@ -319,9 +400,9 @@ export function HeroScene({ captions }: { captions?: readonly string[] }) {
   return <Canvas className="hero-3d-canvas" frameloop="demand" dpr={[1, 2]} shadows="percentage" gl={{ antialias: true, powerPreference: 'low-power' }} camera={{ position: [0, 12, 12], fov: FOV_DEG, near: 0.5, far: 80 }} aria-hidden="true">
     <KitLifetime/>
     <HeroCamera reducedMotion={reducedMotion}/>
-    <color attach="background" args={['#dcead0']}/>
-    <fog attach="fog" args={['#dcead0', 22, 44]}/>
-    <hemisphereLight args={['#fffaf0', '#b7cfa6', 1.0]}/>
+    <color attach="background" args={['#dbe8c8']}/>
+    <fog attach="fog" args={['#dbe8c8', 22, 44]}/>
+    <hemisphereLight args={['#fff9ec', '#a9c48f', 1.05]}/>
     <directionalLight position={[-5, 9, 2.5]} intensity={1.7} color="#fff6e8" castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-0.0004} shadow-normalBias={0.02} shadow-camera-left={-10} shadow-camera-right={10} shadow-camera-top={10} shadow-camera-bottom={-10} shadow-camera-near={1} shadow-camera-far={25}/>
     <directionalLight position={[6, 4, 6]} intensity={0.35} color="#dfeaf2"/>
     <StaticBatch key={captions?.join('|') ?? 'en'}>

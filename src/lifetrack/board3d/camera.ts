@@ -44,9 +44,9 @@ export function fitDistance(points: readonly Vec3[], target: Vec3, dir: Vec3, fo
 
 /** View angles by screen shape: a strong diagonal on wide screens, gentler on portrait phones so the board stays large. */
 export function viewAngles(aspect: number): { yaw: number; pitch: number } {
-  if (aspect < 0.85) return { yaw: 0.36, pitch: 0.98 };
-  if (aspect < 1.3) return { yaw: 0.6, pitch: 0.9 };
-  return { yaw: 0.72, pitch: 0.82 };
+  if (aspect < 0.85) return { yaw: 0.3, pitch: 0.98 };
+  if (aspect < 1.3) return { yaw: 0.5, pitch: 0.86 };
+  return { yaw: 0.5, pitch: 0.76 };
 }
 
 /** Exponential smoothing factor for `dt` seconds at `rate` per second (frame-rate independent). */
