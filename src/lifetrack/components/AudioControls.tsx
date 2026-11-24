@@ -24,7 +24,7 @@ const JINGLES:ReadonlySet<SoundId>=new Set<SoundId>(['claim','month','winner','r
 /** Decoded right after the first user gesture so the dice and board sounds play without delay. */
 const ESSENTIAL:SoundId[]=['click','select','dice','dice-land','step','land','coins','card','confirm'];
 
-type AudioApi = AudioPrefs & { musicState: MusicState; setEnabled: (enabled:boolean)=>void; setMusicOn:(on:boolean)=>void; setEffectsOn:(on:boolean)=>void; setMusicVolume:(value:number)=>void; setEffectsVolume:(value:number)=>void; playEffect:(id:SoundId)=>void };
+type AudioApi = AudioPrefs & { musicState: MusicState; setEnabled: (enabled:boolean)=>void; setMusicOn:(on:boolean)=>void; setEffectsOn:(on:boolean)=>void; setMusicVolume:(value:number)=>void; setEffectsVolume:(value:number)=>void; playEffect:(id:SoundId)=>void; startMusic:()=>void };
 /** Music sits a little under the effects at equal slider settings. */
 const MUSIC_MIX=0.8;
 const audioUrl=(name:string)=>`${import.meta.env.BASE_URL}audio/${name}.mp3`;
@@ -53,11 +53,15 @@ export function AudioProvider({children}:{children:ReactNode}) {
   useEffect(()=>{const m=music.current!;m.setLevel(musicLevel);if(musicLevel>0&&userHasInteracted())m.start();},[musicLevel]);
   // First (and any later) user gesture starts the music if it is wanted but not yet playing; a blocked attempt retries on the next gesture.
   useEffect(()=>{
-    const onGesture=()=>{const m=music.current!;if(m.state!=='playing')m.start();};
+    // pointerdown is an activation only for mouse/pen; touch devices grant it on pointerup/touchend (Chrome) or click (Safari), so listen to all of them.
+    const onGesture=()=>{const m=music.current!;if(m.needsGesture())m.start();};
     const onVisibility=()=>music.current!.setHidden(document.visibilityState==='hidden');
-    window.addEventListener('pointerdown',onGesture,true);window.addEventListener('keydown',onGesture,true);document.addEventListener('visibilitychange',onVisibility);
-    return()=>{window.removeEventListener('pointerdown',onGesture,true);window.removeEventListener('keydown',onGesture,true);document.removeEventListener('visibilitychange',onVisibility);music.current?.setLevel(0);};
+    const events=['pointerdown','pointerup','touchend','click','keydown'] as const;
+    events.forEach((e)=>window.addEventListener(e,onGesture,true));document.addEventListener('visibilitychange',onVisibility);
+    return()=>{events.forEach((e)=>window.removeEventListener(e,onGesture,true));document.removeEventListener('visibilitychange',onVisibility);music.current?.setLevel(0);};
   },[]);
+  /** Explicit start from a button's click handler (Play / Start game): a click is an activation on every browser. */
+  const startMusic=useCallback(()=>{const m=music.current!;if(m.needsGesture())m.start();},[]);
   const lastPlayed=useRef<Partial<Record<SoundId,number>>>({});
   const active=useRef(0);
   const playEffect=useCallback((id:SoundId)=>{
@@ -76,7 +80,7 @@ export function AudioProvider({children}:{children:ReactNode}) {
   const warm=useCallback(()=>{if(preloaded.current||effectsLevel<=0)return;preloaded.current=true;preloadSamples(ESSENTIAL.flatMap(id=>FILES[id]).map(audioUrl));},[effectsLevel]);
   const value=useMemo<AudioApi>(()=>({...prefs,musicState,
     setEnabled:(enabled)=>update({enabled}),setMusicOn:(musicOn)=>update({musicOn}),setEffectsOn:(effectsOn)=>update({effectsOn}),
-    setMusicVolume:(musicVolume)=>update({musicVolume}),setEffectsVolume:(effectsVolume)=>update({effectsVolume}),playEffect}),[prefs,musicState,update,playEffect]);
+    setMusicVolume:(musicVolume)=>update({musicVolume}),setEffectsVolume:(effectsVolume)=>update({effectsVolume}),playEffect,startMusic}),[prefs,musicState,update,playEffect,startMusic]);
   return <AudioContext.Provider value={value}><div className="audio-root" onClickCapture={handleClick} onPointerDownCapture={warm} onKeyDownCapture={warm}>{children}</div></AudioContext.Provider>;
 }
 
@@ -87,7 +91,10 @@ export function AudioControls(){
   const a=useAudio();
   const onRange=(setter:(n:number)=>void)=>(event:ChangeEvent<HTMLInputElement>)=>setter(Number(event.target.value)/100);
   const waiting=a.enabled&&a.musicOn&&a.musicState==='waiting';
+  // Shown only after the page has had a gesture and the browser still refused: one tap starts the music.
+  const prompt=waiting&&userHasInteracted();
   return <div className="audio-controls">
+    {prompt&&<button type="button" className="music-prompt" data-sound="own" onClick={a.startMusic}><Music size={13} aria-hidden="true"/>{t('audio.playMusic')}</button>}
     <button type="button" className={`audio-toggle ${waiting?'is-waiting':''}`} aria-pressed={a.enabled} onClick={()=>a.setEnabled(!a.enabled)} title={a.enabled?(waiting?t('audio.blocked'):t('audio.mute')):t('audio.turnOn')}>{a.enabled?<Volume2 size={16}/>:<VolumeX size={16}/>}<span>{a.enabled?t('audio.on'):t('audio.muted')}</span>{a.enabled&&a.musicOn&&<Music size={12} className={`audio-music-dot ${a.musicState==='playing'?'is-playing':''}`} aria-hidden="true"/>}</button>
     <details className="audio-settings"><summary aria-label={t('audio.settings')} title={t('audio.settings')}><SlidersHorizontal size={14}/></summary><div className="audio-panel">
       <div className="audio-heading"><b>{t('audio.settings')}</b></div>

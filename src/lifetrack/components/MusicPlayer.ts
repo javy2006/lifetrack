@@ -30,6 +30,8 @@ export class MusicPlayer {
   private timer: number | undefined;
   private handover: number | undefined;
   private stopTimer: number | undefined;
+  /** A play() is in flight: further gestures only resume the context, so the element is never started twice. */
+  private pending = false;
   state: MusicState = 'off';
   onState: (s: MusicState) => void = () => {};
 
@@ -70,19 +72,37 @@ export class MusicPlayer {
     else this.setState('waiting');
   }
 
-  /** Call from a user gesture. Starts (or resumes) the music if it is wanted; safe to call repeatedly. */
+  /**
+   * Call from a user gesture. Starts (or resumes) the music if it is wanted; safe to call repeatedly.
+   * "Playing" is reported only once the element is playing AND the shared AudioContext is running:
+   * on touch devices a pointerdown does not count as a user activation, so the context can stay
+   * suspended (silent) while the element plays. In that case the state stays "waiting" and the
+   * next gesture (pointerup, touchend or click are activations everywhere) resumes it.
+   */
   start() {
     if (!this.wanted || this.hidden) return;
     const ctx = this.ensure(); if (!ctx) return;
     window.clearTimeout(this.stopTimer);
-    void ctx.resume().catch(() => {});
     const el = this.els[this.active]!;
-    if (!el.paused && this.state === 'playing') return;
-    el.play().then(() => {
+    const resumed = ctx.state === 'running' ? Promise.resolve() : ctx.resume();
+    if (this.state === 'playing' && !el.paused && ctx.state === 'running') return;
+    if (this.pending) { void resumed.catch(() => {}); return; }
+    this.pending = true;
+    const playing = el.paused ? el.play() : Promise.resolve();
+    Promise.all([playing, resumed]).then(() => {
+      if (!this.wanted || this.hidden) return;
+      if (ctx.state !== 'running') { this.setState('waiting'); return; }
       this.ramp(this.gains[this.active]!, this.target(), FADE_IN);
       this.setState('playing');
       this.schedule();
-    }).catch(() => { this.setState('waiting'); /* blocked: the next gesture retries */ });
+    }).catch(() => { this.setState('waiting'); /* blocked: the next gesture retries */ })
+      .finally(() => { this.pending = false; });
+  }
+
+  /** True when the music is wanted but not audible yet (a later gesture should call start()). */
+  needsGesture(): boolean {
+    const ctx = audio();
+    return this.wanted && !this.hidden && (this.state !== 'playing' || !ctx || ctx.state !== 'running');
   }
 
   /** Briefly lowers the music under a jingle, then restores it. */

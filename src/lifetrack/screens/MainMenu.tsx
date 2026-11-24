@@ -1,17 +1,18 @@
 import { ArrowRight, BookOpen, Building2, HeartHandshake, MonitorPlay, ShieldCheck, Sparkles } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { HeroBoard } from '../board3d/HeroBoard.tsx';
-import { AudioControls } from '../components/AudioControls.tsx';
+import { AudioControls, useAudio } from '../components/AudioControls.tsx';
 import { Brand, Button, Disclaimer, Eyebrow } from '../components/ui.tsx';
 import { LanguageSelect, useI18n } from '../i18n/I18nProvider.tsx';
 
 export function MainMenu({ onPlay, onNew, onHowToPlay, onLearning, onDemo, canResume }: { onPlay: () => void; onNew: () => void; onHowToPlay: () => void; onLearning: () => void; onDemo: () => void; canResume: boolean }) {
   const { t } = useI18n();
+  const { startMusic } = useAudio();
   return <main className="landing-page">
     <header className="landing-nav"><Brand/><span className="nav-note"><ShieldCheck size={15}/> {t('menu.navNote')}</span><div className="nav-tools"><LanguageSelect/><AudioControls/></div></header>
     <section className="hero-grid">
       <div className="hero-copy"><Eyebrow>{t('menu.eyebrow')}</Eyebrow><h1>{t('menu.title1')}<br/><span>{t('menu.title2')}</span></h1><p className="hero-lead">{t('menu.lead')}</p>
-        <div className="hero-actions"><Button onClick={canResume?onPlay:onNew}>{canResume?t('menu.continueSaved'):t('menu.play')} <ArrowRight size={17}/></Button>{canResume&&<Button variant="secondary" onClick={onNew}>{t('menu.newGame')}</Button>}</div>
+        <div className="hero-actions"><Button onClick={()=>{startMusic();(canResume?onPlay:onNew)();}}>{canResume?t('menu.continueSaved'):t('menu.play')} <ArrowRight size={17}/></Button>{canResume&&<Button variant="secondary" onClick={onNew}>{t('menu.newGame')}</Button>}</div>
         <div className="hero-links"><button onClick={onHowToPlay}><BookOpen size={16}/> {t('menu.howToPlay')}</button><button onClick={onLearning}><HeartHandshake size={16}/> {t('menu.learning')}</button><button onClick={onDemo} className="demo-link"><MonitorPlay size={16}/> {t('menu.demo')}</button></div><p className="hero-meta"><Sparkles size={15}/> {t('menu.meta')}</p>
       </div>
       <div className="city-scene hero-board-frame"><HeroBoard/><div className="scene-caption"><Building2 size={16}/> {t('menu.cityCaption')}</div></div>

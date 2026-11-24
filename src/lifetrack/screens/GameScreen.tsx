@@ -19,6 +19,7 @@ import { DecisionCard } from '../components/DecisionCard.tsx';
 import { PlayerDashboard } from '../components/PlayerDashboard.tsx';
 import { EventIllustration } from '../components/EventIllustration.tsx';
 import { NetWorthChart, RecapChart } from '../components/Charts.tsx';
+import { CardMast, TableCard, eventKind } from '../components/TableCard.tsx';
 import { BoardScene } from '../board/BoardScene.tsx';
 import { useBoardController } from '../board/useBoardController.ts';
 import { getActionLayerMode, getEventDrawBoardStep } from '../board/boardTypes.ts';
@@ -59,16 +60,17 @@ function RivalPanel({ state }: { state: GameState }) {
 function EventView({ state, dispatch }: { state: GameState; dispatch: Dispatch }) {
   const { t, content } = useI18n();
   const event = getCurrentEvent(state);
-  if (state.phase === 'event-draw') return <Card className="phase-card event-reveal"><div className="event-icon">✦</div><Eyebrow>{t('event.whatsAhead', { n: state.round })}</Eyebrow><h2>{t('event.whatHappens')}</h2><PhaseButton label={t('event.reveal')} onClick={() => dispatch({ type: 'event/draw' })}/></Card>;
+  if (state.phase === 'event-draw') return <TableCard kind="event" className="phase-card event-reveal"><CardMast kind="event" eyebrow={t('event.whatsAhead', { n: state.round })} title={t('event.whatHappens')}/><div className="tc-deck" aria-hidden="true"><span/><span/><span/></div><PhaseButton label={t('event.reveal')} onClick={() => dispatch({ type: 'event/draw' })}/></TableCard>;
   if (!event) return <Card className="phase-card"><h2>{t('event.unavailableTitle')}</h2><p>{t('event.unavailable')}</p></Card>;
   const player = getHumanPlayer(state);
   const tx = eventText(event, content);
   const total = event.expenses.reduce((n, e) => n + e.amount, 0);
-  return <Card className="event-card"><div className={`event-art category-${event.category}`}><EventIllustration event={event}/><span className="event-risk">{tx.risk}</span></div><div className="event-copy"><Eyebrow>{t('event.eyebrow', { month: t(`months.${state.round - 1}`) })}</Eyebrow><h2 className="event-title-enter">{tx.title}</h2><p className="event-story">{tx.story}</p>
+  const kind = eventKind(event);
+  return <TableCard kind={kind} className="event-card"><div className={`event-art category-${event.category}`}><EventIllustration event={event}/><span className="event-risk">{tx.risk}</span></div><div className="event-copy"><CardMast kind={kind} eyebrow={t(`months.${state.round - 1}`)} title={<span className="event-title-enter">{tx.title}</span>}/><p className="event-story">{tx.story}</p>
     {event.expenses.length > 0 && <div className="event-expenses">{event.expenses.map((e, i) => <div key={e.label}><span>{tx.expense(i)}</span><b>{formatRM(e.amount)}</b></div>)}<div className="event-total"><b>{t('event.totalCosts')}</b><b>{formatRM(total)}</b></div></div>}
     <details className="event-coverage"><summary>{t('event.coverHelp')}</summary>{POLICY_ORDER.map((id) => <div key={id}><b>{policyText(id, content).shortName} · {player.policies.some((p) => p.policyId === id) ? t('event.owned') : t('event.notOwned')}</b><span>{tx.note(id)}</span></div>)}</details>
     <LearnMore label={t('event.whyMatters')}><div className="lesson-snippet"><Sparkles size={17}/><div><b>{tx.lessonTitle}</b><p>{tx.lessonText}</p></div></div></LearnMore>
-    <PhaseButton label={t('event.resolve')} onClick={() => dispatch({ type: 'event/resolve' })}/></div></Card>;
+    <PhaseButton label={t('event.resolve')} onClick={() => dispatch({ type: 'event/resolve' })}/></div></TableCard>;
 }
 
 function ClaimView({ state, dispatch }: { state: GameState; dispatch: Dispatch }) {
@@ -79,10 +81,10 @@ function ClaimView({ state, dispatch }: { state: GameState; dispatch: Dispatch }
   const lines = [['total', claim.totalExpense], ['eligible', claim.eligibleMedicalExpense], ['reimbursement', claim.reimbursement], ['benefits', claim.fixedBenefits], ['outOfPocket', claim.outOfPocket], ['fromCash', claim.paidFromCash], ['fromSavings', claim.paidFromSavings], ['shortfall', claim.shortfall]] as const;
   const outcomeRow = (o: typeof claim.outcomes[number]) => <div className="outcome-row" key={o.policyId}><span className={`outcome-status status-${o.status}`}>{t(`claim.status.${o.status}`)}</span><div><b>{policyText(o.policyId, content).name}</b><LearnMore label={t('claim.why')}><p>{outcomeReason(o, event, content, t)}</p>{o.eligibleAmount !== undefined && <small>{t('claim.detail', { bill: formatRM(o.eligibleAmount), deductible: formatRM(o.deductibleApplied ?? 0), after: formatRM(o.amountAfterDeductible ?? 0) })}{o.coverageLimit !== undefined ? t('claim.detailLimit', { limit: formatRM(o.coverageLimit) }) : ''}</small>}</LearnMore></div><strong>{formatRM(o.payout)}</strong></div>;
   const owned = claim.outcomes.filter((o) => o.status !== 'not-owned'), others = claim.outcomes.filter((o) => o.status === 'not-owned');
-  return <div className="claim-layout"><Card className="claim-card"><div className="section-heading"><div><Eyebrow>{t('claim.eyebrow', { n: state.round })}</Eyebrow><h2>{eventText(event, content).title}</h2></div></div>
+  return <div className="claim-layout"><TableCard kind="protection" className="claim-card"><CardMast kind="protection" eyebrow={t('claim.eyebrow', { n: state.round })} title={eventText(event, content).title}/>
     <div className="claim-lines">{lines.filter(([key, value]) => value !== 0 || key === 'total' || key === 'outOfPocket').map(([key, value]) => <div className={key === 'reimbursement' || key === 'benefits' ? 'claim-positive' : key === 'outOfPocket' || key === 'shortfall' ? 'claim-negative' : ''} key={key}><span>{t(`claim.${key}`)}</span><b>{formatRM(value)}</b></div>)}</div>
-    <div className="policy-outcomes"><h3>{t('claim.yourCover')}</h3>{owned.length ? owned.map(outcomeRow) : <p className="outcome-none">{t('claim.noCover')}</p>}{others.length > 0 && <LearnMore label={t('claim.otherCover')}>{others.map(outcomeRow)}</LearnMore>}</div></Card>
-    <Card className="claim-learning"><span className="learning-icon"><Sparkles size={20}/></span><Eyebrow>{t('claim.teaches')}</Eyebrow><h2>{insight.title}</h2><div className="takeaway"><b>{t('claim.takeaway')}</b><span>{insight.takeaway}</span></div><LearnMore><p>{insight.explanation}</p>{insight.example && <p className="learning-example">{insight.example}</p>}</LearnMore><PhaseButton label={t('claim.continue')} onClick={() => dispatch({ type: 'claims/continue' })}/></Card></div>;
+    <div className="policy-outcomes"><h3>{t('claim.yourCover')}</h3>{owned.length ? owned.map(outcomeRow) : <p className="outcome-none">{t('claim.noCover')}</p>}{others.length > 0 && <LearnMore label={t('claim.otherCover')}>{others.map(outcomeRow)}</LearnMore>}</div></TableCard>
+    <TableCard kind="special" className="claim-learning"><CardMast kind="special" icon={Sparkles} eyebrow={t('claim.teaches')} title={insight.title}/><div className="takeaway"><b>{t('claim.takeaway')}</b><span>{insight.takeaway}</span></div><LearnMore><p>{insight.explanation}</p>{insight.example && <p className="learning-example">{insight.example}</p>}</LearnMore><PhaseButton label={t('claim.continue')} onClick={() => dispatch({ type: 'claims/continue' })}/></TableCard></div>;
 }
 
 function MonthSummary({ state, dispatch }: { state: GameState; dispatch: Dispatch }) {
@@ -93,31 +95,31 @@ function MonthSummary({ state, dispatch }: { state: GameState; dispatch: Dispatc
     [t('summary.start'), formatRM(record?.cashAtStart ?? 0)], [t('summary.income'), `+${formatRM(record?.income ?? 0)}`, 'positive'], [t('summary.essentials'), `−${formatRM(record?.essentials ?? 0)}`],
     [t('summary.premiums'), `−${formatRM(summary?.premiums ?? 0)}`], [t('summary.saved'), `+${formatRM(saved)}`, 'positive'], [t('summary.eventCosts'), `−${formatRM(claim?.outOfPocket ?? 0)}`], [t('summary.benefits'), `+${formatRM(claim?.fixedBenefits ?? 0)}`, 'positive'],
   ];
-  return <Card className="summary-card"><div className="summary-banner"><span className="summary-check"><Check size={21}/></span><div><Eyebrow>{t('summary.eyebrow', { n: state.round })}</Eyebrow><h2>{t('summary.done', { month: t(`months.${state.round - 1}`) })}</h2></div></div>
+  return <TableCard kind="special" className="summary-card"><CardMast kind="special" icon={Check} eyebrow={t('summary.eyebrow', { n: state.round })} title={t('summary.done', { month: t(`months.${state.round - 1}`) })}/>
     <div className="summary-progress"><div><span>{t('summary.journey')}</span><b>{t('summary.ofTotal', { n: state.round, total: GAME_CONFIG.totalRounds })}</b></div><span className="summary-progress-track"><i style={{ width: `${Math.min(100, (state.round / GAME_CONFIG.totalRounds) * 100)}%` }}/></span></div>
     <div className="summary-balances"><div><span>{t('summary.endCash')}</span><b>{formatRM(player.cash)}</b></div><div><span>{t('summary.endSavings')}</span><b>{formatRM(player.savings)}</b></div></div>
     <RecapChart player={player}/>
     <LearnMore><div className="summary-grid">{cells.map(([label, value, tone]) => <div key={label}><small>{label}</small><b className={tone}>{value}</b></div>)}</div></LearnMore>
-    <PhaseButton label={state.round === GAME_CONFIG.totalRounds ? t('summary.review') : t('summary.next')} onClick={() => dispatch({ type: 'round/next' })}/></Card>;
+    <PhaseButton label={state.round === GAME_CONFIG.totalRounds ? t('summary.review') : t('summary.next')} onClick={() => dispatch({ type: 'round/next' })}/></TableCard>;
 }
 
 function QuizView({ state, dispatch }: { state: GameState; dispatch: Dispatch }) {
   const { t, content } = useI18n();
   const { playEffect } = useAudio();
   const progress = getQuizProgress(state.quizAnswers);
-  if (progress.allAnswered) return <Card className="quiz-card quiz-finished"><span className="quiz-finished-icon"><Check size={23}/></span><Eyebrow>{t('quiz.complete')}</Eyebrow><h2>{t('quiz.score', { correct: countCorrectAnswers(state.quizAnswers), total: progress.total })}</h2><Button onClick={() => dispatch({ type: 'quiz/finish' })}>{t('quiz.seeResults')} <ArrowRight size={16}/></Button></Card>;
+  if (progress.allAnswered) return <TableCard kind="special" className="quiz-card quiz-finished"><CardMast kind="special" icon={Check} eyebrow={t('quiz.complete')} title={t('quiz.score', { correct: countCorrectAnswers(state.quizAnswers), total: progress.total })}/><Button onClick={() => dispatch({ type: 'quiz/finish' })}>{t('quiz.seeResults')} <ArrowRight size={16}/></Button></TableCard>;
   const question = progress.currentQuestion!;
   const q = quizText(question.id, content);
-  return <Card className="quiz-card"><div className="quiz-top"><div><Eyebrow>{t('quiz.eyebrow', { n: progress.answered.length + 1, total: progress.total })}</Eyebrow><h2>{q.prompt}</h2></div><span className="quiz-progress">{t('quiz.progress', { answered: progress.answered.length, total: progress.total })}</span></div>
+  return <TableCard kind="special" className="quiz-card" deal={false}><CardMast kind="special" icon={CircleHelp} eyebrow={t('quiz.eyebrow', { n: progress.answered.length + 1, total: progress.total })} title={q.prompt} corner={t('quiz.progress', { answered: progress.answered.length, total: progress.total })}/>
     {progress.answered.length > 0 && <details className="answered-review" open><summary>{t('quiz.reviewAnswered', { count: progress.answered.length })}</summary><div className="answered-review-list">{progress.answered.map((item) => { const iq = quizText(item.question.id, content); return <article className="answered-review-item" key={item.question.id}><span className={`answer-mark ${item.isCorrect ? 'answer-right' : 'answer-wrong'}`} aria-label={item.isCorrect ? t('quiz.correct') : t('quiz.incorrect')}>{item.isCorrect ? '✓' : '!'}</span><div><b>{iq.prompt}</b><p>{t('quiz.yourAnswer', { answer: item.selectedOption ? iq.option(item.selectedOption.id) : t('quiz.unavailable') })}</p>{!item.isCorrect && <p>{t('quiz.correctAnswer', { answer: iq.option(item.correctOption.id) })}</p>}<small>{iq.explanation}</small></div></article>; })}</div></details>}
     <div className="quiz-options">{question.options.map((o) => <button key={o.id} className="quiz-option" data-sound="own" onClick={() => { dispatch({ type: 'quiz/answer', questionId: question.id, optionId: o.id }); playEffect(o.id === question.correctOptionId ? 'quiz-correct' : 'quiz-wrong'); }}><span className="option-letter">{o.id.toUpperCase()}</span><span>{q.option(o.id)}</span></button>)}</div>
-    <div className="quiz-footer"><span>{t('quiz.concept', { label: conceptLabel(question.concept, content) })}</span></div></Card>;
+    <div className="quiz-footer"><span>{t('quiz.concept', { label: conceptLabel(question.concept, content) })}</span></div></TableCard>;
 }
 
 function ResultsView({ state, dispatch }: { state: GameState; dispatch: Dispatch }) {
   const { t, content } = useI18n();
   const standings = getFinalStandings(state); const human = getHumanPlayer(state); const winner = standings[0]!;
-  return <div className="results-layout"><Card className="results-hero"><span className="winner-crown">✦</span><Eyebrow>{t('results.eyebrow')}</Eyebrow><h2>{winner.playerId === human.id ? t('results.youBuilt') : t('results.takesLead', { name: getCharacter(winner.playerId).name })}</h2><div className="final-score"><b>{standings.find((s) => s.playerId === human.id)?.total.toFixed(1)}</b><span>{t('results.score')}</span></div></Card>
+  return <div className="results-layout"><TableCard kind="special" className="results-hero"><span className="winner-crown">✦</span><Eyebrow>{t('results.eyebrow')}</Eyebrow><h2>{winner.playerId === human.id ? t('results.youBuilt') : t('results.takesLead', { name: getCharacter(winner.playerId).name })}</h2><div className="final-score"><b>{standings.find((s) => s.playerId === human.id)?.total.toFixed(1)}</b><span>{t('results.score')}</span></div></TableCard>
     <Card className="standings-card"><div className="section-heading"><div><Eyebrow>{t('results.standings')}</Eyebrow><h2>{t('results.fourJourneys')}</h2></div><span className="score-chip">{t('results.outOf')}</span></div>
       <div className="standing-list">{standings.map((s, i) => { const c = characterText(s.playerId, content); return <div className={`standing-row ${s.playerId === human.id ? 'standing-you' : ''}`} key={s.playerId}><span className="rank-number">{String(i + 1).padStart(2, '0')}</span><CharacterPortrait id={s.playerId} name={c.name} size={30} className={`mini-avatar ${s.playerId}`}/><div className="standing-name"><b>{c.name}{s.playerId === human.id && <em>{t('common.you')}</em>}</b><small>{c.title}</small></div><div className="score-breakdown"><span>{t('results.wealth')} <b>{s.wealthPoints.toFixed(1)}</b></span><span>{t('results.savings')} <b>{s.savingsPoints.toFixed(1)}</b></span><span>{t('results.learning')} <b>{s.learningPoints.toFixed(1)}</b></span></div><div className="standing-total"><b>{s.total.toFixed(1)}</b><small>{t('results.points')}</small></div></div>; })}</div>
       <NetWorthChart state={state}/>
@@ -198,8 +200,8 @@ export function GameScreen({ state, dispatch, onExit, demo }: { state: GameState
   let content: ReactNode = null;
   if (state.status === 'review') content = <QuizView state={state} dispatch={dispatch}/>;
   else if (state.status === 'complete') content = <ResultsView state={state} dispatch={demo ? () => demo.restart() : dispatch}/>;
-  else if (state.phase === 'income') content = <Card className="phase-card income-phase"><span className="phase-orbit"><Coins size={25}/></span><Eyebrow>{t('game.incomeEyebrow', { n: state.round })}</Eyebrow><h2>{t('game.payday')}</h2><div className="income-amount">+{formatRM(GAME_CONFIG.monthlyIncome)}<small>{t('game.monthlyIncome')}</small></div><PhaseButton label={t('game.collect')} onClick={() => dispatch({ type: 'round/collect-income' })}/></Card>;
-  else if (state.phase === 'expenses') content = <Card className="phase-card expenses-phase"><span className="phase-orbit"><Wallet size={25}/></span><Eyebrow>{t('game.billsEyebrow', { n: state.round })}</Eyebrow><h2>{t('game.payBills')}</h2><div className="bill-breakdown"><div><span>{t('game.rentFood')}</span><b>−{formatRM(GAME_CONFIG.essentialExpenses)}</b></div><div><span>{t('game.coverPremiums')}</span><b>−{formatRM(getMonthlyPremiumTotal(player))}</b></div><div className="bill-remaining"><span>{t('game.cashLeft')}</span><b>{formatRM(player.cash - GAME_CONFIG.essentialExpenses - getMonthlyPremiumTotal(player))}</b></div></div><PhaseButton label={t('game.pay')} onClick={() => dispatch({ type: 'round/pay-bills' })}/></Card>;
+  else if (state.phase === 'income') content = <TableCard kind="income" className="phase-card income-phase"><CardMast kind="income" icon={Coins} eyebrow={t('game.incomeEyebrow', { n: state.round })} title={t('game.payday')}/><div className="income-amount tc-figure">+{formatRM(GAME_CONFIG.monthlyIncome)}<small>{t('game.monthlyIncome')}</small></div><PhaseButton label={t('game.collect')} onClick={() => dispatch({ type: 'round/collect-income' })}/></TableCard>;
+  else if (state.phase === 'expenses') content = <TableCard kind="expense" className="phase-card expenses-phase"><CardMast kind="expense" icon={Wallet} eyebrow={t('game.billsEyebrow', { n: state.round })} title={t('game.payBills')}/><div className="bill-breakdown"><div><span>{t('game.rentFood')}</span><b>−{formatRM(GAME_CONFIG.essentialExpenses)}</b></div><div><span>{t('game.coverPremiums')}</span><b>−{formatRM(getMonthlyPremiumTotal(player))}</b></div><div className="bill-remaining"><span>{t('game.cashLeft')}</span><b>{formatRM(player.cash - GAME_CONFIG.essentialExpenses - getMonthlyPremiumTotal(player))}</b></div></div><PhaseButton label={t('game.pay')} onClick={() => dispatch({ type: 'round/pay-bills' })}/></TableCard>;
   else if (state.phase === 'decisions') content = board.progress?.stage === 'human-landed' ? <DecisionCard state={state} dispatch={dispatch} landed={lastMove?.playerId === state.humanId ? { roll: lastMove.roll, label: t(`tiles.${BOARD_ROUTE[lastMove.to]!.label === 'CHECKPOINT' ? 'checkpoint' : BOARD_ROUTE[lastMove.to]!.category}`) } : null}/> : null;
   else if (state.phase === 'event-draw') content = null; // rivals' turns are shown on the board itself
   else if (state.phase === 'event') content = <EventView state={state} dispatch={dispatch}/>;
