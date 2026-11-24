@@ -97,9 +97,13 @@ QA (production build, headless Edge, all executed): unit 112/112; tsc clean; bui
 - Month recap: reward chips (amount moved to savings; cover payout when there is one), and an art header on screens at least 900 px tall.
 - QA re-run after this: journey 3D 99/99, SVG 91/91; board3d, demo, cards, audio, i18n (4 languages) all 0 failures; unit 112/112; engine diff empty.
 
+### Milestone 3 (resumed after the turn-order work): results standings
+- Standings rows are cards: medal-coloured rank, name, large total, and on phones three score chips (wealth, savings, learning) under the name. The disclaimer under the results sits on a cream strip.
+- Checked with `scripts/qa/results-view.mjs` (a completed engine game injected) at 390×844, 360×640 and 1366×768: no overflow. Journey 3D 99/99 re-run.
+
 ### Overhaul: next milestones
-1. More district detail around the outer road (budget: ~292 of 300 draw calls; merge materials first).
-2. Results: a fuller standings layout on phones.
+1. More district detail around the outer road (budget: ~293 of 300 draw calls; merge materials first).
+2. Owner decision pending: should landing on a space trigger personal events? That would be a rule change; today dice never decide money.
 4. Audio review by ear (not possible headless).
 
 ## Tabletop visual upgrade: printed cards, 3D city board, audio fix (2026-11-24) — complete
