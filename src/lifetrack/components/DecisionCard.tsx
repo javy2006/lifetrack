@@ -20,10 +20,11 @@ import { policyText } from '../i18n/content.ts';
 import { canAdd, confirmActions, previewDraft, sameMove, type DraftMove } from './decisionDraft.ts';
 import { Button, Disclaimer } from './ui.tsx';
 import { CardMast, TableCard, type CardKind } from './TableCard.tsx';
+import { CardArt, POLICY_ART, type ArtSlug } from './art.tsx';
 
 const POLICY_ICON: Record<PolicyId, LucideIcon> = { medical: HeartPulse, accident: Shield, critical: Sparkles };
 
-type Option = { move: DraftMove; className: string; kind: CardKind | 'neutral'; icon: LucideIcon; title: string; detail: string; price: string; priceNote?: string; details?: React.ReactNode };
+type Option = { move: DraftMove; art?: ArtSlug; className: string; kind: CardKind | 'neutral'; icon: LucideIcon; title: string; detail: string; price: string; priceNote?: string; details?: React.ReactNode };
 
 /** One ledger line: before → after, with the change. */
 function LedgerRow({ label, before, after }: { label: string; before: number; after: number }) {
@@ -79,11 +80,11 @@ export function DecisionCard({ state, dispatch, landed }: { state: GameState; di
   };
 
   const options: Option[] = [
-    { move: { kind: 'save' }, className: 'save-action', kind: 'opportunity', icon: Landmark, title: t('decision.save', { amount: formatRM(GAME_CONFIG.saveAmount) }), detail: t('decision.saveDetail'), price: `−${formatRM(GAME_CONFIG.saveAmount)}`, priceNote: t('card.toSavings') },
+    { move: { kind: 'save' }, art: 'savings', className: 'save-action', kind: 'opportunity', icon: Landmark, title: t('decision.save', { amount: formatRM(GAME_CONFIG.saveAmount) }), detail: t('decision.saveDetail'), price: `−${formatRM(GAME_CONFIG.saveAmount)}`, priceNote: t('card.toSavings') },
     ...POLICY_ORDER.map((id): Option => {
       const p = POLICIES[id], tx = policyText(id, content);
       const benefit = p.benefit.kind === 'reimbursement' ? t('decision.benefitReimbursement', { amount: formatRM(p.benefit.coverageLimit) }) : t(p.benefit.kind === 'fixed' ? 'decision.benefitFixed' : 'decision.benefitLump', { amount: formatRM(p.benefit.amount) });
-      return { move: { kind: 'buy', policyId: id }, className: `buy-action policy-${id}`, kind: 'protection', icon: POLICY_ICON[id], title: tx.name, detail: benefit, price: `−${formatRM(p.monthlyPremium)}`, priceNote: t('card.perMonth'),
+      return { move: { kind: 'buy', policyId: id }, art: POLICY_ART[id], className: `buy-action policy-${id}`, kind: 'protection', icon: POLICY_ICON[id], title: tx.name, detail: benefit, price: `−${formatRM(p.monthlyPremium)}`, priceNote: t('card.perMonth'),
         details: <><p className="policy-type">{tx.type}</p>{p.benefit.kind === 'reimbursement' && <p>{t('decision.payFirst', { deductible: formatRM(p.benefit.deductible), limit: formatRM(p.benefit.coverageLimit) })}</p>}<div className="policy-explain"><b>{t('decision.respondsTo')}</b><span>{tx.covered}</span><b>{t('decision.exclusions')}</b><span>{tx.exclusions.join(' · ')}</span></div><p>{tx.explanation}</p></> };
     }),
     { move: { kind: 'pass' }, className: 'pass-action', kind: 'neutral', icon: ArrowRight, title: t('decision.pass'), detail: t('decision.passDetail'), price: t('card.free') },
@@ -109,11 +110,12 @@ export function DecisionCard({ state, dispatch, landed }: { state: GameState; di
       corner={slots > 0 ? `${Math.min(draft.length, slots)}/${slots}` : undefined}/>
     {applied.length > 0 && <p className="decision-applied"><Check size={14}/> {t('decision.alreadyMade', { list: applied.map((a) => a.kind === 'save' ? t('decision.saveShort') : a.kind === 'buy' ? policyText(a.policyId, content).shortName : t('decision.pass')).join(', ') })}{state.decisionSnapshot && slots > 0 && <button type="button" className="link-button" onClick={() => dispatch({ type: 'decision/reset' })}><RotateCcw size={12}/> {t('decision.undo')}</button>}</p>}
     <div className="decision-options choice-hand" role="group" aria-label={t('decision.group')}>
-      {options.map(({ move, className, kind, icon: Icon, title, detail, price, priceNote, details }, i) => {
+      {options.map(({ move, art, className, kind, icon: Icon, title, detail, price, priceNote, details }, i) => {
         const { n, owned, available, reason, order } = states[i]!;
-        return <div key={className} className={`decision-option choice-card ck-${kind} ${details ? 'has-inspect' : ''} ${n > 0 ? 'is-selected' : ''} ${owned ? 'is-owned' : ''} ${!available && n === 0 ? 'is-unavailable' : ''}`} style={{ '--i': i } as React.CSSProperties}>
+        return <div key={className} className={`decision-option choice-card ck-${kind} cc-${art ?? 'plain'} ${details ? 'has-inspect' : ''} ${n > 0 ? 'is-selected' : ''} ${owned ? 'is-owned' : ''} ${!available && n === 0 ? 'is-unavailable' : ''}`} style={{ '--i': i } as React.CSSProperties}>
           <button type="button" data-sound="own" className={`decision-pick ${className}`} aria-pressed={n > 0} disabled={!available && n === 0} onClick={() => toggle(move)}>
             <span className="cc-mast"><span className="cc-icon"><Icon size={17}/></span><span className="cc-kind">{kind === 'neutral' ? t('decision.pass') : t(`card.kind.${kind}`)}</span></span>
+            {art ? <CardArt slug={art} className="cc-art"/> : <span className="cc-art cc-art-plain" aria-hidden="true"><Icon size={34} strokeWidth={1.6}/></span>}
             <span className="decision-option-text cc-body"><b>{title}</b><small>{detail}</small></span>
             <span className="cc-price"><b>{price}</b>{priceNote && <small>{priceNote}</small>}</span>
             {reason && <span className="cc-ribbon">{reason}</span>}
@@ -139,9 +141,10 @@ export function DecisionCard({ state, dispatch, landed }: { state: GameState; di
     {confirmed && <span className="tc-locked-stamp" aria-hidden="true"><Check size={18}/> {t('decision.lockedIn')}</span>}
     <Disclaimer compact/>
     {insp && inspState && <div className="cc-inspect-layer" role="dialog" aria-modal="true" aria-label={t('card.details')} onMouseDown={(e) => { if (e.target === e.currentTarget) setInspecting(null); }} onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setInspecting(null); } }}>
-      <div className={`choice-card cc-zoom ck-${insp.kind}`}>
+      <div className={`choice-card cc-zoom ck-${insp.kind} cc-${insp.art ?? 'plain'}`}>
         <button type="button" className="modal-close" autoFocus onClick={() => setInspecting(null)} aria-label={t('card.close')}>×</button>
         <span className="cc-mast"><span className="cc-icon"><insp.icon size={20}/></span><span className="cc-kind">{insp.kind === 'neutral' ? t('decision.pass') : t(`card.kind.${insp.kind}`)}</span></span>
+        {insp.art && <CardArt slug={insp.art} className="cc-art cc-zoom-art"/>}
         <h3>{insp.title}</h3>
         <p className="cc-zoom-detail">{insp.detail}</p>
         <span className="cc-price"><b>{insp.price}</b>{insp.priceNote && <small>{insp.priceNote}</small>}</span>

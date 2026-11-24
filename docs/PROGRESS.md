@@ -18,6 +18,40 @@ Ground rule: `src/lifetrack/game/` (reducer, calculations, AI strategies, polici
 | 4.3C-2d | Phone: "Money" drawer overlaps board heading | Open (cosmetic) |
 | 5.x | Three.js + React Three Fiber 9 board renderer | Not started (dependencies not installed) |
 
+## Visual & UX overhaul, milestone 1: assets, design system, homepage, cards, landmark (2026-11-24)
+
+Resume point: committed. The next steps are listed under "Overhaul: next milestones" below.
+
+| Area | What changed | Files |
+| --- | --- | --- |
+| Asset pipeline | Owner art (~140 MB) moved from `public/assets/` to the untracked `art-source/` (gitignored), so Vite no longer ships it. 29 optimised WebP files (~1.3 MB) are built by a script. Each image has a decision (use / modify / recreate / reject) with its reason | `scripts/assets/build_overhaul_assets.py`, `docs/ASSET_REVIEW.md`, `public/assets/{art,icons,scenes,characters/full,characters/portraits}` |
+| Design system | Tokens (sky, cream, gold, red, category colours, radii, shadows, Nunito display type) and the restyle of every screen in one stylesheet loaded after `index.css`. Pressable 3D buttons, blue HUD, cream panels | `src/lifetrack/styles/overhaul.css`, `src/main.tsx`, `index.html` |
+| Homepage | City backdrop (with a scrim for readability), big Play button, guide tiles, the four full-body characters as a fanned hand, 3D category icons. The 3D chunk is preloaded from the menu | `screens/MainMenu.tsx` |
+| Character selection | Full-body character art (round portrait as fallback) | `screens/CharacterSelection.tsx` |
+| Cards | Artwork on every decision card, the inspect view, payday/bills (modal only), life events (art chosen from the engine's event category) and claims. Per-product colours. Art never carries numbers | `components/art.tsx`, `components/DecisionCard.tsx`, `screens/GameScreen.tsx` |
+| Dashboard | Each player mat shows cash, savings, net worth and monthly costs, plus three cover pips. The identical income line was dropped. The game has no debt or asset mechanics, so none are shown | `components/PlayerDashboard.tsx` |
+| 3D board | LifeTrack Civic Hall replaces the old tower: cream hall, blue roofs, lit windows, columned entrance, clock tower with the shield, blue dome with a gold spire, forecourt fountain. Turned to face the camera, inside the plaza | `board3d/City3D.tsx` |
+| Results | Plaza backdrop and a podium for the top three | `screens/GameScreen.tsx` |
+| Languages | New labels (`menu.castAria`, `dashboard.coverCount`) in EN/BM/ZH/TA | `i18n/*.ts` |
+
+Verified, not changed: the turn rhythm in `board/boardTiming.ts` already matches the brief (900 ms dice, 360 ms per step, 650 ms landing pause, reduced-motion variant). The decision draft/confirm-once flow is unchanged.
+
+QA (production build, headless Edge, all executed): unit 112/112; tsc clean; build OK; `git diff -- src/lifetrack/game` empty.
+- journey `?renderer=3d` 99/99 and `?renderer=svg` 91/91, with 0 console errors and no overflow.
+- `character-images` all pass. Updated: it now expects the 440 px full-body art, and the fallback blocks all character art.
+- `cards.mjs` ALL PASS at 390×844, 1366×768 and 360×640.
+- `audio.mjs` 0 failures; `intro.mjs` 0 failures; `renderer-default` all pass.
+- `board3d.mjs` all pass (~293 draw calls/frame against the 300 limit).
+- `i18n.mjs` (4 languages) 0 failures.
+- `demo.mjs` 0 failures. Fixed a race in the test: at 8× the autopilot can pass the recap before the pause lands, and the next milestone is then that month's own recap.
+- Visual sweep at 1920×1080, 1440×900, 1366×768, 1024×768, 844×390, 390×844, 360×640 and 320×640: no horizontal overflow.
+
+### Overhaul: next milestones
+1. Board atmosphere: sky-tinted 3D background and fog, more district detail around the outer road (watch the 300 draw-call budget: 293 now).
+2. Month recap: art header plus cash and savings deltas as reward chips.
+3. Results: a fuller standings layout on phones.
+4. Audio review by ear (not possible headless).
+
 ## Tabletop visual upgrade: printed cards, 3D city board, audio fix (2026-11-24) — complete
 
 Reference: the owner's gameplay video (`docs/reference/20261123-1432-40.9480842.mp4`, 14 s portrait clip of a

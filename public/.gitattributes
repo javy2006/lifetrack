@@ -6,3 +6,7 @@ favicon.png -filter -diff -merge -text
 assets/characters/portraits/** -filter -diff -merge -text
 audio/** -filter -diff -merge -text
 assets/hero/** -filter -diff -merge -text
+assets/characters/full/** -filter -diff -merge -text
+assets/art/** -filter -diff -merge -text
+assets/icons/** -filter -diff -merge -text
+assets/scenes/** -filter -diff -merge -text

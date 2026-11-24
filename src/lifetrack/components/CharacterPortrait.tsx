@@ -2,8 +2,8 @@ import { useState } from 'react';
 import type { CharacterId } from '../game/types.ts';
 
 /**
- * Official character portraits: face-centred crops of the reference images, built by
- * scripts/assets/build_character_assets.py into public/assets/characters/portraits and served
+ * Official character portraits: head-and-shoulders crops of the owner's avatar art, built by
+ * scripts/assets/build_overhaul_assets.py into public/assets/characters/portraits and served
  * relative to Vite's base URL (never an absolute file path). They are stored as plain git blobs,
  * not LFS pointers (see public/.gitattributes), so deployments serve the real images.
  */

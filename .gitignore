@@ -24,3 +24,7 @@ logs/
 
 # Browser QA screenshots
 qa-shots/
+
+# Owner-supplied full-resolution source art (~140 MB). Optimised copies are built into public/assets by
+# scripts/assets/build_overhaul_assets.py; the originals stay local and untracked.
+art-source/

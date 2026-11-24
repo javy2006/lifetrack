@@ -95,39 +95,68 @@ function PulseRing({ color, y, animate }: { color: string; y: number; animate: b
 }
 
 /**
- * LifeTrack Tower: the city's landmark at the centre of the park. A stepped stone plinth in a
- * fountain basin, a white clock-tower shaft with the red shield emblem on two faces, a gold
- * cupola and a flag. Tall enough to anchor the board, slim enough never to hide a space.
+ * LifeTrack Civic Hall: the city's landmark in the centre of the park, rebuilt in 3D from the
+ * owner's central-landmark painting (docs/ASSET_REVIEW.md): a cream hall with blue roofs and
+ * lit windows, a columned entrance, a clock tower with the red LifeTrack shield, a blue dome with
+ * a gold spire, and a fountain on the forecourt. It is turned 45° so its front faces the camera
+ * diagonal, fits inside the plaza (never over a space) and stays below the old tower's height.
  */
+const STONE = '#efe4cf', WALL = '#f8efdc', ROOF = '#2f5fb0', ROOF_DARK = '#244c93', GOLD = '#e0ac2e', LIT = '#ffd77a';
 function Landmark() {
-  return <group>
-    {/* Fountain basin and water */}
-    <P g="cyl" c="#e7dcc7" p={[0, 0.09, 0]} s={[1.3, 0.08, 1.3]}/>
-    <P g="cyl" c="#6fb4d0" p={[0, 0.132, 0]} s={[1.14, 0.012, 1.14]} shadow={false}/>
-    {/* Stepped plinth */}
-    <P g="cylLow" c="#e7dcc7" p={[0, 0.18, 0]} s={[0.62, 0.12, 0.62]}/>
-    <P g="cylLow" c="#e7dcc7" p={[0, 0.27, 0]} s={[0.48, 0.08, 0.48]}/>
-    {/* Shaft with corner pilasters */}
-    <P c="#fbf6e8" p={[0, 0.78, 0]} s={[0.3, 0.98, 0.3]}/>
-    {[-1, 1].flatMap((sx) => [-1, 1].map((sz) => <P key={`${sx}${sz}`} c="#e7dcc7" p={[sx * 0.15, 0.78, sz * 0.15]} s={[0.05, 0.98, 0.05]}/>))}
-    {/* Shield emblems facing the two camera sides */}
-    {[0, Math.PI / 2].map((ry) => <group key={ry} position={[0, 0.86, 0]} rotation={[0, ry, 0]}>
-      <group position={[0, 0, 0.155]}>
-        <P c="#c8102e" p={[0, 0.03, 0]} s={[0.2, 0.17, 0.02]}/>
-        <P g="cone" c="#c8102e" p={[0, -0.1, 0]} s={[0.2, 0.1, 0.02]} r={[Math.PI, 0, 0]}/>
-        <P c="#fbf6e8" p={[0, 0.03, 0.012]} s={[0.035, 0.12, 0.006]} shadow={false}/>
-        <P c="#fbf6e8" p={[0, 0.055, 0.012]} s={[0.1, 0.035, 0.006]} shadow={false}/>
-      </group>
+  return <group rotation={[0, Math.PI / 4, 0]}>
+    {/* Stone podium and steps */}
+    <P c={STONE} p={[0, 0.1, -0.05]} s={[1.56, 0.1, 1.0]}/>
+    <P c={STONE} p={[0, 0.085, 0.5]} s={[0.7, 0.07, 0.16]}/>
+    {/* Main hall and its two lower wings */}
+    <P c={WALL} p={[0, 0.33, -0.16]} s={[0.92, 0.36, 0.56]}/>
+    {[-1, 1].map((sx) => <group key={sx}>
+      <P c={WALL} p={[sx * 0.6, 0.29, -0.12]} s={[0.36, 0.28, 0.5]}/>
+      <P g="prism" c={ROOF} p={[sx * 0.6, 0.43, -0.12]} s={[0.42, 0.16, 0.56]}/>
+      {[-0.08, 0.08].map((dx) => <P key={dx} c={LIT} p={[sx * 0.6 + dx, 0.29, 0.135]} s={[0.07, 0.12, 0.01]} shadow={false}/>)}
     </group>)}
-    {/* Clock band */}
-    <P c="#e7dcc7" p={[0, 1.3, 0]} s={[0.38, 0.06, 0.38]}/>
-    {[0, Math.PI / 2].map((ry) => <group key={ry} rotation={[0, ry, 0]}><P g="cyl" c="#fbf6e8" p={[0, 1.44, 0.17]} s={[0.17, 0.012, 0.17]} r={[Math.PI / 2, 0, 0]}/><P c="#27324f" p={[0, 1.46, 0.178]} s={[0.012, 0.06, 0.004]} shadow={false}/></group>)}
-    <P c="#fbf6e8" p={[0, 1.44, 0]} s={[0.34, 0.22, 0.34]}/>
-    {/* Gold cupola and flag */}
-    <P c="#e7dcc7" p={[0, 1.57, 0]} s={[0.4, 0.04, 0.4]}/>
-    <P g="dome" c="#d9a93f" p={[0, 1.59, 0]} s={[0.32, 0.3, 0.32]}/>
-    <P g="cylLow" c="#7d5d43" p={[0, 1.86, 0]} s={[0.018, 0.28, 0.018]}/>
-    <P c="#c8102e" p={[0.08, 1.94, 0]} s={[0.15, 0.09, 0.01]}/>
+    <P g="prism" c={ROOF} p={[0, 0.51, -0.16]} s={[1.0, 0.2, 0.64]}/>
+    {[-0.3, -0.15, 0.15, 0.3].map((dx) => <P key={dx} c={LIT} p={[dx, 0.34, 0.125]} s={[0.075, 0.15, 0.01]} shadow={false}/>)}
+    {/* Columned entrance with a pediment */}
+    <P c={STONE} p={[0, 0.16, 0.26]} s={[0.5, 0.03, 0.22]}/>
+    {[-0.18, -0.06, 0.06, 0.18].map((cx) => <P key={cx} g="cylLow" c="#fffaf0" p={[cx, 0.31, 0.32]} s={[0.04, 0.28, 0.04]}/>)}
+    <P c={STONE} p={[0, 0.465, 0.27]} s={[0.52, 0.04, 0.24]}/>
+    <P g="prism" c={ROOF_DARK} p={[0, 0.485, 0.27]} s={[0.52, 0.1, 0.24]}/>
+    <P c="#8a5a2b" p={[0, 0.24, 0.126]} s={[0.12, 0.16, 0.01]} shadow={false}/>
+    {/* Clock tower with the LifeTrack shield and a clock above it */}
+    <P c={WALL} p={[0, 0.82, -0.16]} s={[0.32, 0.62, 0.32]}/>
+    {[-1, 1].flatMap((sx) => [-1, 1].map((sz) => <P key={`${sx}${sz}`} c={STONE} p={[sx * 0.16, 0.82, -0.16 + sz * 0.16]} s={[0.045, 0.62, 0.045]}/>))}
+    {[0, Math.PI / 2, -Math.PI / 2].map((ry) => <group key={ry} position={[0, 0, -0.16]} rotation={[0, ry, 0]}>
+      <group position={[0, 0.72, 0.165]}>
+        <P c="#c8102e" p={[0, 0.03, 0]} s={[0.17, 0.14, 0.018]}/>
+        <P g="cone" c="#c8102e" p={[0, -0.08, 0]} s={[0.17, 0.08, 0.018]} r={[Math.PI, 0, 0]}/>
+        <P c="#fbf6e8" p={[0, 0.03, 0.011]} s={[0.03, 0.1, 0.005]} shadow={false}/>
+        <P c="#fbf6e8" p={[0, 0.05, 0.011]} s={[0.085, 0.03, 0.005]} shadow={false}/>
+      </group>
+      <P g="cyl" c="#fffaf0" p={[0, 1.0, 0.163]} s={[0.17, 0.012, 0.17]} r={[Math.PI / 2, 0, 0]}/>
+      <P g="ring" c={GOLD} p={[0, 1.0, 0.168]} s={[0.17, 0.17, 0.05]} shadow={false}/>
+      <P c="#27324f" p={[0, 1.02, 0.172]} s={[0.012, 0.055, 0.004]} shadow={false}/>
+      <P c="#27324f" p={[0.018, 1.0, 0.172]} s={[0.04, 0.01, 0.004]} shadow={false}/>
+    </group>)}
+    {/* Dome, gold ring and spire */}
+    <P c={STONE} p={[0, 1.15, -0.16]} s={[0.38, 0.05, 0.38]}/>
+    <P g="cylLow" c={WALL} p={[0, 1.2, -0.16]} s={[0.15, 0.08, 0.15]}/>
+    <P g="dome" c={ROOF} p={[0, 1.22, -0.16]} s={[0.3, 0.28, 0.3]}/>
+    <P g="ring" c={GOLD} p={[0, 1.235, -0.16]} s={[0.3, 0.3, 0.12]} r={[Math.PI / 2, 0, 0]} shadow={false}/>
+    <P g="sphere" c={GOLD} p={[0, 1.5, -0.16]} s={[0.05, 0.05, 0.05]}/>
+    <P g="cone" c={GOLD} p={[0, 1.6, -0.16]} s={[0.035, 0.16, 0.035]}/>
+    {/* Forecourt fountain with two lamps and banners */}
+    <group position={[0, 0, 0.78]}>
+      <P g="cyl" c={STONE} p={[0, 0.09, 0]} s={[0.46, 0.07, 0.46]}/>
+      <P g="cyl" c="#6fb8dc" p={[0, 0.128, 0]} s={[0.4, 0.01, 0.4]} shadow={false}/>
+      <P g="cylLow" c={STONE} p={[0, 0.2, 0]} s={[0.05, 0.18, 0.05]}/>
+      <P g="cyl" c={STONE} p={[0, 0.29, 0]} s={[0.18, 0.025, 0.18]}/>
+      <mesh geometry={geo().sphere} material={mat('#bfe6f7', { emissive: '#9ad6f2', emissiveIntensity: 0.25 })} position={[0, 0.34, 0]} scale={[0.07, 0.09, 0.07]}/>
+    </group>
+    {[-1, 1].map((sx) => <group key={sx} position={[sx * 0.52, 0, 0.62]}>
+      <P g="cylLow" c="#3c4a57" p={[0, 0.27, 0]} s={[0.02, 0.36, 0.02]}/>
+      <mesh geometry={geo().sphere} material={mat('#fff3c4', { emissive: LIT, emissiveIntensity: 0.7 })} position={[0, 0.47, 0]} scale={0.05}/>
+      <P c={sx < 0 ? ROOF : GOLD} p={[sx * 0.05, 0.32, 0]} s={[0.07, 0.16, 0.008]}/>
+    </group>)}
   </group>;
 }
 

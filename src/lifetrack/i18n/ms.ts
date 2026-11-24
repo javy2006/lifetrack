@@ -21,6 +21,7 @@ const pack: LanguagePack = {
       play: 'Main sekarang', continueSaved: 'Sambung permainan tersimpan', newGame: 'Mula permainan baharu', howToPlay: 'Cara bermain', learning: 'Belajar tentang insurans',
       demo: 'Demo pembentangan', meta: 'Cabaran enam bulan · Kira-kira 8–12 minit', cityCaption: 'Papan bandar anda · Kuala Lumpur',
       heroAria: 'Papan bandar mini 3D dengan empat token profesion',
+      castAria: 'Kenali empat pemain',
       value1: 'Bina penampan', value1Text: 'Lihat bagaimana simpanan kecil menjadi daya tahan.',
       value2: 'Pilih perlindungan', value2Text: 'Terokai apa yang boleh dan tidak boleh dilakukan oleh polisi rekaan.',
       value3: 'Belajar sambil bermain', value3Text: 'Peristiwa hidup menjadikan konsep kewangan satu keputusan.',
@@ -67,7 +68,7 @@ const pack: LanguagePack = {
       tokenAria: '{name}{who} di petak {n}', youParen: ' (anda)', aiParen: ' (AI)',
     },
     tiles: { salary: 'GAJI', savings: 'SIMPAN', medical: 'PERUBATAN', rest: 'REHAT', protection: 'LINDUNG', family: 'KELUARGA', accident: 'KEMALANGAN', lucky: 'BERTUAH', checkpoint: 'SEMAK' },
-    dashboard: { aria: 'Semua pemain', yourTurn: 'Giliran anda', moving: 'Bergerak', youSpace: 'Anda · Petak {n}', aiSpace: 'AI · Petak {n}' },
+    dashboard: { aria: 'Semua pemain', yourTurn: 'Giliran anda', moving: 'Bergerak', youSpace: 'Anda · Petak {n}', aiSpace: 'AI · Petak {n}', coverCount: '{n} daripada 3 polisi dimiliki' },
     card: {
       kind: { event: 'Peristiwa hidup', opportunity: 'Peluang', investment: 'Pelaburan', protection: 'Perlindungan', expense: 'Perbelanjaan', emergency: 'Kecemasan', income: 'Pendapatan', special: 'Pencapaian' },
       yourMove: 'Giliran anda',

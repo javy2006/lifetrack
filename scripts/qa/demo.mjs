@@ -49,8 +49,10 @@ for (const [tag, viewport] of [['desk', { width: 1366, height: 768 }], ['phone',
   // Next milestone: jumps to the next month's recap, then pauses there.
   // Next milestone: from the month it is paused on, it plays to the following month's recap and pauses there.
   const pausedRound = await page.evaluate(() => Number((document.querySelector('.content-heading .eyebrow')?.textContent.match(/\d+/) ?? [0])[0]));
+  // At 8x the autopilot can pass the recap before the pause click lands; from mid-month the next milestone is that month's own recap.
+  const target = pausedRound + ((await page.locator('.summary-card').count()) > 0 ? 1 : 0);
   await page.getByRole('button', { name: /next milestone/i }).click();
-  const nextRecap = await page.waitForFunction((r) => { const e = document.querySelector('.summary-card .tc-eyebrow, .summary-card .eyebrow'); return e && Number((e.textContent.match(/\d+/) ?? [0])[0]) === r + 1; }, pausedRound, { timeout: 60000 }).then(() => true, () => false);
+  const nextRecap = await page.waitForFunction((r) => { const e = document.querySelector('.summary-card .tc-eyebrow, .summary-card .eyebrow'); return e && Number((e.textContent.match(/\d+/) ?? [0])[0]) === r; }, target, { timeout: 60000 }).then(() => true, () => false);
   check(`${tag}: next milestone reaches the next month's recap`, nextRecap, `paused in month ${pausedRound}`);
   check(`${tag}: and pauses there`, await page.locator('.demo-state').waitFor({ timeout: 4000 }).then(() => true, () => false));
   // Skip to results.

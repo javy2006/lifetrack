@@ -1,4 +1,4 @@
-// LifeTrack character-image QA: the four official portraits load on the selection screen (desktop + phone),
+// LifeTrack character-image QA: the four official full-body character images load on the selection screen (desktop + phone),
 // are cropped with object-fit: cover, and fall back to labelled initials when blocked. Same setup as journey.mjs:
 //   node ../lt-qa/character-images.mjs http://127.0.0.1:4174/ ./shots/select
 // Character selection: all four official portraits load (no broken images), at desktop and phone.
@@ -16,7 +16,7 @@ for (const [tag, vp] of [['desktop', { width: 1440, height: 900 }], ['phone', { 
   await page.waitForTimeout(1500);
   const imgs = await page.evaluate(() => [...document.querySelectorAll('.character-option img')].map((i) => ({ src: new URL(i.src).pathname, ok: i.complete && i.naturalWidth > 0, w: i.naturalWidth, fit: getComputedStyle(i).objectFit, alt: i.alt })));
   const fallbacks = await page.locator('.character-portrait-fallback').count();
-  const pass = imgs.length === 4 && imgs.every((i) => i.ok && i.w === 320 && i.fit === 'cover') && fallbacks === 0 && bad.length === 0;
+  const pass = imgs.length === 4 && imgs.every((i) => i.ok && i.w === 440 && i.fit === 'cover') && fallbacks === 0 && bad.length === 0;
   ok &&= pass;
   console.log(`${pass ? 'PASS' : 'FAIL'} ${tag}: ${imgs.map((i) => `${i.src} ${i.ok ? i.w + 'px' : 'BROKEN'} ${i.fit}`).join(' | ')} fallbacks=${fallbacks} bad=${bad.join(',')} warn=${warn.join(',')}`);
   await page.screenshot({ path: `${out}-${tag}.png` });
@@ -25,7 +25,7 @@ for (const [tag, vp] of [['desktop', { width: 1440, height: 900 }], ['phone', { 
 // Fallback path: block the portrait requests and confirm initials replace broken images.
 {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-  await ctx.route('**/assets/characters/portraits/**', (r) => r.abort());
+  await ctx.route('**/assets/characters/**', (r) => r.abort());
   const page = await ctx.newPage();
   await page.goto(base);
   await page.locator('button', { hasText: /Play the game/ }).first().click();

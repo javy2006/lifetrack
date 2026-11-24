@@ -1,4 +1,7 @@
-"""Builds the web assets for the four LifeTrack characters from the official references.
+"""SUPERSEDED (2026-11-24) by build_overhaul_assets.py, which builds the portraits from the new avatar art.
+Kept for history; its reference/ inputs no longer exist.
+
+Builds the web assets for the four LifeTrack characters from the official references.
 
 Source of truth: public/assets/characters/reference/{alex,mei-ling,vikram,aisyah}.jpg (2048x2048; Vikram's internal id is 'daniel').
 Outputs (small, committed as plain git blobs (see public/.gitattributes), served from public/):

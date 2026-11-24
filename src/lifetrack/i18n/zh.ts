@@ -21,6 +21,7 @@ const pack: LanguagePack = {
       play: '开始游戏', continueSaved: '继续已保存的游戏', newGame: '开始新游戏', howToPlay: '玩法说明', learning: '保险小课堂',
       demo: '演示模式', meta: '六个月挑战 · 约 8–12 分钟', cityCaption: '你的城市棋盘 · 吉隆坡',
       heroAria: '一座迷你 3D 城市棋盘，上面有四枚职业棋子',
+      castAria: '认识四位玩家',
       value1: '建立缓冲', value1Text: '了解小额储蓄如何积累成抗风险能力。',
       value2: '选择保障', value2Text: '看看虚构保单能做什么、不能做什么。',
       value3: '边玩边学', value3Text: '生活事件把理财概念变成真实的决定。',
@@ -67,7 +68,7 @@ const pack: LanguagePack = {
       tokenAria: '{name}{who}在第 {n} 格', youParen: '（你）', aiParen: '（AI）',
     },
     tiles: { salary: '薪水', savings: '储蓄', medical: '医疗', rest: '休息', protection: '保障', family: '家庭', accident: '意外', lucky: '幸运', checkpoint: '检查' },
-    dashboard: { aria: '所有玩家', yourTurn: '轮到你', moving: '移动中', youSpace: '你 · 第 {n} 格', aiSpace: 'AI · 第 {n} 格' },
+    dashboard: { aria: '所有玩家', yourTurn: '轮到你', moving: '移动中', youSpace: '你 · 第 {n} 格', aiSpace: 'AI · 第 {n} 格', coverCount: '已拥有 3 份保单中的 {n} 份' },
     card: {
       kind: { event: '人生事件', opportunity: '机会', investment: '投资', protection: '保障', expense: '开支', emergency: '突发状况', income: '收入', special: '里程碑' },
       yourMove: '轮到你',

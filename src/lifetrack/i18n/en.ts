@@ -21,6 +21,7 @@ const en = {
     play: 'Play the game', continueSaved: 'Continue saved game', newGame: 'Start a new game', howToPlay: 'How to play', learning: 'Insurance learning',
     demo: 'Presentation demo', meta: 'A six-month challenge · About 8–12 minutes', cityCaption: 'Your city board · Kuala Lumpur',
     heroAria: 'A miniature 3D city board with four profession tokens',
+    castAria: 'Meet the four players',
     value1: 'Build a buffer', value1Text: 'Learn how small savings grow into resilience.',
     value2: 'Choose your cover', value2Text: 'Explore what fictional policies can and cannot do.',
     value3: 'Learn as you go', value3Text: 'Life events turn money concepts into decisions.',
@@ -68,7 +69,7 @@ const en = {
     tokenAria: '{name}{who} on space {n}', youParen: ' (you)', aiParen: ' (AI)',
   },
   tiles: { salary: 'SALARY', savings: 'SAVE', medical: 'MEDICAL', rest: 'REST', protection: 'COVER', family: 'FAMILY', accident: 'ACCIDENT', lucky: 'LUCKY', checkpoint: 'CHECK' },
-  dashboard: { aria: 'All players', yourTurn: 'Your turn', moving: 'Moving', youSpace: 'You · Space {n}', aiSpace: 'AI · Space {n}' },
+  dashboard: { aria: 'All players', yourTurn: 'Your turn', moving: 'Moving', youSpace: 'You · Space {n}', aiSpace: 'AI · Space {n}', coverCount: '{n} of 3 policies owned' },
   card: {
     kind: { event: 'Life event', opportunity: 'Opportunity', investment: 'Investment', protection: 'Protection', expense: 'Expense', emergency: 'Emergency', income: 'Income', special: 'Milestone' },
     yourMove: 'Your move',
