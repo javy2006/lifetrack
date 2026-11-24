@@ -46,10 +46,14 @@ QA (production build, headless Edge, all executed): unit 112/112; tsc clean; bui
 - `demo.mjs` 0 failures. Fixed a race in the test: at 8× the autopilot can pass the recap before the pause lands, and the next milestone is then that month's own recap.
 - Visual sweep at 1920×1080, 1440×900, 1366×768, 1024×768, 844×390, 390×844, 360×640 and 320×640: no horizontal overflow.
 
+### Milestone 2 (same day): board haze + month recap
+- The 3D background and fog are now a sky haze (`#d3e6f5`), so the horizon blends into the page. Draw calls ~292/300.
+- Month recap: reward chips (amount moved to savings; cover payout when there is one), and an art header on screens at least 900 px tall.
+- QA re-run after this: journey 3D 99/99, SVG 91/91; board3d, demo, cards, audio, i18n (4 languages) all 0 failures; unit 112/112; engine diff empty.
+
 ### Overhaul: next milestones
-1. Board atmosphere: sky-tinted 3D background and fog, more district detail around the outer road (watch the 300 draw-call budget: 293 now).
-2. Month recap: art header plus cash and savings deltas as reward chips.
-3. Results: a fuller standings layout on phones.
+1. More district detail around the outer road (budget: ~292 of 300 draw calls; merge materials first).
+2. Results: a fuller standings layout on phones.
 4. Audio review by ear (not possible headless).
 
 ## Tabletop visual upgrade: printed cards, 3D city board, audio fix (2026-11-24) — complete

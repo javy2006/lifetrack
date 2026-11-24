@@ -294,3 +294,17 @@ body:has(.setup-page) { background: var(--lt-sky); background-color: var(--lt-sk
   .home-v2 .landing-nav .brand > span:last-child { display: none; }
   .home-v2 .landing-nav { gap: 8px; }
 }
+
+/* Board: the 3D horizon fades into a sky haze (Board3DScene background/fog), matching the page. */
+.game-scene-content .board-viewport:has(>.board-3d) { background: #d3e6f5; }
+
+/* Month recap: art header and reward chips for what went well. */
+.summary-art { height: clamp(72px, 12vh, 120px); margin: 0 0 12px; }
+.summary-rewards { display: flex; flex-wrap: wrap; gap: 8px; margin: -4px 0 12px; }
+.reward-chip { display: inline-flex; align-items: baseline; gap: 6px; padding: 6px 11px; border-radius: 999px; font-size: 12px; font-weight: 700; animation: reward-pop .45s cubic-bezier(.2, 1.4, .4, 1) both; animation-delay: .25s; }
+.reward-chip b { font: 900 15px/1 var(--lt-display); }
+.reward-save { color: #135c39; background: #dff3e7; box-shadow: inset 0 0 0 1px #b6dfc6; }
+.reward-cover { color: #1d4ea6; background: #e2ecfb; box-shadow: inset 0 0 0 1px #bcd0f2; }
+@keyframes reward-pop { from { opacity: 0; transform: scale(.7); } }
+@media (max-height: 900px) { .summary-art { display: none; } }
+@media (prefers-reduced-motion: reduce) { .reward-chip { animation: none; } }

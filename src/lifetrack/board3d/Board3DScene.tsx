@@ -330,8 +330,8 @@ export default function Board3DScene({ view, onContextLost }: { view: Board3DVie
   >
     <KitLifetime/>
     <CameraRig focus={view.focus ? pawnWorld(view.positions[view.focus] ?? 0, view.focus, view.positions) : null} reducedMotion={reducedMotion}/>
-    <color attach="background" args={['#dbe8c8']}/>
-    <fog attach="fog" args={['#dbe8c8', 22, 44]}/>
+    <color attach="background" args={['#d3e6f5']}/>
+    <fog attach="fog" args={['#d3e6f5', 22, 44]}/>
     <hemisphereLight args={[mood.sky, '#a9c48f', 1.05]}/>
     {/* Key light from the upper left of the screen so shadows fall toward the viewer's lower right. */}
     <directionalLight
@@ -400,8 +400,8 @@ export function HeroScene({ captions }: { captions?: readonly string[] }) {
   return <Canvas className="hero-3d-canvas" frameloop="demand" dpr={[1, 2]} shadows="percentage" gl={{ antialias: true, powerPreference: 'low-power' }} camera={{ position: [0, 12, 12], fov: FOV_DEG, near: 0.5, far: 80 }} aria-hidden="true">
     <KitLifetime/>
     <HeroCamera reducedMotion={reducedMotion}/>
-    <color attach="background" args={['#dbe8c8']}/>
-    <fog attach="fog" args={['#dbe8c8', 22, 44]}/>
+    <color attach="background" args={['#d3e6f5']}/>
+    <fog attach="fog" args={['#d3e6f5', 22, 44]}/>
     <hemisphereLight args={['#fff9ec', '#a9c48f', 1.05]}/>
     <directionalLight position={[-5, 9, 2.5]} intensity={1.7} color="#fff6e8" castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-0.0004} shadow-normalBias={0.02} shadow-camera-left={-10} shadow-camera-right={10} shadow-camera-top={10} shadow-camera-bottom={-10} shadow-camera-near={1} shadow-camera-far={25}/>
     <directionalLight position={[6, 4, 6]} intensity={0.35} color="#dfeaf2"/>

@@ -97,7 +97,12 @@ function MonthSummary({ state, dispatch }: { state: GameState; dispatch: Dispatc
   ];
   return <TableCard kind="special" className="summary-card"><CardMast kind="special" icon={Check} eyebrow={t('summary.eyebrow', { n: state.round })} title={t('summary.done', { month: t(`months.${state.round - 1}`) })}/>
     <div className="summary-progress"><div><span>{t('summary.journey')}</span><b>{t('summary.ofTotal', { n: state.round, total: GAME_CONFIG.totalRounds })}</b></div><span className="summary-progress-track"><i style={{ width: `${Math.min(100, (state.round / GAME_CONFIG.totalRounds) * 100)}%` }}/></span></div>
+    <CardArt slug={saved > 0 ? 'savings' : 'emergency-fund'} className="summary-art"/>
     <div className="summary-balances"><div><span>{t('summary.endCash')}</span><b>{formatRM(player.cash)}</b></div><div><span>{t('summary.endSavings')}</span><b>{formatRM(player.savings)}</b></div></div>
+    {(saved > 0 || (claim?.fixedBenefits ?? 0) + (claim?.reimbursement ?? 0) > 0) && <div className="summary-rewards">
+      {saved > 0 && <span className="reward-chip reward-save"><b>+{formatRM(saved)}</b> {t('summary.saved')}</span>}
+      {(claim?.fixedBenefits ?? 0) + (claim?.reimbursement ?? 0) > 0 && <span className="reward-chip reward-cover"><b>+{formatRM((claim?.fixedBenefits ?? 0) + (claim?.reimbursement ?? 0))}</b> {t('claim.yourCover')}</span>}
+    </div>}
     <RecapChart player={player}/>
     <LearnMore><div className="summary-grid">{cells.map(([label, value, tone]) => <div key={label}><small>{label}</small><b className={tone}>{value}</b></div>)}</div></LearnMore>
     <PhaseButton label={state.round === GAME_CONFIG.totalRounds ? t('summary.review') : t('summary.next')} onClick={() => dispatch({ type: 'round/next' })}/></TableCard>;
