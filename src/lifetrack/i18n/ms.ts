@@ -70,7 +70,7 @@ const pack: LanguagePack = {
     tiles: { salary: 'GAJI', savings: 'SIMPAN', medical: 'PERUBATAN', rest: 'REHAT', protection: 'LINDUNG', family: 'KELUARGA', accident: 'KEMALANGAN', lucky: 'BERTUAH', checkpoint: 'SEMAK' },
     turnOrder: { eyebrow: 'Sebelum bermula', title: 'Siapa mula dahulu?', subtitle: 'Kad diagihkan secara rawak. Susunan ini kekal untuk keenam-enam bulan.', position: 'Giliran {n}', place: { 1: 'Pertama', 2: 'Kedua', 3: 'Ketiga', 4: 'Keempat' }, skip: 'Langkau', start: 'Mula permainan', note: 'Bidak bergerak mengikut susunan ini setiap bulan. Peristiwa hidup bulanan tetap berlaku kepada semua.' },
     shared: { note: 'Peristiwa hidup bulan ini dicabut daripada dek dan berlaku kepada keempat-empat pemain. Setiap pemain membayar daripada tunai dan simpanan sendiri, dan hanya perlindungan mereka sendiri yang membayar.', everyone: 'Keadaan semua pemain', paid: 'Dibayar {amount}', coverPaid: 'Perlindungan membayar {amount}', landing: 'Mendarat di petak tidak mengubah wang: ia hanya menunjukkan kedudukan bidak anda.' },
-    dashboard: { aria: 'Semua pemain', yourTurn: 'Giliran anda', moving: 'Bergerak', youSpace: 'Anda · Petak {n}', aiSpace: 'AI · Petak {n}', coverCount: '{n} daripada 3 polisi dimiliki' },
+    dashboard: { aria: 'Semua pemain', yourTurn: 'Giliran anda', moving: 'Bergerak', youSpace: 'Anda · Petak {n}', aiSpace: 'AI · Petak {n}', debt: 'Hutang', coverCount: '{n} daripada 3 polisi dimiliki' },
     card: {
       kind: { event: 'Peristiwa hidup', opportunity: 'Peluang', investment: 'Pelaburan', protection: 'Perlindungan', expense: 'Perbelanjaan', emergency: 'Kecemasan', income: 'Pendapatan', special: 'Pencapaian' },
       yourMove: 'Giliran anda',

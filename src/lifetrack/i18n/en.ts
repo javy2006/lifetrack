@@ -71,7 +71,7 @@ const en = {
   tiles: { salary: 'SALARY', savings: 'SAVE', medical: 'MEDICAL', rest: 'REST', protection: 'COVER', family: 'FAMILY', accident: 'ACCIDENT', lucky: 'LUCKY', checkpoint: 'CHECK' },
   turnOrder: { eyebrow: 'Before we start', title: 'Who goes first?', subtitle: 'Cards are dealt at random. This order stays the same for all six months.', position: 'Turn {n}', place: { 1: '1st', 2: '2nd', 3: '3rd', 4: '4th' }, skip: 'Skip', start: 'Start the game', note: 'Pawns move in this order every month. The month’s life event still happens to everyone.' },
   shared: { note: 'This month’s life event is drawn from the deck and happens to all four players. Each player pays from their own cash and savings, and only their own cover pays out.', everyone: 'How everyone fared', paid: 'Paid {amount}', coverPaid: 'Cover paid {amount}', landing: 'Landing on a space never changes money: it shows where your pawn is.' },
-  dashboard: { aria: 'All players', yourTurn: 'Your turn', moving: 'Moving', youSpace: 'You · Space {n}', aiSpace: 'AI · Space {n}', coverCount: '{n} of 3 policies owned' },
+  dashboard: { aria: 'All players', yourTurn: 'Your turn', moving: 'Moving', youSpace: 'You · Space {n}', aiSpace: 'AI · Space {n}', debt: 'Debt', coverCount: '{n} of 3 policies owned' },
   card: {
     kind: { event: 'Life event', opportunity: 'Opportunity', investment: 'Investment', protection: 'Protection', expense: 'Expense', emergency: 'Emergency', income: 'Income', special: 'Milestone' },
     yourMove: 'Your move',

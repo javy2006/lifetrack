@@ -404,3 +404,76 @@ body:has(.setup-page) { background: var(--lt-sky); background-color: var(--lt-sk
 }
 /* The disclaimer under the results sits on a cream strip, so it stays readable over the sky. */
 .results-layout > .disclaimer { margin: 0; padding: 10px 14px; border-radius: 14px; color: var(--lt-ink-2); background: rgba(255, 250, 240, .94); }
+
+/* Dashboard debt (engine's unpaid shortfall): muted at zero, red when a player owes. */
+.pd-debt dd { color: var(--lt-ink-3); }
+.pd-debt.has-debt dd { color: #c2243b; }
+@media (max-width: 640px) { .board-card .pd-debt { display: none; } }
+
+/* Money feedback on the player mats: a chip floats up from the figure that changed. */
+.pd-card dl > div { position: relative; }
+.pd-delta { position: absolute; right: 0; top: -4px; z-index: 2; padding: 1px 6px; border-radius: 999px; font: 900 10.5px/1.3 var(--lt-display); white-space: nowrap; pointer-events: none; animation: pd-delta 1.6s cubic-bezier(.2, .8, .3, 1) both; }
+.pd-delta.up { color: #135c39; background: #d9f2e3; box-shadow: 0 0 0 1px #9fd5b5; }
+.pd-delta.down { color: #9c1c30; background: #fbe1e5; box-shadow: 0 0 0 1px #efb0bb; }
+@keyframes pd-delta { 0% { opacity: 0; transform: translateY(6px) scale(.8); } 15% { opacity: 1; transform: translateY(-4px) scale(1.05); } 70% { opacity: 1; transform: translateY(-10px); } 100% { opacity: 0; transform: translateY(-18px); } }
+@media (prefers-reduced-motion: reduce) { .pd-delta { animation: pd-fade 1.6s linear both; } @keyframes pd-fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } } }
+@media (max-width: 640px) { .board-card .pd-delta { display: none; } }
+
+/* ==========================================================================
+   Decision cards: tactile physical cards
+   ========================================================================== */
+.choice-card .decision-pick { min-height: 232px; isolation: isolate; }
+/* Foil sheen sweeps across on hover / focus. */
+.choice-card .decision-pick::after { content: ''; position: absolute; inset: 0; z-index: 3; border-radius: inherit; pointer-events: none; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.55) 48%, transparent 60%) 140% 0 / 260% 100% no-repeat; opacity: 0; transition: opacity .2s ease; }
+.choice-card .decision-pick:hover:not(:disabled)::after, .choice-card .decision-pick:focus-visible::after { opacity: 1; animation: cc-sheen .9s ease-out; }
+@keyframes cc-sheen { from { background-position: 140% 0; } to { background-position: -40% 0; } }
+/* Press: the card dips under the finger. */
+.choice-card .decision-pick:active:not(:disabled) { transform: translateY(1px) scale(.975); }
+.choice-card .decision-pick[aria-pressed="true"]:active:not(:disabled) { transform: translateY(-7px) scale(.985); }
+/* Selected: lifted, tilted a touch, with a soft glow in the card colour. */
+.choice-card .decision-pick[aria-pressed="true"] { transform: translateY(-10px) rotate(-1.2deg); }
+.choice-card.is-selected .cc-art img { transform: scale(1.06); }
+.choice-card .cc-art img { transition: transform .35s cubic-bezier(.2, .9, .3, 1.1); }
+/* Confirm: picked cards are committed (pulse up, then settle), the rest step back. */
+.decision-card-v2.is-confirmed .choice-card:not(.is-selected) .decision-pick { opacity: .45; filter: grayscale(.8); transform: scale(.96); transition: opacity .3s ease, filter .3s ease, transform .3s ease; }
+.decision-card-v2.is-confirmed .choice-card.is-selected .decision-pick { animation: cc-commit .6s cubic-bezier(.2, 1.3, .4, 1) both; }
+@keyframes cc-commit { 0% { transform: translateY(-10px) rotate(-1.2deg); } 40% { transform: translateY(-22px) rotate(0) scale(1.05); } 100% { transform: translateY(-6px) rotate(0) scale(1); } }
+@media (max-height: 760px) { .choice-card .decision-pick { min-height: 200px; } }
+@media (max-width: 640px) { .choice-card .decision-pick { min-height: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .choice-card .decision-pick::after { animation: none; }
+  .choice-card .decision-pick[aria-pressed="true"], .decision-card-v2.is-confirmed .choice-card.is-selected .decision-pick { transform: none; animation: none; }
+  .choice-card.is-selected .cc-art img { transform: none; }
+}
+/* Hover keeps exactly the selected transform (a different hover transform under a resting pointer jitters). */
+.choice-card .decision-pick[aria-pressed="true"]:hover:not(:disabled) { transform: translateY(-10px) rotate(-1.2deg); }
+@media (prefers-reduced-motion: reduce) { .choice-card .decision-pick[aria-pressed="true"]:hover:not(:disabled) { transform: none; } }
+
+/* ==========================================================================
+   Homepage depth and screen transitions
+   ========================================================================== */
+/* The city backdrop drifts very slowly (a living postcard), with a warm sun glow behind the title. */
+.home-backdrop { animation: home-drift 40s ease-in-out infinite alternate; transform-origin: 70% 40%; }
+@keyframes home-drift { from { transform: scale(1.02); } to { transform: scale(1.08) translateX(-1%); } }
+.home-v2::before { content: ''; position: absolute; z-index: -1; left: -10%; top: -20%; width: 60%; height: 70%; pointer-events: none; background: radial-gradient(closest-side, rgba(255, 214, 120, .28), transparent); }
+/* Brand lockup reads as a game logo: a bigger shield on the homepage. */
+.home-v2 .landing-nav .brand-mark { width: 40px; height: 40px; border-radius: 13px 13px 13px 5px; }
+.home-v2 .landing-nav .brand { font-size: 18px; }
+/* Play button breathes gently to invite the first tap. */
+.home-v2 .home-play { animation: play-breathe 2.6s ease-in-out infinite; }
+@keyframes play-breathe { 0%, 100% { box-shadow: inset 0 1px 0 rgba(255,255,255,.38), inset 0 -2px 0 rgba(0,0,0,.12), 0 3px 0 var(--lt-red-edge), 0 10px 18px -8px rgba(181, 21, 43, .65), 0 0 0 0 rgba(246, 185, 40, 0); } 50% { box-shadow: inset 0 1px 0 rgba(255,255,255,.38), inset 0 -2px 0 rgba(0,0,0,.12), 0 3px 0 var(--lt-red-edge), 0 10px 18px -8px rgba(181, 21, 43, .65), 0 0 0 6px rgba(246, 185, 40, .28); } }
+/* Screens arrive instead of snapping in: setup, draw and game. */
+.setup-page, .game-fullscreen > .game-content { animation: screen-in .45s cubic-bezier(.2, .9, .3, 1) both; }
+@keyframes screen-in { from { opacity: 0; transform: translateY(14px) scale(.99); } }
+@media (prefers-reduced-motion: reduce) {
+  .home-backdrop, .home-v2 .home-play, .setup-page, .game-fullscreen > .game-content { animation: none; }
+}
+/* Player mats: the turn number sits on the avatar's corner and the cover marks under the name, so names keep their width. */
+.pd-card header { position: relative; }
+.pd-order { position: absolute; left: -5px; top: -5px; z-index: 1; width: 16px; height: 16px; font-size: 10px; box-shadow: inset 0 0 0 1.5px var(--lt-gold-2), 0 0 0 2px #fff; }
+.pd-name { flex: 1; }
+.pd-card header .pd-cover { position: absolute; right: 0; bottom: -2px; margin: 0; padding: 0; }
+.pd-card .pd-turn { z-index: 2; }
+/* The pick stamp: a gold seal with a dark check (wins over the original .decision-option-mark colours). */
+.choice-card .decision-pick .cc-stamp.decision-option-mark { background: linear-gradient(180deg, #ffd969, var(--lt-gold-2)); color: #3b2a00; box-shadow: 0 0 0 2.5px #fff, 0 4px 8px rgba(0,0,0,.25); }
+.choice-card.is-owned .decision-pick .cc-stamp.decision-option-mark { background: var(--lt-green); color: #fff; }

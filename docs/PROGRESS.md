@@ -101,8 +101,31 @@ QA (production build, headless Edge, all executed): unit 112/112; tsc clean; bui
 - Standings rows are cards: medal-coloured rank, name, large total, and on phones three score chips (wealth, savings, learning) under the name. The disclaimer under the results sits on a cream strip.
 - Checked with `scripts/qa/results-view.mjs` (a completed engine game injected) at 390×844, 360×640 and 1366×768: no overflow. Journey 3D 99/99 re-run.
 
+### Milestone 4: richer 3D city, tactile cards, dashboard debt, homepage depth (2026-11-24)
+- **Assets:** no new files in `design-references/` or `public/assets/` since `docs/ASSET_REVIEW.md` (16 references and the same production set re-checked), so every decision there still stands.
+- **3D board** (`board3d/City3D.tsx`):
+  - Towers used a six-material box, which cost 12 draws each and could not be batched. Now: one facade material plus a roof slab, merged per colour.
+  - With that headroom the city gained a second skyline row, more homes and street trees, plus lamps, benches and flower beds on the plaza paths (palette colours only, so no new materials).
+  - Draw calls went from ~293 to ~227 per frame with much more detail.
+- **Decision cards:**
+  - foil sheen on hover/focus, a press dip, a tilted lift with the art zooming slightly when selected;
+  - on confirm the picks pulse and the other cards step back;
+  - the pick stamp is a gold seal (an old rule had painted it red under a dark check);
+  - selected-hover keeps the same transform (no jitter); reduced motion turns it all off.
+- **Dashboard:**
+  - adds **Debt**, the engine's `unpaidShortfall` (costs a player could not cover). Net worth stays the engine's cash + savings, as before.
+  - Floating +/− chips when cash or savings change.
+  - Turn number on the avatar corner and cover marks under the name, so names no longer truncate at 1366 px.
+- **Homepage:** a slow drift on the city backdrop, a warm glow behind the title, a bigger logo, a gently pulsing Play button. Setup and game screens fade in.
+- **QA (executed):**
+  - unit 126/126; tsc clean; build OK; engine diff empty.
+  - journey 3D 99/99 (twice), SVG 91/91; cards at 390, 1366 and 360 ALL PASS; turnorder ALL PASS.
+  - audio, demo, intro 0 failures; renderer-default and character-images no failures; board3d pass (~227 draw calls).
+  - i18n 4 languages 0 failures.
+  - Gameplay sweep at 1920×1080, 1440×900, 1366×768, 1024×768, 844×390, 390×844, 360×640 and 320×640: 0 console errors.
+
 ### Overhaul: next milestones
-1. More district detail around the outer road (budget: ~293 of 300 draw calls; merge materials first).
+1. Optional: use the ~70 draw calls of headroom for animated touches (fountain water, flags) if they stay idle-friendly.
 2. Owner decision pending: should landing on a space trigger personal events? That would be a rule change; today dice never decide money.
 4. Audio review by ear (not possible headless).
 

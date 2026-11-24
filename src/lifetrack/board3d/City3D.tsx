@@ -223,6 +223,24 @@ function Shop({ x, z }: { x: number; z: number }) {
   </group>;
 }
 
+/** Park bench: slats in the shop-roof brown on dark lamp-post legs (palette colours only: no new materials). */
+function Bench({ x, z, ry = 0 }: { x: number; z: number; ry?: number }) {
+  return <group position={[x, 0.04, z]} rotation={[0, ry, 0]}>
+    <P c="#8a6b52" p={[0, 0.09, 0]} s={[0.3, 0.025, 0.1]}/>
+    <P c="#8a6b52" p={[0, 0.15, -0.045]} s={[0.3, 0.07, 0.02]}/>
+    {[-0.12, 0.12].map((dx) => <P key={dx} c="#4b5a63" p={[dx, 0.045, 0]} s={[0.025, 0.09, 0.08]} shadow={false}/>)}
+  </group>;
+}
+
+/** Raised flower bed: cream kerb with a bloom colour taken from the existing palette. */
+function FlowerBed({ x, z, bloom, w = 0.36, d = 0.36 }: { x: number; z: number; bloom: string; w?: number; d?: number }) {
+  return <group position={[x, 0.04, z]}>
+    <P c="#e7dcc7" p={[0, 0.03, 0]} s={[w, 0.06, d]}/>
+    <P c="#5f9a4f" p={[0, 0.065, 0]} s={[w - 0.06, 0.02, d - 0.06]} shadow={false}/>
+    {[[-1, -1], [1, 1], [-1, 1], [1, -1], [0, 0]].map(([a, b], i) => <P key={i} g="sphere" c={bloom} p={[a! * (w / 4), 0.09, b! * (d / 4)]} s={[0.07, 0.06, 0.07]} shadow={false}/>)}
+  </group>;
+}
+
 /** Sand footpath from the plaza toward one side of the park, edged in a darker sand. */
 function Path({ axis, dir }: { axis: 'x' | 'z'; dir: 1 | -1 }) {
   const from = 1.05, to = 2.55, mid = dir * (from + to) / 2, len = to - from;
@@ -268,15 +286,31 @@ export function CityBlock() {
     <Tree x={1.0} z={2.25} s={0.66} tone="#e9c046"/>
     <Tree x={-0.75} z={-2.25} s={0.55} tone="#e39b3f"/>
     <Tree x={0.75} z={-2.25} s={0.55}/>
+    {/* Plaza dressing: flower beds on the diagonals, lamps and benches along the four paths */}
+    {[[1, 1, '#c8102e'], [-1, 1, '#e9c046'], [1, -1, '#7d68a6'], [-1, -1, '#e9c046']].map(([sx, sz, c]) => <FlowerBed key={`${sx}${sz}`} x={(sx as number) * 1.0} z={(sz as number) * 1.0} bloom={c as string} w={0.3} d={0.3}/>)}
+    {[[0.38, 1.7], [-0.38, 2.3], [0.38, -1.7], [-0.38, -2.3], [1.7, -0.38], [2.3, 0.38], [-1.7, 0.38], [-2.3, -0.38]].map(([x, z], i) => <group key={i} scale={0.7} position={[x!, 0.04, z!]}><Lamp x={0} z={0}/></group>)}
+    <Bench x={-0.42} z={1.55} ry={Math.PI / 2}/>
+    <Bench x={0.42} z={-1.55} ry={-Math.PI / 2}/>
+    <Bench x={1.55} z={0.42} ry={Math.PI}/>
+    <Bench x={-1.55} z={-0.42}/>
+    {/* More trees in the open lawns */}
+    <Tree x={-2.3} z={0.55} s={0.55} tone="#6fa35a"/>
+    <Tree x={2.3} z={-0.25} s={0.5} tone="#e9c046"/>
+    <Tree x={-0.75} z={2.3} s={0.5} tone="#5f9a4f"/>
+    <Tree x={0.95} z={-1.05} s={0.42} tone="#6fa35a"/>
+    <Tree x={-1.0} z={-1.05} s={0.42} tone="#e39b3f"/>
   </group>;
 }
 
 /** Office tower with window facades (outer city, behind the board so it never hides a tile). */
 function Tower({ x, z, w, h, d, c }: { x: number; z: number; w: number; h: number; d: number; c: string }) {
-  const win = mat(c, { map: windowTexture() }), roof = mat('#e9e4d8');
+  // One material per facade colour (no per-face material array), so StaticBatch merges every tower of that
+  // colour into a single draw. A roof slab covers the window texture on the top face.
+  const win = mat(c, { map: windowTexture() });
   return <group position={[x, 0, z]}>
-    <mesh geometry={geo().box} material={[win, win, roof, roof, win, win]} position={[0, h / 2, 0]} scale={[w, h, d]} castShadow receiveShadow/>
-    <P c="#cfc8b8" p={[0, h + 0.04, 0]} s={[w * 0.55, 0.08, d * 0.55]}/>
+    <mesh geometry={geo().box} material={win} position={[0, h / 2, 0]} scale={[w, h, d]} castShadow receiveShadow/>
+    <P c="#e9e4d8" p={[0, h + 0.006, 0]} s={[w + 0.02, 0.02, d + 0.02]}/>
+    <P c="#cfc8b8" p={[0, h + 0.05, 0]} s={[w * 0.55, 0.08, d * 0.55]}/>
   </group>;
 }
 
@@ -318,7 +352,22 @@ export function OuterCity() {
     <Tower x={-7.0} z={-3.4} w={1.0} h={1.9} d={1.1} c="#f0d39b"/>
     <Tower x={-7.1} z={0.2} w={1.0} h={1.4} d={1.0} c="#e2b08a"/>
     <Tower x={-7.0} z={3.6} w={1.0} h={1.2} d={1.1} c="#f0d39b"/>
+    {/* Second skyline row (taller, further back) */}
+    <Tower x={-3.1} z={-8.6} w={1.2} h={3.0} d={1.0} c="#a9c9c0"/>
+    <Tower x={0.0} z={-8.9} w={1.3} h={3.4} d={1.1} c="#e2b08a"/>
+    <Tower x={3.2} z={-8.6} w={1.1} h={2.8} d={1.0} c="#f0d39b"/>
+    <Tower x={6.3} z={-8.2} w={1.0} h={2.2} d={1.0} c="#a9c9c0"/>
+    <Tower x={-6.4} z={-8.3} w={1.0} h={2.5} d={1.0} c="#f0d39b"/>
+    <Tower x={-8.6} z={-5.6} w={1.0} h={2.9} d={1.0} c="#e2b08a"/>
+    <Tower x={-8.7} z={-1.8} w={1.1} h={2.3} d={1.0} c="#a9c9c0"/>
+    <Tower x={-8.6} z={2.0} w={1.0} h={2.0} d={1.0} c="#e2b08a"/>
     {/* In front: low homes, shops and trees */}
+    <House x={-6.6} z={-6.6} wall="#f8f7f0" roof="#457a9b" ry={0.4}/>
+    <House x={6.7} z={-5.3} wall="#f0d9bc" roof="#b5523b" ry={Math.PI / 2}/>
+    <Shop x={6.6} z={5.4}/>
+    <House x={-2.6} z={8.0} wall="#eadfcc" roof="#24845b"/>
+    <House x={2.9} z={8.1} wall="#f8f7f0" roof="#b5523b" ry={-0.15}/>
+    {[[-4.8, 8.0], [-0.1, 8.3], [5.4, 7.9], [8.0, 4.4], [8.1, -2.8], [8.0, 0.9], [-7.9, 7.6], [7.8, -7.4]].map(([x, z], i) => <Tree key={`r${i}`} x={x!} z={z!} s={1.05} tone={['#6fa35a', '#e9c046', '#5f9a4f', '#e39b3f'][i % 4]}/>)}
     <House x={-3.8} z={6.6} wall="#f0d9bc" roof="#b5523b"/>
     <House x={-1.2} z={6.8} wall="#f8f7f0" roof="#457a9b" ry={0.15}/>
     <Shop x={1.6} z={6.6}/>
