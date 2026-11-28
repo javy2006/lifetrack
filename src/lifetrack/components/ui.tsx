@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
-import { ArrowRight, ShieldCheck } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useI18n } from '../i18n/I18nProvider.tsx';
 
 export function Button({ children, className = '', variant = 'primary', ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'quiet' }) {
@@ -11,7 +11,7 @@ export function Card({ children, className = '', ...props }: HTMLAttributes<HTML
 }
 
 export function Brand({ light = false }: { light?: boolean }) {
-  return <div className={`brand ${light ? 'brand-light' : ''}`}><span className="brand-mark"><ShieldCheck size={19} /></span><span>LIFETRACK</span></div>;
+  return <div className={`brand ${light ? 'brand-light' : ''}`}><span className="brand-mark"><img src="/logo/lifetrack-logo-128.png" alt="" width={128} height={128} decoding="async" /></span><span>LIFETRACK</span></div>;
 }
 
 export function Disclaimer({ compact = false }: { compact?: boolean }) {

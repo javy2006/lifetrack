@@ -10,3 +10,6 @@ assets/characters/full/** -filter -diff -merge -text
 assets/art/** -filter -diff -merge -text
 assets/icons/** -filter -diff -merge -text
 assets/scenes/** -filter -diff -merge -text
+
+# Brand logo is loaded directly by the browser (header badge).
+logo/** -filter -diff -merge -text

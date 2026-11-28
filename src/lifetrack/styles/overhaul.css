@@ -503,3 +503,6 @@ body:has(.setup-page) { background: var(--lt-sky); background-color: var(--lt-sk
 @media (max-height: 500px) and (orientation: landscape) { .table-card.event-card > .event-art { display: none; } }
 /* Tap-through guard (GameScreen): a freshly dealt card ignores pointer input for ~450 ms. */
 .game-action-layer.is-arriving .primary-column { pointer-events: none; }
+/* Brand mark shows the LifeTrack logo artwork (public/logo) instead of the old red shield tile. */
+.brand-mark { background: none; box-shadow: 0 2px 6px rgba(9, 30, 66, .22); overflow: hidden; padding: 0; }
+.brand-mark img { display: block; width: 100%; height: 100%; object-fit: cover; }
